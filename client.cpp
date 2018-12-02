@@ -62,19 +62,6 @@ void* RecieverThread(void* pVData)
 char g_cIdentifier[20 + 1] = {0};
 
 
-//enum class CMESSAGE_CODE_ACTIONS : long 
-//{
-//    MESSAGE_CODE_ACTIONS_REGISTER          = 1001,
-//    MESSAGE_CODE_ACTIONS_REGISTER_RESPONSE = 1002,
-//    
-//    MESSAGE_CODE_ACTIONS_REGISTER_TARGET          = 1003,
-//    MESSAGE_CODE_ACTIONS_REGISTER_TARGET_RESPONSE = 1004,
-//    
-//    MESSAGE_CODE_ACTIONS_CHAT          = 1005,
-//    MESSAGE_CODE_ACTIONS_CHAT_RESPONSE = 1006,
-//    MESSAGE_CODE_ACTIONS_CHAT_MESSAGE  = 1007,
-//};
-
 int ExecuteResponse(tagData& stData)
 {
     long lnMessageCode = stData.nMessageCode;
