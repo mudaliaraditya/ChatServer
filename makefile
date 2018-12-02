@@ -14,4 +14,4 @@ client.o : client.cpp
 	g++ -c  client.cpp -g -lpthread -std=c++11
 	
 clean :
-	rm *.out
+	rm *.out || true
