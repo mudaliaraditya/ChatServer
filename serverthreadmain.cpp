@@ -49,29 +49,106 @@ int RecvUDPData(int nSockFD,void* cData,size_t nSize, sockaddr_in* pstSockAddr,s
 
 map<string, tagData> g_cPortIdentifier;
 
-list<tagData> g_cList;
+list<tagData> g_cResponseList;
+
+list<tagData> g_cProcessList;
+
+pthread_mutex_t g_cProcessMutex;
+pthread_mutex_t g_cProcessMutexCounter;
+pthread_mutex_t g_cResponseMutex;
+int g_cLockerInt = 0;
+int g_cListLen = 0;
+
 
 int ExecuteFunction( const tagData& stData);
 
 int GetResponseForFunction(tagData& stData);
 #ifndef singlethread
-void* SenderThread(void* pArg)
+
+void* ProcessThread(void* pArg)
 {
-   // tagData lstRecvData = {0};
-    tagData lstData = {0};
     int lnReturnVal = 0;
-    
     while(true)
     {
-       if(!g_cList.empty())
+//       lnReturnVal =  pthread_mutex_lock(&g_cProcessMutex);
+//       if(lnReturnVal != 0)
+//       {
+//           printf("%s, %d ",strerror(errno),__LINE__);
+//           perror("unable to take lock");
+//           exit(1);
+//           
+//       }
+       if(g_cListLen > 0)
        {
-           lstData = g_cList.back();
-           g_cList.pop_back();
-           if(lstData.nMessageCode == 1003)
+           //pthread_mutex_unlock(&g_cProcessMutex);
+           printf("In funtion \nthread id = %d\n", pthread_self());
+           lnReturnVal =  pthread_mutex_lock(&g_cProcessMutex);
+           if(lnReturnVal != 0)
            {
-               cout << "prob";
+              printf("%s, %d ",strerror(errno),__LINE__);
+              perror("unable to take lock");
+              exit(1);
            }
-            int lnVal = ExecuteFunction(lstData);
+            while(g_cLockerInt == 1)
+            {
+
+            }
+            if(g_cLockerInt == 0)
+            {
+                g_cLockerInt = 1;
+            }
+//           if(g_cResponseList.empty())
+//           {
+//               pthread_mutex_unlock(&g_cProcessMutex);
+//               continue;
+//           }
+           cout << "process thread process mutex acquired" << endl;
+            if(g_cListLen <= 0)
+            {
+                      if(g_cLockerInt == 1)
+                    {
+                        g_cLockerInt = 0;
+                    }
+            lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
+            if(lnReturnVal != 0)
+            {
+                 printf("%s, %d",strerror(errno),__LINE__);
+                 perror("unable to take lock");
+                 exit(1);
+             }
+                continue;
+                
+            }
+           tagData lstData = g_cProcessList.back();
+           g_cProcessList.pop_back();
+           lnReturnVal = pthread_mutex_lock(&g_cProcessMutexCounter);
+            if(lnReturnVal != 0)
+            {
+                printf("%s %d",strerror(errno),__LINE__);
+                exit(1);
+            }
+            g_cListLen--;
+            lnReturnVal = pthread_mutex_unlock(&g_cProcessMutexCounter);
+            if(lnReturnVal != 0)
+            {
+                printf("%s %d",strerror(errno),__LINE__);
+                exit(1);
+            }
+             if(g_cLockerInt == 1)
+            {
+                g_cLockerInt = 0;
+            }
+           lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
+           if(lnReturnVal != 0)
+           {
+                printf("%s, %d",strerror(errno),__LINE__);
+                perror("unable to take lock");
+                exit(1);
+            }
+           
+           cout << "process thread process mutex acquired" << endl;
+           
+           int lnVal = ExecuteFunction(lstData);
            if(lnVal != 0)
            {
                exit(1); 
@@ -87,10 +164,75 @@ void* SenderThread(void* pArg)
            int lnDataStructSize = sizeof(tagData);
            char lcBuffer[lnDataStructSize] = {0};
            
+           lnReturnVal =  pthread_mutex_lock(&g_cResponseMutex);
+           if(lnReturnVal != 0)
+           {
+                printf("%s, %d",strerror(errno),__LINE__);
+                perror("unable to take lock");
+                exit(1);
+           }
+           cout << "processthread mutex lock acquired" << endl;
+           
+           g_cResponseList.push_back(lstData);
+           lnReturnVal =  pthread_mutex_unlock(&g_cResponseMutex);
+           if(lnReturnVal != 0)
+           {
+                printf("%s, %d",strerror(errno),__LINE__);
+                perror("unable to take lock");
+                exit(1);
+           }
+           cout << "processthread mutex lock released" << endl;
+       }
+    }
+}
+
+void* SenderThread(void* pArg)
+{
+   // tagData lstRecvData = {0};
+    tagData lstData = {0};
+    int lnReturnVal = 0;
+    
+    while(true)
+    {
+       //if(!g_cResponseList.empty())
+       {
+           pthread_mutex_lock(&g_cResponseMutex);
+           if(g_cResponseList.empty())
+           {
+               pthread_mutex_unlock(&g_cResponseMutex);
+               continue;
+           }
+           lstData = g_cResponseList.back();
+           g_cResponseList.pop_back();
+           pthread_mutex_unlock(&g_cResponseMutex);
+           if(lstData.nMessageCode == 1003)
+           {
+               cout << "prob";
+           }
+           
+//           int lnVal = ExecuteFunction(lstData);
+//           if(lnVal != 0)
+//           {
+//               exit(1); 
+//           }
+//           
+//           lnReturnVal = GetResponseForFunction(lstData);
+//           if(0 > lnReturnVal )
+//           {
+//               cout << "wrong response code" << endl;
+//               //printf("%s", strerror(errno));
+//              // exit(1);
+//           }
+           int lnDataStructSize = sizeof(tagData);
+           char lcBuffer[lnDataStructSize] = {0};
+           
            memcpy(&lcBuffer, (char*)&lstData, lnDataStructSize);
            
            //sendto(sockfd, (const char *)&lcBuffer, sizeof(tagData),  MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len); 
            lnReturnVal = sendto(lstData.stNetWork.fd, (const char *)&lcBuffer, sizeof(tagData),  MSG_CONFIRM, (const struct sockaddr *) &(lstData.stNetWork.addr), lstData.stNetWork.restrict); 
+           //sendto(lstData.stNetWork.fd, (const char *)&lcBuffer, sizeof(tagData),  MSG_CONFIRM, (const struct sockaddr *) &(lstData.stNetWork.addr), lstData.stNetWork.restrict); 
+          // lnReturnVal = SendUDPData(lstData.stNetWork.fd, (const char *)&lcBuffer, sizeof(tagData),  &(lstData.stNetWork.addr), (lstData.stNetWork.restrict));
+                                 //   (int nSockFD,const void* cData,size_t nSize,const struct sockaddr_in* pstSockAddr,socklen_t nSockAddrLen)
            if(0 > lnReturnVal )
            {
                printf("%s", strerror(errno));
@@ -232,46 +374,107 @@ int GetResponseForFunction(tagData& stData)
     return -1;
 }
 
-// Driver code 
-int main() 
-{ 
-    int sockfd = 0;  
-    // Creating socket file descriptor 
-    //if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
-    if ( (sockfd = CreateUDPSocketIP()) < 0)//socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
+
+int NetWorkInitialize(int& nSockfd)
+{
+    if ( (nSockfd = CreateUDPSocketIP()) < 0)//socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
     {
         perror("socket creation failed"); 
         exit(EXIT_FAILURE); 
-    } 
+    }
+    
       
     memset(&servaddr, 0, sizeof(servaddr)); 
     memset(&cliaddr, 0, sizeof(cliaddr)); 
-      
+    
+    FillSockAddrin( AF_INET, htons(PORT), INADDR_ANY, &servaddr );
+    
+    if ( bind(nSockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0 )
+    {
+        perror("bind failed"); 
+        exit(EXIT_FAILURE); 
+    }
+    
+    return EXIT_SUCCESS;
+}
+
+// Driver code 
+int main() 
+{
+    int lnRetVal = 0;
+    int sockfd = 0;
+#ifndef singlethread
+    pthread_t lnSenderPThread;
+    pthread_create(&lnSenderPThread, NULL, SenderThread,NULL);
+    pthread_t lnProcessPThread[NO_OF_PROC_THREADS];
+    for(int lnCounter =0 ;lnCounter< NO_OF_PROC_THREADS; lnCounter++)
+    {
+        pthread_create(((pthread_t*)&(lnProcessPThread[lnCounter])), NULL, ProcessThread,NULL);
+    }
+    
+
+    if (pthread_mutex_init(&g_cProcessMutex, NULL) != 0) 
+    { 
+         printf("%s %d",strerror(errno),__LINE__);
+        printf("\n mutex init has failed\n"); 
+        return 1; 
+    }
+    if (pthread_mutex_init(&g_cResponseMutex, NULL) != 0) 
+    {
+        printf("%s %d",strerror(errno), __LINE__);
+        printf("\n mutex init has failed\n"); 
+        return 1; 
+    } 
+    
+     if (pthread_mutex_init(&g_cProcessMutexCounter, NULL) != 0) 
+    {
+        printf("%s %d",strerror(errno), __LINE__);
+        printf("\n mutex init has failed\n"); 
+        return 1; 
+    } 
+#endif 
+    // Creating socket file descriptor 
+    //if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
+//    if ( (sockfd = CreateUDPSocketIP()) < 0)//socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
+//    {
+//        perror("socket creation failed"); 
+//        exit(EXIT_FAILURE); 
+//    } 
+//      
+//    memset(&servaddr, 0, sizeof(servaddr)); 
+//    memset(&cliaddr, 0, sizeof(cliaddr)); 
+//      
     // Filling server information 
 //    servaddr.sin_family    = AF_INET; // IPv4 
 //    servaddr.sin_addr.s_addr = INADDR_ANY; 
 //    servaddr.sin_port = htons(PORT); 
-    FillSockAddrin( AF_INET, htons(PORT), INADDR_ANY, &servaddr );
+
+//    FillSockAddrin( AF_INET, htons(PORT), INADDR_ANY, &servaddr );
+
     // Bind the socket with the server address 
-    if ( bind(sockfd, (const struct sockaddr *)&servaddr,  
-            sizeof(servaddr)) < 0 )
+//    if ( bind(sockfd, (const struct sockaddr *)&servaddr,  
+//            sizeof(servaddr)) < 0 )
+//    {
+//        perror("bind failed"); 
+//        exit(EXIT_FAILURE); 
+//    } 
+    lnRetVal = NetWorkInitialize(sockfd);
+    if(lnRetVal != EXIT_SUCCESS)
     {
-        perror("bind failed"); 
+          perror("Network Initialize failed"); 
         exit(EXIT_FAILURE); 
-    } 
-      
-    int len, n;
+    }
+    
+    int len = 0, n = 0;
     tagData lstData = {0}; 
     //n = recvfrom(sockfd, (char *)buffer, MAXLINE,MSG_WAITALL, ( struct sockaddr *) &cliaddr, (socklen_t*)&len); 
-#ifndef singlethread
-    pthread_t lnPthread;
-    pthread_create(&lnPthread, NULL, SenderThread,NULL);
-#endif
+
     while(true)
     {
         memset(&lstData, 0, sizeof(lstData));
-        n = recvfrom(sockfd, (char *)&lstData, sizeof(tagData),MSG_WAITALL, ( struct sockaddr *) &cliaddr, (socklen_t*)&len);
-      //  n = RecvUDPData(sockfd, (char *)&lstData, sizeof(tagData),  &cliaddr);
+        len = sizeof(cliaddr);
+        //n = recvfrom(sockfd, (char *)&lstData, sizeof(tagData),MSG_WAITALL, ( struct sockaddr *) &cliaddr, (socklen_t*)&len);
+        n = RecvUDPData(sockfd, (char *)&lstData, sizeof(tagData),  &cliaddr, (socklen_t*)&len);
         if(n <= 0)
         {
             cout << "" << endl;
@@ -287,11 +490,7 @@ int main()
         cout << cliaddr.sin_family<< endl;
         cout << cliaddr.sin_port<< endl;
         cout << cliaddr.sin_zero << endl;
-        //printf("Client : %s\n", lstData.cIdentifier);
-//             if(lstData.nMessageCode == 1003)
-//           {
-//               cout << "prob";
-//           }
+
 #ifndef singlethread
         memcpy(&(lstData.stNetWork.addr), &cliaddr, sizeof(sockaddr_in));
         lstData.stNetWork.fd = sockfd;
@@ -301,9 +500,49 @@ int main()
         cout << "chat data " << lstData.cBuffer << endl;
         cout << "identifier " << lstData.cIdentifier << endl;
         cout << "target " <<lstData.cTarget << endl;
-        ///cout << lstData.cBuffer << endl;
-        g_cList.push_back(lstData);
+        lnRetVal = pthread_mutex_lock(&g_cProcessMutex);
+        if(lnRetVal != 0)
+        {
+            printf("%s %d",strerror(errno), __LINE__);
+            exit(1);
+        }
+        while(g_cLockerInt == 1)
+        {
+            
+        }
+        if(g_cLockerInt == 0)
+        {
+            g_cLockerInt = 1;
+        }
+        cout << "mtex acquired process main" << endl;
+        g_cProcessList.push_back(lstData);
         
+        lnRetVal = pthread_mutex_lock(&g_cProcessMutexCounter);
+        if(lnRetVal != 0)
+        {
+            printf("%s %d",strerror(errno),__LINE__);
+            exit(1);
+        }
+        g_cListLen++;
+        lnRetVal = pthread_mutex_unlock(&g_cProcessMutexCounter);
+        if(lnRetVal != 0)
+        {
+            printf("%s %d",strerror(errno),__LINE__);
+            exit(1);
+        }
+        
+        if(g_cLockerInt == 1)
+        {
+            g_cLockerInt = 0;
+        }
+        lnRetVal = pthread_mutex_unlock(&g_cProcessMutex);
+        if(lnRetVal != 0)
+        {
+            printf("%s %d",strerror(errno),__LINE__);
+            exit(1);
+        }
+        cout << "mtex Released process main" << endl;
+      
 #endif
 #ifdef singlethread
         int lnVal = ExecuteFunction(lstData);
@@ -328,8 +567,22 @@ int main()
     
 
     
-    close(sockfd);     
+    close(sockfd);    
+    lnRetVal =pthread_mutex_destroy(&g_cProcessMutex); 
+    if(lnRetVal != 0)
+    {
+         printf("%s, %d",strerror(errno),__LINE__);
+         perror("unable to take lock");
+         exit(1);
+    }
+    
+    lnRetVal = pthread_mutex_destroy(&g_cResponseMutex); 
+    if(lnRetVal != 0)
+    {
+       printf("%s, %d",strerror(errno),__LINE__);
+       perror("unable to take lock");
+       exit(1);
+    }
     return 0;
 }
-
 
