@@ -1,3 +1,4 @@
+#pragma once
 
 enum class CMESSAGE_CODE_ACTIONS : long 
 {
