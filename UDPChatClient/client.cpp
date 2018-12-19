@@ -215,8 +215,10 @@ int main(int argc,char* argv[])
    memcpy(lpstThreadData, &lstData, sizeof(tagData));
    cout << "sockfd is "<< lpstThreadData->stNetWork.fd << endl;
    pthread_t lnPThread;
+   pthread_t lnPThread1;
    //sleep(1); 
    pthread_create(&lnPThread, NULL, RecieverThread, lpstThreadData);
+  // pthread_create(&lnPThread1, NULL, RecieverThread, lpstThreadData);
    
    lnLen = sendto(lnSockFd, (const char *)&lstData, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &servaddr, sizeof(servaddr)); 
    if(lnLen <= 0)
@@ -259,8 +261,14 @@ int main(int argc,char* argv[])
       lstData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT;
       strncpy(lstData.cIdentifier, g_cIdentifier, 20);
       cout << "Enter Chat Data" << endl;
-      //cin  >> lstData.cBuffer; 
-      strncpy(lstData.cBuffer, g_cIdentifier, 20);
+      if(lnTesting == 1)
+      {
+         strncpy(lstData.cBuffer, g_cIdentifier, 20);
+      }
+      else
+      {
+        cin  >> lstData.cBuffer; 
+      }
       SetRand(lstData.cUniqueMessageIdentifier,30);
       lnLen = sendto(lnSockFd, (const char *)&lstData, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &servaddr, sizeof(servaddr)); 
       if(lnLen <= 0)
