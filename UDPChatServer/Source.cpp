@@ -59,8 +59,6 @@ int CleanUp()
       }
    }
    
-   ;
-   
 }
 
 void handle_signal(int signal) 
@@ -68,14 +66,9 @@ void handle_signal(int signal)
     const char *signal_name;
     sigset_t pending;
 
-    // Find out which signal we're handling
-    switch (signal) {
-        case SIGHUP:
-            signal_name = "SIGHUP";
-            break;
-        case SIGUSR1:
-            signal_name = "SIGUSR1";
-            break;
+    
+    switch (signal) 
+    {
         case SIGINT:
         {
             printf("Caught SIGINT, exiting now\n");
@@ -83,10 +76,12 @@ void handle_signal(int signal)
             exit(0);
           
         }
-          break;
-            default:
-            fprintf(stderr, "Caught wrong signal: %d\n", signal);
-            return;
+        break;
+        default:
+        {
+           fprintf(stderr, "Caught wrong signal: %d\n", signal);
+           return;
+        }   
     }
 }
 
@@ -124,24 +119,24 @@ int NetWorkInitialize(int& nSockfd)
 
 int SendUDPData(int nSockFD, const void* cData, size_t nSize, const struct sockaddr_in* pstSockAddr, long nSockAddrLen)
 {
-#ifndef WIN32
-   return sendto(nSockFD, (const char *)&cData, nSize, MSG_CONFIRM, (const struct sockaddr *) pstSockAddr, nSockAddrLen);
-#endif
+   #ifndef WIN32
+      return sendto(nSockFD, (const char *)&cData, nSize, MSG_CONFIRM, (const struct sockaddr *) pstSockAddr, nSockAddrLen);
+   #endif
 
-#ifdef WIN32
-   return sendto(nSockFD, (const char *)&cData, nSize, 0, (const struct sockaddr *) pstSockAddr, nSockAddrLen);
-#endif
+   #ifdef WIN32
+      return sendto(nSockFD, (const char *)&cData, nSize, 0, (const struct sockaddr *) pstSockAddr, nSockAddrLen);
+   #endif
 }
 
 int RecvUDPData(int nSockFD, void* cData, size_t nSize, sockaddr_in* pstSockAddr, long pnSockAddrLen)
 {
 
-#ifndef WIN32
-   return recvfrom(nSockFD, (void*)cData, nSize, MSG_WAITALL, (struct sockaddr *) pstSockAddr, (socklen_t*)&pnSockAddrLen);
-#endif
-#ifdef WIN32
-   return recvfrom(nSockFD, (char*)cData, nSize, 0, (struct sockaddr *) pstSockAddr, (int*)&pnSockAddrLen);
-#endif
+   #ifndef WIN32
+      return recvfrom(nSockFD, (void*)cData, nSize, MSG_WAITALL, (struct sockaddr *) pstSockAddr, (socklen_t*)&pnSockAddrLen);
+   #endif
+   #ifdef WIN32
+      return recvfrom(nSockFD, (char*)cData, nSize, 0, (struct sockaddr *) pstSockAddr, (int*)&pnSockAddrLen);
+   #endif
 
 }
 
