@@ -4,10 +4,19 @@ using namespace std;
 #pragma pack(1)
 
 long g_OS = 0;
+//UDPChatServer 20/12/2018 Aditya M.
+typedef map<string, tagData*> CIdentiferDataStore;
+typedef map<string, tagData*>::iterator CIteratotrIdentiferDataStore;
 
-map<string, tagData> g_cPortIdentifier;
-list<tagData> g_cResponseList;
-list<tagData> g_cProcessList;
+typedef  list<tagData*> CDataStore;
+typedef  list<tagData*>::iterator CIteratorDataStore;
+
+
+
+CIdentiferDataStore g_cPortIdentifier;
+CDataStore g_cResponseList;
+CDataStore g_cProcessList;
+//UDPChatServer 20/12/2018 Aditya M.
 
 int CreateUDPSocketIP()
 {
@@ -16,6 +25,71 @@ int CreateUDPSocketIP()
 }
 
 struct sockaddr_in servaddr, cliaddr;
+
+int CleanUp()
+{
+   for(CIteratotrIdentiferDataStore lcIter = g_cPortIdentifier.begin(); lcIter != g_cPortIdentifier.end();lcIter++)
+   {
+      tagData* lpstData = lcIter->second;
+      if(lpstData != nullptr)
+      {
+         delete (lpstData);
+         lpstData = nullptr;
+      }
+      //lcIter = g_cPortIdentifier.erase(lcIter);
+   }
+   
+   for(CIteratorDataStore lcIter = g_cResponseList.begin();g_cResponseList.end() != lcIter; lcIter++)
+   {
+      tagData* lpstData = *lcIter;
+      if(lpstData != nullptr)
+      {
+         delete (lpstData);
+         lpstData = nullptr;
+      }
+   }
+   
+   for(CIteratorDataStore lcIter = g_cProcessList.begin(); g_cProcessList.end() != lcIter; lcIter++)
+   {
+      tagData* lpstData = *lcIter;
+      if(lpstData != nullptr)
+      {
+         delete (lpstData);
+         lpstData = nullptr;
+      }
+   }
+   
+   ;
+   
+}
+
+void handle_signal(int signal) 
+{
+    const char *signal_name;
+    sigset_t pending;
+
+    // Find out which signal we're handling
+    switch (signal) {
+        case SIGHUP:
+            signal_name = "SIGHUP";
+            break;
+        case SIGUSR1:
+            signal_name = "SIGUSR1";
+            break;
+        case SIGINT:
+        {
+            printf("Caught SIGINT, exiting now\n");
+            CleanUp();
+            exit(0);
+          
+        }
+          break;
+            default:
+            fprintf(stderr, "Caught wrong signal: %d\n", signal);
+            return;
+    }
+}
+
 
 void FillSockAddrin(long sin_family, unsigned short int sin_port, long long sin_addr, sockaddr_in* sockaddrin)
 {
@@ -74,11 +148,13 @@ int RecvUDPData(int nSockFD, void* cData, size_t nSize, sockaddr_in* pstSockAddr
 int ExecuteFunction(const tagData& stData)
 {
    long lnMessageCode = stData.nMessageCode;
+   tagData* lpstData = nullptr;
    switch (lnMessageCode)
    {
    case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER) :
    {
-      bool lbVal = (g_cPortIdentifier.insert(pair<string, tagData>(stData.cIdentifier, stData))).second;
+      lpstData = new tagData(stData);
+      bool lbVal = (g_cPortIdentifier.insert(pair<string, tagData*>(stData.cIdentifier, lpstData))).second;
       if (lbVal == false)
       {
          printf("duplicate identifier insert to identifier(%s) store failed ", stData.cIdentifier);
@@ -90,13 +166,17 @@ int ExecuteFunction(const tagData& stData)
 
    case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET) :
    {
-      map<string, tagData>::iterator lcIterator = g_cPortIdentifier.find(stData.cIdentifier);
+      map<string, tagData*>::iterator lcIterator = g_cPortIdentifier.find(stData.cIdentifier);
       if (lcIterator == g_cPortIdentifier.end())
       {
 
       }
-
-      tagData& lcData = lcIterator->second;
+         if(lcIterator->second == nullptr)
+         {
+            cout << "invalid ptr" << endl;
+            exit(1);
+         }
+      tagData& lcData = *(lcIterator->second);
       strncpy(lcData.cTarget, stData.cTarget, 20);
    }
                                                                                  break;
@@ -108,23 +188,24 @@ int ExecuteFunction(const tagData& stData)
       tagData lstData = stData;
       lstData.nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE;
       memcpy(&lcBuffer, (char*)&lstData, sizeof(tagData));
-      map<string, tagData>::iterator lcIter = g_cPortIdentifier.find(stData.cIdentifier);
+      map<string, tagData*>::iterator lcIter = g_cPortIdentifier.find(stData.cIdentifier);
       if (lcIter == g_cPortIdentifier.end())
       {
          cout << stData.cIdentifier << "not found";
             printf("%s %d", strerror(errno), __LINE__);
         // exit(1);
       }
-      map<string, tagData>::iterator lcIter1 = g_cPortIdentifier.find(lcIter->second.cTarget);
+      
+      map<string, tagData*>::iterator lcIter1 = g_cPortIdentifier.find(lcIter->second->cTarget);
       if (lcIter1 == g_cPortIdentifier.end())
       {
-         cout << "Target not found" << lcIter->second.cTarget <<  "By Identifier " << stData.cIdentifier <<endl;
+         cout << "Target not found" << lcIter->second->cTarget <<  "By Identifier " << stData.cIdentifier <<endl;
             printf("%s %d", strerror(errno), __LINE__);
         // exit(1);
          //goto A;
       }
       int len, n;
-      sendto(lcIter1->second.stNetWork.fd, (const char *)&lcBuffer, sizeof(tagData), 0, (const struct sockaddr *) &(lcIter1->second.stNetWork.addr), lcIter1->second.stNetWork.restrict);
+      sendto(lcIter1->second->stNetWork.fd, (const char *)&lcBuffer, sizeof(tagData), 0, (const struct sockaddr *) &(lcIter1->second->stNetWork.addr), lcIter1->second->stNetWork.restrict);
    }
                                                                       break;
    }
@@ -178,7 +259,8 @@ pthread_cond_t g_cConditionalVar;
 void* ProcessThread(void* pArg)
 {
    int lnReturnVal = 0;
-   tagData lstData = {0};
+   //tagData lstData = {0};
+   tagData* lstData = nullptr;
    while (true)
    {
 
@@ -208,6 +290,17 @@ void* ProcessThread(void* pArg)
             cout << "Process fired" << endl;
             g_cProcessList.pop_back();         
          }
+         else
+         {
+            lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
+            if (lnReturnVal != 0)
+            {
+               printf("%s, %d", strerror(errno), __LINE__);
+               perror("unable to take lock");
+               exit(1);
+            }
+            continue;
+         }
          lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
          if (lnReturnVal != 0)
          {
@@ -218,13 +311,13 @@ void* ProcessThread(void* pArg)
 #ifdef LOGGING           
          cout << "process thread process mutex acquired" << endl;
 #endif
-         int lnVal = ExecuteFunction(lstData);
+         int lnVal = ExecuteFunction(*lstData);
          if (lnVal != 0)
          {
          //   exit(1);
          }
 
-         lnReturnVal = GetResponseForFunction(lstData);
+         lnReturnVal = GetResponseForFunction(*lstData);
          if (0 > lnReturnVal)
          {
             cout << "wrong response code" << endl;
@@ -261,7 +354,7 @@ void* ProcessThread(void* pArg)
 
 void* SenderThread(void* pArg)
 {
-   tagData lstData = { 0 };
+   tagData* lstData = nullptr;
    int lnReturnVal = 0;
 
    while (true)
@@ -274,7 +367,14 @@ void* SenderThread(void* pArg)
          pthread_mutex_unlock(&g_cResponseMutex);
          continue;
       }
+      
       lstData = g_cResponseList.back();
+      if(nullptr == lstData)
+      {
+         cout << "error nullptr" << endl;
+         exit(1);
+      }
+      
       g_cResponseList.pop_back();
       lnReturnVal = pthread_mutex_unlock(&g_cResponseMutex);
       if (lnReturnVal != 0)
@@ -287,21 +387,22 @@ void* SenderThread(void* pArg)
       int lnDataStructSize = sizeof(tagData);
       char lcBuffer[lnDataStructSize] = { 0 };
 
-      memcpy(&lcBuffer, (char*)&lstData, lnDataStructSize);
+      memcpy(&lcBuffer, (char*)lstData, lnDataStructSize);
 
-      lnReturnVal = sendto(lstData.stNetWork.fd, (const char *)&lcBuffer, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &(lstData.stNetWork.addr), lstData.stNetWork.restrict);
+      lnReturnVal = sendto(lstData->stNetWork.fd, (const char *)&lcBuffer, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &(lstData->stNetWork.addr), lstData->stNetWork.restrict);
       if (0 > lnReturnVal)
       {
          printf("%s", strerror(errno));
          exit(1);
       }
+      
+      delete (lstData);
+      lstData = nullptr;
       //#define LOGGING
 #ifdef LOGGING        
       printf("%s", strerror(errno));
       printf("Hello message sent.\n");
 #endif
-
-
    }
 }
 
@@ -312,8 +413,10 @@ void* SenderThread(void* pArg)
 #ifndef WIN32
 int main()
 {
-
-
+   struct sigaction lstSigAction;
+     lstSigAction.sa_flags = 0;
+   lstSigAction.sa_handler  = handle_signal;
+   sigaction(SIGINT, &lstSigAction, NULL);
    g_OS = 1;
 
    int lnRetVal = 0;
@@ -352,15 +455,16 @@ int main()
    }
 
    long long len = 0, n = 0;
-   tagData lstData = { 0 };
+   tagData* lstData = nullptr;
    //n = recvfrom(sockfd, (char *)buffer, MAXLINE,MSG_WAITALL, ( struct sockaddr *) &cliaddr, (socklen_t*)&len); 
 
    while (true)
    {
-      memset(&lstData, 0, sizeof(lstData));
+      //memset(&lstData, 0, sizeof(lstData));
+      lstData = new tagData();
       len = sizeof(cliaddr);
       //n = recvfrom(sockfd, (char *)&lstData, sizeof(tagData),MSG_WAITALL, ( struct sockaddr *) &cliaddr, (socklen_t*)&len);
-      n = RecvUDPData(sockfd, (char *)&lstData, sizeof(tagData), &cliaddr, len);
+      n = RecvUDPData(sockfd, (char *)lstData, sizeof(tagData), &cliaddr, len);
       if (n <= 0)
       {
          cout << "" << endl;
@@ -370,9 +474,9 @@ int main()
 #ifdef LOGGING
       printf("%s", strerror(errno));
 #endif
-      if (lstData.nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER)
+      if (lstData->nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER)
       {
-         lstData.stNetWork.fd = sockfd;
+         lstData->stNetWork.fd = sockfd;
       }
 #ifdef LOGGING
       cout << cliaddr.sin_addr.s_addr << endl;
@@ -381,15 +485,15 @@ int main()
       cout << cliaddr.sin_zero << endl;
 #endif
 
-      memcpy(&(lstData.stNetWork.addr), &cliaddr, sizeof(sockaddr_in));
-      lstData.stNetWork.fd = sockfd;
-      //lstData.stNetWork.addr
-      lstData.stNetWork.restrict = sizeof(sockaddr_in);
-      lstData.stNetWork.flags = MSG_CONFIRM;
+      memcpy(&(lstData->stNetWork.addr), &cliaddr, sizeof(sockaddr_in));
+      lstData->stNetWork.fd = sockfd;
+      //lstData->stNetWork.addr
+      lstData->stNetWork.restrict = sizeof(sockaddr_in);
+      lstData->stNetWork.flags = MSG_CONFIRM;
 #ifdef LOGGING        
-      cout << "chat data " << lstData.cBuffer << endl;
-      cout << "identifier " << lstData.cIdentifier << endl;
-      cout << "target " << lstData.cTarget << endl;
+      cout << "chat data " << lstData->cBuffer << endl;
+      cout << "identifier " << lstData->cIdentifier << endl;
+      cout << "target " << lstData->cTarget << endl;
 #endif        
       lnRetVal = pthread_mutex_lock(&g_cProcessMutex);
       if (lnRetVal != 0)
@@ -421,6 +525,8 @@ int main()
 
 
    close(sockfd);
+   CleanUp();
+   
    lnRetVal = pthread_mutex_destroy(&g_cProcessMutex);
    if (lnRetVal != 0)
    {

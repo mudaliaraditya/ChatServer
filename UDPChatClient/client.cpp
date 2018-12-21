@@ -1,5 +1,5 @@
 #include <math.h>
-
+#include <deque>
 #include "includes.h"
 
 #pragma pack(1)
@@ -9,10 +9,17 @@ using namespace std;
 struct tagData;
 int ExecuteResponse(tagData& stData);
 
+int g_nTesting = 0;
+char** g_pcParam = nullptr;
+short g_nArgs = 0;
 
 char g_cIdentifier[20 + 1] = {0};
 map <string,tagData> g_cMessageHolder;
+deque<tagData> g_cSenderDataStore;
 
+pthread_mutex_t g_SenderMutex;
+
+struct sockaddr_in     servaddr = {0};
 
 
 void SetRand(char* cBuf,int nSize)
@@ -120,6 +127,95 @@ int RecvUDPData(int nSockFD, void* cData, size_t nSize, sockaddr_in* pstSockAddr
 
 
 #ifndef WIN32
+void* SenderThread(void* pVData)
+{
+    int lnDataRecievedLen = 0;
+    tagData* lpstData = (tagData*)pVData;
+   // tagData lstData = *lpstData;
+    //tagNetworkThread* lpstThread = &(lstData.stNetWork);
+   tagNetworkThread& lstThread = lpstData->stNetWork;
+    int lnSockFd = 0,lnLen = 0;
+    tagData lstRecvData = {0};
+    
+    int lnRetVal = 0;
+    while(true)
+    {
+       memset(&lstRecvData, 0 ,sizeof(tagData));       
+       pthread_mutex_lock(&g_SenderMutex);
+       if(!g_cSenderDataStore.empty())
+       {
+         lstRecvData = g_cSenderDataStore.back();
+         g_cSenderDataStore.pop_back();
+         pthread_mutex_unlock(&g_SenderMutex);
+         
+         
+         
+         
+         lnLen = sendto(lstThread.fd, (const char *)&lstRecvData, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &(lstThread.addr), sizeof((lstThread.addr))); 
+         if(lnLen <= 0)
+         {
+            printf("error");
+            exit(1);
+         }
+         printf("ChatSend message sent.\n");
+       }
+       else
+       {
+          pthread_mutex_unlock(&g_SenderMutex);
+       }
+       
+//       
+//        tagData* lpstData = (tagData*)pVData;
+//   // tagData lstData = *lpstData;
+//    //tagNetworkThread* lpstThread = &(lstData.stNetWork);
+//    tagNetworkThread& lstThread = lpstData->stNetWork;
+//
+//    tagData lstRecvData = {0};
+//    
+//    int lnRetVal = 0;
+//    while(true)
+//    {
+//       memset(&lstRecvData, 0 ,sizeof(tagData));       
+//       //lnDataRecievedLen = RecvUDPData(lpstThread->fd, (char *)&lstRecvData, sizeof(tagData), (struct sockaddr *) &(lpstThread->addr));
+////       lnDataRecievedLen  = 	   recvfrom(lpstThread->fd, (char *)&lstRecvData, sizeof(tagData), MSG_WAITALL, (struct sockaddr *) &(lpstThread->addr),(socklen_t*)&(lpstThread->restrict));
+//       lnDataRecievedLen  = 	   recvfrom(lstThread.fd, (char *)&lstRecvData, sizeof(tagData), MSG_WAITALL, (struct sockaddr *) &(lstThread.addr),(socklen_t*)&(lstThread.restrict));
+       //lnDataRecievedLen = RecvUDPData(lpstThread->fd, (char *)&lstRecvData, sizeof(tagData), (struct sockaddr *) &(lpstThread->addr));
+//       lnDataRecievedLen  = 	   recvfrom(lpstThread->fd, (char *)&lstRecvData, sizeof(tagData), MSG_WAITALL, (struct sockaddr *) &(lpstThread->addr),(socklen_t*)&(lpstThread->restrict));
+       //lnDataRecievedLen  = 	   recvfrom(lstThread.fd, (char *)&lstRecvData, sizeof(tagData), MSG_WAITALL, (struct sockaddr *) &(lstThread.addr),(socklen_t*)&(lstThread.restrict));
+       //if(0 >= lnDataRecievedLen)
+       //{
+       //    cout << "data reception error" << endl;
+          // exit(1);
+       //}
+       
+       //lnRetVal = ExecuteResponse(lstRecvData);
+       //if(lnRetVal == -1)
+       //{
+        //   cout << "response handling error " << endl;
+          //exit(1);
+       //}
+       //printf("Server : %d\n", lstRecvData.nMessageCode);
+         //memset(&lstData, 0, sizeof(tagData));    
+         //lstData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT;
+         //strncpy(lstData.cIdentifier, g_cIdentifier, 20);
+        // c/out << "Enter Chat Data" << endl;
+        // if(lnTesting == 1)
+         //{
+         //  strncpy(lstData.cBuffer, g_cIdentifier, 20);
+        // }
+        // else
+        // {
+         // cin  >> lstData.cBuffer; 
+        // }
+         //SetRand(lstData.cUniqueMessageIdentifier,30);
+         
+    }
+    
+}
+
+
+
+
 void* RecieverThread(void* pVData)
 {
     int lnDataRecievedLen = 0;
@@ -140,6 +236,7 @@ void* RecieverThread(void* pVData)
        if(0 >= lnDataRecievedLen)
        {
            cout << "data reception error" << endl;
+           cout << strerror(errno) << endl;
           // exit(1);
        }
        
@@ -153,21 +250,112 @@ void* RecieverThread(void* pVData)
     }
     
 }
+//UDpChatServer 21/12/2018 Aditya M.:START
+int PreSender(tagData& stData)
+{
+   switch(stData.nMessageCode)
+   {
+      case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER:
+      {
+         cout << "Enter your Identifier ID" << endl;
+         if(g_nTesting == 1)
+         {
+             //strncpy( lstData.cTarget, "QWE", 3);
+             strncpy( stData.cIdentifier, g_pcParam[2], 4);
+         }
+         else
+         {
+             cin >> stData.cIdentifier;
+             //strncpy( lstData.cIdentifier, "ABC", 3);
+         }
 
+          memcpy(g_cIdentifier, stData.cIdentifier, 20);
+          sleep(5);
+      }
+      break;
+      case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET:
+      {
+         
 
+         printf("Hello message sent.\n");
+         memset(&stData, 0, sizeof(tagData));
+         memcpy(stData.cIdentifier, g_cIdentifier, 20);
+         stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET;
+
+         cout << "Enter Target Identifier" << endl;
+         //cin >> stData.cTarget; 
+         if(g_nTesting == 1)
+         {
+            // strncpy( stData.cTarget, "QWE", 3);
+            strncpy( stData.cTarget, g_pcParam[3], 4);
+         }
+         else
+         {
+            cin >> stData.cTarget;
+         }
+         sleep(2);
+      }
+      break;
+      case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT:
+      {
+         stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT;
+         strncpy(stData.cIdentifier, g_cIdentifier, 20);
+         
+         if(g_nTesting == 1)
+         {
+            strncpy(stData.cBuffer, g_cIdentifier, 20);
+         }
+         else
+         {
+           cout << "Enter Chat Data" << endl;
+           cin  >> stData.cBuffer; 
+         }
+      }
+      break;
+   }
+   return 0;
+}
+
+int PostSender(tagData& stData)
+{
+   switch(stData.nMessageCode)
+   {
+      case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER:
+      {
+         stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET;
+      }
+      break;
+      case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET:
+      {
+         stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT;
+      }
+      break;
+      case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT:
+      {
+         stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT;
+      }
+      break;
+   }
+   return 0;
+}
+//UDpChatServer 21/12/2018 Aditya M.:END
 int main(int argc,char* argv[])
 {
-    int lnTesting = 0;
-    if(argc >= 2)
+   g_nArgs = argc;
+   g_pcParam = argv;
+   int lnRetVal = 0;
+    
+    if(argc == 4)
     {
-       if(strncmp("TEST",argv[1],4) == 0)
+       if( strncmp("TEST", g_pcParam[1], 4) == 0)
        {
-           lnTesting = 1;
+           g_nTesting = 1;
        }
     }
     int lnSockFd                      = 0; 
     tagData* lpstThreadData = NULL;
-    struct sockaddr_in     servaddr = {0};
+    tagData* lpstThreadData1 = NULL;
+  
 
     size_t lnLen = 0;
     if ( (lnSockFd = CreateUDPSocketIP()) < 0 )
@@ -176,111 +364,144 @@ int main(int argc,char* argv[])
         exit(EXIT_FAILURE);
     }
 
-    FillSockAddrin(AF_INET, htons(PORT), (in_addr_t)(inet_addr("127.0.0.1")), &servaddr);
+    //FillSockAddrin(AF_INET, htons(PORT), (in_addr_t)(inet_addr("127.0.0.1")), &servaddr);
+    FillSockAddrin(AF_INET, htons(PORT), (in_addr_t)(inet_addr("172.25.1.8")), &servaddr);
 
     tagData lstData = {0};
-
-    lstData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER;
-
-    cout << "Enter your Identifier ID" << endl;
-    if(lnTesting == 1)
-    {
-       //strncpy( lstData.cTarget, "QWE", 3);
-       strncpy( lstData.cIdentifier, argv[2], 4);
-    }
-    else
-    {
-       cin >> lstData.cIdentifier;
-       //strncpy( lstData.cIdentifier, "ABC", 3);
-    }
-
-    memcpy(g_cIdentifier, lstData.cIdentifier, 20);
     
     lstData.stNetWork.fd        = lnSockFd;
     lstData.stNetWork.n         = sizeof(tagData);
     lstData.stNetWork.flags     = MSG_WAITALL;
     lstData.stNetWork.addr      = servaddr;
     lstData.stNetWork.restrict  = sizeof(servaddr);
+   
+   lpstThreadData = new tagData();
+   lpstThreadData1 = new tagData();
+   
+   cout << "sockfd is "<< lpstThreadData->stNetWork.fd << endl;
+   
+   pthread_t lnPThread;
+   pthread_t lnPThread1;
+   //sleep(1);
+   memcpy(lpstThreadData, &lstData, sizeof(tagData));
+   memcpy(lpstThreadData1, &lstData, sizeof(tagData));
+   pthread_create(&lnPThread, NULL, RecieverThread, lpstThreadData);
+   pthread_create(&lnPThread1, NULL, SenderThread, lpstThreadData1);
+   
+   
     
-    SetRand(lstData.cUniqueMessageIdentifier,30);
+    //SetRand(lstData.cUniqueMessageIdentifier,30);
+    //pthread_mutex_lock(&g_SenderMutex);
+    //g_cSenderDataStore.push_front(lstData);
+    //pthread_mutex_unlock(&g_SenderMutex);
+    
+    
+    //UDPChatServer 21/12/2018 Aditya M. :Start old functionality
+//    lstData.stNetWork.fd        = lnSockFd;
+//    lstData.stNetWork.n         = sizeof(tagData);
+//    lstData.stNetWork.flags     = MSG_WAITALL;
+//    lstData.stNetWork.addr      = servaddr;
+//    lstData.stNetWork.restrict  = sizeof(servaddr);
+    //UDPChatServer 21/12/2018 Aditya M. :End old functionality
+    
 
-    lpstThreadData = new tagData();
-    
+   
    //memcpy(lpstThreadData, &lstData, sizeof(tagData));
    // cout << "sockfd is "<< lpstThreadData->stNetWork.fd << endl;
    // pthread_t lnPThread;
    
    //pthread_create(&lnPThread, NULL, RecieverThread, lpstThreadData);
    //tagData lstThreadData = {0};
-   memcpy(lpstThreadData, &lstData, sizeof(tagData));
-   cout << "sockfd is "<< lpstThreadData->stNetWork.fd << endl;
-   pthread_t lnPThread;
-   pthread_t lnPThread1;
-   //sleep(1); 
-   pthread_create(&lnPThread, NULL, RecieverThread, lpstThreadData);
+   
+//   cout << "sockfd is "<< lpstThreadData->stNetWork.fd << endl;
+//   pthread_t lnPThread;
+//   pthread_t lnPThread1;
+//   //sleep(1); 
+//   pthread_create(&lnPThread, NULL, RecieverThread, lpstThreadData);
+//   pthread_create(&lnPThread1, NULL, SenderThread, lpstThreadData1);
   // pthread_create(&lnPThread1, NULL, RecieverThread, lpstThreadData);
    
-   lnLen = sendto(lnSockFd, (const char *)&lstData, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &servaddr, sizeof(servaddr)); 
-   if(lnLen <= 0)
-   {
-       printf("error");
-       exit(1);
-   }
-   sleep(5);
-   printf("Hello message sent.\n");
- 
-   memset(&lstData, 0, sizeof(tagData));
-   memcpy(lstData.cIdentifier, g_cIdentifier, 20);
-   lstData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET;
- 
-   cout << "Enter Target Identifier" << endl;
-   //cin >> lstData.cTarget; 
-   if(lnTesting == 1)
-   {
-      // strncpy( lstData.cTarget, "QWE", 3);
-      strncpy( lstData.cTarget, argv[3], 4);
-   }
-   else
-   {
-      cin >> lstData.cTarget;
-   }
+   //lnLen = sendto(lnSockFd, (const char *)&lstData, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &servaddr, sizeof(servaddr)); 
+   //if(lnLen <= 0)
+  // {
+  //     printf("error");
+ //      exit(1);
+ //  }
+//   pthread_mutex_lock(&g_SenderMutex);
+//   g_cSenderDataStore.push_front(lstData);
+//   pthread_mutex_unlock(&g_SenderMutex);
+//   sleep(5);
+//   
+//   printf("Hello message sent.\n");
+//   memset(&lstData, 0, sizeof(tagData));
+//   memcpy(lstData.cIdentifier, g_cIdentifier, 20);
+//   lstData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET;
+// 
+//   cout << "Enter Target Identifier" << endl;
+//   //cin >> lstData.cTarget; 
+//   if(g_nTesting == 1)
+//   {
+//      // strncpy( lstData.cTarget, "QWE", 3);
+//      strncpy( lstData.cTarget, argv[3], 4);
+//   }
+//   else
+//   {
+//      cin >> lstData.cTarget;
+//   }
    //SendUDPData(sockfd, (const char *)&lstData, sizeof(tagData), &servaddr); 
-   SetRand(lstData.cUniqueMessageIdentifier,30);
-   lnLen = sendto(lnSockFd, (const char *)&lstData, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &servaddr, sizeof(servaddr)); 
-   if(lnLen <= 0)
-   {
-      printf("error");
-      exit(1);
-   }
-   sleep(2);
-   printf("SpeakData message sent.\n"); 
-
+   
+ //  SetRand(lstData.cUniqueMessageIdentifier,30);
+   //lnLen = sendto(lnSockFd, (const char *)&lstData, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &servaddr, sizeof(servaddr)); 
+   //if(lnLen <= 0)
+   //{
+   //   printf("error");
+   ///   exit(1);
+   //}
+ //  pthread_mutex_lock(&g_SenderMutex);
+  // g_cSenderDataStore.push_front(lstData);
+  // pthread_mutex_unlock(&g_SenderMutex);
+   
+   //printf("SpeakData message sent.\n"); 
+   lstData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER;
    while(true)
    {
-      memset(&lstData, 0, sizeof(tagData));    
-      lstData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT;
-      strncpy(lstData.cIdentifier, g_cIdentifier, 20);
-      cout << "Enter Chat Data" << endl;
-      if(lnTesting == 1)
-      {
-         strncpy(lstData.cBuffer, g_cIdentifier, 20);
-      }
-      else
-      {
-        cin  >> lstData.cBuffer; 
-      }
+      //memset(&lstData, 0, sizeof(tagData));    
+      
       SetRand(lstData.cUniqueMessageIdentifier,30);
-      lnLen = sendto(lnSockFd, (const char *)&lstData, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &servaddr, sizeof(servaddr)); 
-      if(lnLen <= 0)
+      
+      lnRetVal = PreSender(lstData);
+      if(0 != lnRetVal)
       {
-          printf("error");
-          exit(1);
+         cout << "error occured at Presender" << endl;
+         exit(1);  
       }
-      printf("ChatSend message sent.\n");
+      
+      pthread_mutex_lock(&g_SenderMutex);
+      g_cSenderDataStore.push_front(lstData);
+      pthread_mutex_unlock(&g_SenderMutex);
+      
+      memset (lstData.cBuffer, 0,sizeof(lstData.cBuffer));
+      memset (lstData.cUniqueMessageIdentifier, 0,sizeof(lstData.cUniqueMessageIdentifier));
+    
+      lnRetVal = PostSender(lstData);
+      if(0 != lnRetVal)
+      {
+         cout << "error occured at PostSender" << endl;
+         exit(1);  
+      }
+      //lnLen = sendto(lnSockFd, (const char *)&lstData, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &servaddr, sizeof(servaddr)); 
+      //if(lnLen <= 0)
+      //{
+      //    printf("error");
+      //   exit(1);
+      //}
+      //printf("ChatSend message sent.\n");
    }
 
+   pthread_join(lnPThread1,NULL);
    pthread_join(lnPThread,NULL);
    delete lpstThreadData;
+   delete lpstThreadData1;
    
    close(lnSockFd);
    return 0;

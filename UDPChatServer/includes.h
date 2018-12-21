@@ -17,6 +17,7 @@
 #include "defines.h"
 #include "enums.h"
 #include <pthread.h>
+#include <signal.h>
 #endif
 #ifdef WIN32
 
