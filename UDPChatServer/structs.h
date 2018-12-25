@@ -61,4 +61,8 @@ struct tagData
     char cUniqueMessageIdentifier[30 + 1];
     tagNetworkThread stNetWork;
 };
+
+
+
+
 #endif

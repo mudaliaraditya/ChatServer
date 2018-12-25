@@ -11,7 +11,7 @@ typedef map<string, tagData*>::iterator CIteratotrIdentiferDataStore;
 typedef  list<tagData*> CDataStore;
 typedef  list<tagData*>::iterator CIteratorDataStore;
 
-
+int g_nTesting = 1;
 
 CIdentiferDataStore g_cPortIdentifier;
 CDataStore g_cResponseList;
@@ -59,6 +59,8 @@ int CleanUp()
       }
    }
    
+   ;
+   
 }
 
 void handle_signal(int signal) 
@@ -66,9 +68,14 @@ void handle_signal(int signal)
     const char *signal_name;
     sigset_t pending;
 
-    
-    switch (signal) 
-    {
+    // Find out which signal we're handling
+    switch (signal) {
+        case SIGHUP:
+            signal_name = "SIGHUP";
+            break;
+        case SIGUSR1:
+            signal_name = "SIGUSR1";
+            break;
         case SIGINT:
         {
             printf("Caught SIGINT, exiting now\n");
@@ -76,12 +83,10 @@ void handle_signal(int signal)
             exit(0);
           
         }
-        break;
-        default:
-        {
-           fprintf(stderr, "Caught wrong signal: %d\n", signal);
-           return;
-        }   
+          break;
+            default:
+            fprintf(stderr, "Caught wrong signal: %d\n", signal);
+            return;
     }
 }
 
@@ -119,24 +124,24 @@ int NetWorkInitialize(int& nSockfd)
 
 int SendUDPData(int nSockFD, const void* cData, size_t nSize, const struct sockaddr_in* pstSockAddr, long nSockAddrLen)
 {
-   #ifndef WIN32
-      return sendto(nSockFD, (const char *)&cData, nSize, MSG_CONFIRM, (const struct sockaddr *) pstSockAddr, nSockAddrLen);
-   #endif
+#ifndef WIN32
+   return sendto(nSockFD, (const char *)&cData, nSize, MSG_CONFIRM, (const struct sockaddr *) pstSockAddr, nSockAddrLen);
+#endif
 
-   #ifdef WIN32
-      return sendto(nSockFD, (const char *)&cData, nSize, 0, (const struct sockaddr *) pstSockAddr, nSockAddrLen);
-   #endif
+#ifdef WIN32
+   return sendto(nSockFD, (const char *)&cData, nSize, 0, (const struct sockaddr *) pstSockAddr, nSockAddrLen);
+#endif
 }
 
 int RecvUDPData(int nSockFD, void* cData, size_t nSize, sockaddr_in* pstSockAddr, long pnSockAddrLen)
 {
 
-   #ifndef WIN32
-      return recvfrom(nSockFD, (void*)cData, nSize, MSG_WAITALL, (struct sockaddr *) pstSockAddr, (socklen_t*)&pnSockAddrLen);
-   #endif
-   #ifdef WIN32
-      return recvfrom(nSockFD, (char*)cData, nSize, 0, (struct sockaddr *) pstSockAddr, (int*)&pnSockAddrLen);
-   #endif
+#ifndef WIN32
+   return recvfrom(nSockFD, (void*)cData, nSize, MSG_WAITALL, (struct sockaddr *) pstSockAddr, (socklen_t*)&pnSockAddrLen);
+#endif
+#ifdef WIN32
+   return recvfrom(nSockFD, (char*)cData, nSize, 0, (struct sockaddr *) pstSockAddr, (int*)&pnSockAddrLen);
+#endif
 
 }
 
@@ -154,7 +159,7 @@ int ExecuteFunction(const tagData& stData)
       {
          printf("duplicate identifier insert to identifier(%s) store failed ", stData.cIdentifier);
             printf("%s %d", strerror(errno), __LINE__);
-         exit(-1);
+        // exit(-1);
       }
    }
    break;
@@ -383,14 +388,16 @@ void* SenderThread(void* pArg)
       char lcBuffer[lnDataStructSize] = { 0 };
 
       memcpy(&lcBuffer, (char*)lstData, lnDataStructSize);
-
+if(g_nTesting != 1)
+{
       lnReturnVal = sendto(lstData->stNetWork.fd, (const char *)&lcBuffer, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &(lstData->stNetWork.addr), lstData->stNetWork.restrict);
       if (0 > lnReturnVal)
       {
          printf("%s", strerror(errno));
          exit(1);
       }
-      
+}    
+      g_nTesting--;
       delete (lstData);
       lstData = nullptr;
       //#define LOGGING
