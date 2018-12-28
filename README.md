@@ -1,4 +1,4 @@
-UDPChatServer
+ChatServer
 
 
 this is used for having a two way communication between multiple client pair
