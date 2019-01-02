@@ -63,6 +63,24 @@ struct tagData
 };
 
 
-
+struct tagTimeData
+{
+   public:
+   tagData stData;
+   time_t m_nTime;
+   long m_nCounter;
+   
+   tagTimeData(const time_t& nTime,const tagData& stDatis)
+   {
+      m_nCounter = 2;
+      m_nTime    = nTime;
+      stData =     stDatis;
+   }
+   
+   bool  operator<(const tagTimeData& lstB) const
+   {
+      return m_nTime < lstB.m_nTime;
+   }
+};
 
 #endif

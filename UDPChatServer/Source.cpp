@@ -1,15 +1,22 @@
+#include <deque>
+
 #include "includes.h"
 using namespace std;
 
 #pragma pack(1)
 
 long g_OS = 0;
+bool g_bProgramShouldWork = true;
 //UDPChatServer 20/12/2018 Aditya M.
 typedef map<string, tagData*> CIdentiferDataStore;
 typedef map<string, tagData*>::iterator CIteratotrIdentiferDataStore;
 
 typedef  list<tagData*> CDataStore;
 typedef  list<tagData*>::iterator CIteratorDataStore;
+
+
+
+deque<string> g_cIdentifierStore;
 
 int g_nTesting = 1;
 
@@ -28,6 +35,7 @@ struct sockaddr_in servaddr, cliaddr;
 
 int CleanUp()
 {
+   g_bProgramShouldWork = false;
    for(CIteratotrIdentiferDataStore lcIter = g_cPortIdentifier.begin(); lcIter != g_cPortIdentifier.end();lcIter++)
    {
       tagData* lpstData = lcIter->second;
@@ -59,8 +67,7 @@ int CleanUp()
       }
    }
    
-   ;
-   
+   return 0;
 }
 
 void handle_signal(int signal) 
@@ -69,24 +76,21 @@ void handle_signal(int signal)
     sigset_t pending;
 
     // Find out which signal we're handling
-    switch (signal) {
-        case SIGHUP:
-            signal_name = "SIGHUP";
-            break;
-        case SIGUSR1:
-            signal_name = "SIGUSR1";
-            break;
+    switch (signal) 
+    {
         case SIGINT:
         {
             printf("Caught SIGINT, exiting now\n");
             CleanUp();
             exit(0);
-          
         }
-          break;
-            default:
-            fprintf(stderr, "Caught wrong signal: %d\n", signal);
-            return;
+        break;
+        
+       default:
+       {
+          fprintf(stderr, "Caught wrong signal: %d\n", signal);
+          return;
+       }
     }
 }
 
@@ -254,14 +258,43 @@ pthread_mutex_t g_cProcessMutex;
 
 pthread_mutex_t g_cResponseMutex;
 
+pthread_mutex_t g_cIdentifierMutex;
+
+pthread_mutex_t g_cDataStoreMutex;
+
 pthread_cond_t g_cConditionalVar;
+
+
+void* EventHandling(void* pEventHandlingArg)
+{
+   while(g_bProgramShouldWork)
+   {
+      pthread_mutex_lock(&g_cIdentifierMutex);
+      if(!(g_cIdentifierStore.empty()))
+      {
+          sleep(10);
+          g_cIdentifierStore.pop_front();
+          pthread_mutex_unlock(&g_cIdentifierMutex);
+      }
+      else
+      {
+         
+         pthread_mutex_unlock(&g_cIdentifierMutex);
+      }
+   }
+
+
+}
+
+
+
 
 void* ProcessThread(void* pArg)
 {
    int lnReturnVal = 0;
    //tagData lstData = {0};
    tagData* lstData = nullptr;
-   while (true)
+   while (true == g_bProgramShouldWork)
    {
 
       lnReturnVal = pthread_mutex_lock(&g_cProcessMutex);
@@ -350,6 +383,7 @@ void* ProcessThread(void* pArg)
 #endif
       }
    }
+   return NULL;
 }
 
 void* SenderThread(void* pArg)
@@ -357,7 +391,7 @@ void* SenderThread(void* pArg)
    tagData* lstData = nullptr;
    int lnReturnVal = 0;
 
-   while (true)
+   while (true == g_bProgramShouldWork)
    {
       //if(!g_cResponseList.empty())
 
@@ -388,16 +422,13 @@ void* SenderThread(void* pArg)
       char lcBuffer[lnDataStructSize] = { 0 };
 
       memcpy(&lcBuffer, (char*)lstData, lnDataStructSize);
-if(g_nTesting != 1)
-{
+
       lnReturnVal = sendto(lstData->stNetWork.fd, (const char *)&lcBuffer, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &(lstData->stNetWork.addr), lstData->stNetWork.restrict);
       if (0 > lnReturnVal)
       {
          printf("%s", strerror(errno));
          exit(1);
       }
-}    
-      g_nTesting--;
       delete (lstData);
       lstData = nullptr;
       //#define LOGGING
@@ -406,6 +437,7 @@ if(g_nTesting != 1)
       printf("Hello message sent.\n");
 #endif
    }
+   return NULL;
 }
 
 
@@ -416,24 +448,33 @@ if(g_nTesting != 1)
 int main()
 {
    struct sigaction lstSigAction;
-     lstSigAction.sa_flags = 0;
+   lstSigAction.sa_flags = 0;
    lstSigAction.sa_handler  = handle_signal;
+   
    sigaction(SIGINT, &lstSigAction, NULL);
+   
    g_OS = 1;
 
    int lnRetVal = 0;
    int sockfd = 0;
 
    pthread_t lnSenderPThread;
-   pthread_create(&lnSenderPThread, NULL, SenderThread, NULL);
+   
    pthread_t lnProcessPThread[NO_OF_PROC_THREADS];
+   
+   pthread_create(&lnSenderPThread, NULL, SenderThread, NULL);
    
    for (int lnCounter = 0; lnCounter< NO_OF_PROC_THREADS; lnCounter++)
    {
       pthread_create(((pthread_t*)&(lnProcessPThread[lnCounter])), NULL, ProcessThread, NULL);
    }
 
-   pthread_cond_init(&g_cConditionalVar,NULL);
+   if (pthread_cond_init(&g_cConditionalVar,NULL) != 0)
+   {
+      printf("%s %d", strerror(errno), __LINE__);
+      printf("\n conditional var init has failed\n");
+      return 1;
+   }
    
    if (pthread_mutex_init(&g_cProcessMutex, NULL) != 0)
    {
@@ -456,46 +497,55 @@ int main()
       exit(EXIT_FAILURE);
    }
 
-   long long len = 0, n = 0;
-   tagData* lstData = nullptr;
-   //n = recvfrom(sockfd, (char *)buffer, MAXLINE,MSG_WAITALL, ( struct sockaddr *) &cliaddr, (socklen_t*)&len); 
-
-   while (true)
+   long long lnSockAddrlen = 0, lnNoOfBytes = 0;
+   tagData* lpstData = nullptr;
+   bool lbDiscardPacket = false;
+   while (true == g_bProgramShouldWork)
    {
-      //memset(&lstData, 0, sizeof(lstData));
-      lstData = new tagData();
-      len = sizeof(cliaddr);
-      //n = recvfrom(sockfd, (char *)&lstData, sizeof(tagData),MSG_WAITALL, ( struct sockaddr *) &cliaddr, (socklen_t*)&len);
-      n = RecvUDPData(sockfd, (char *)lstData, sizeof(tagData), &cliaddr, len);
-      if (n <= 0)
+      lpstData = new tagData();
+      lnSockAddrlen = sizeof(cliaddr);
+      lnNoOfBytes = RecvUDPData(sockfd, (char *)lpstData, sizeof(tagData), &cliaddr, lnSockAddrlen);
+      if (lnNoOfBytes <= 0)
       {
          cout << "" << endl;
          exit(1);
-
       }
-#ifdef LOGGING
-      printf("%s", strerror(errno));
-#endif
-      if (lstData->nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER)
+      cout << lpstData->cUniqueMessageIdentifier << endl;
+      pthread_mutex_lock( &g_cIdentifierMutex);
+      for(auto& lstIdentifiers : g_cIdentifierStore)
       {
-         lstData->stNetWork.fd = sockfd;
+        // cout << lstIdentifiers.c_str() << " ";
+         if(0 == strcmp(lstIdentifiers.c_str(),lpstData->cUniqueMessageIdentifier))
+         {
+            cout << "duplicate packet" << endl;
+            cout << lstIdentifiers.c_str() << " duplicated" << endl;;
+           lbDiscardPacket = true;
+            // continue;
+         }
       }
-#ifdef LOGGING
-      cout << cliaddr.sin_addr.s_addr << endl;
-      cout << cliaddr.sin_family << endl;
-      cout << cliaddr.sin_port << endl;
-      cout << cliaddr.sin_zero << endl;
-#endif
-
-      memcpy(&(lstData->stNetWork.addr), &cliaddr, sizeof(sockaddr_in));
-      lstData->stNetWork.fd = sockfd;
-      //lstData->stNetWork.addr
-      lstData->stNetWork.restrict = sizeof(sockaddr_in);
-      lstData->stNetWork.flags = MSG_CONFIRM;
+      if(true == lbDiscardPacket)
+      {
+         delete lpstData;
+         lbDiscardPacket = false;
+         lpstData = nullptr;
+         continue;
+      }
+       //cout << endl;
+      g_cIdentifierStore.push_back(lpstData->cUniqueMessageIdentifier);
+      pthread_mutex_unlock( &g_cIdentifierMutex);
+      
+      if (lpstData->nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER)
+      {
+         lpstData->stNetWork.fd = sockfd;
+      }
+      memcpy(&(lpstData->stNetWork.addr), &cliaddr, sizeof(sockaddr_in));
+      lpstData->stNetWork.fd = sockfd;
+      lpstData->stNetWork.restrict = sizeof(sockaddr_in);
+      lpstData->stNetWork.flags = MSG_CONFIRM;
 #ifdef LOGGING        
-      cout << "chat data " << lstData->cBuffer << endl;
-      cout << "identifier " << lstData->cIdentifier << endl;
-      cout << "target " << lstData->cTarget << endl;
+      cout << "chat data " << lpstData->cBuffer << endl;
+      cout << "identifier " << lpstData->cIdentifier << endl;
+      cout << "target " << lpstData->cTarget << endl;
 #endif        
       lnRetVal = pthread_mutex_lock(&g_cProcessMutex);
       if (lnRetVal != 0)
@@ -507,9 +557,7 @@ int main()
 #ifdef LOGGING
       cout << "mtex acquired process main" << endl;
 #endif
-      g_cProcessList.push_back(lstData);
-
-      //g_cListLen++;
+      g_cProcessList.push_back(lpstData);
       
       pthread_cond_signal(&g_cConditionalVar);
       lnRetVal = pthread_mutex_unlock(&g_cProcessMutex);
@@ -527,7 +575,12 @@ int main()
 
 
    close(sockfd);
-   CleanUp();
+   if(CleanUp() != 0)
+   {
+      //printf("%s, %d", strerror(errno), __LINE__);
+      perror("cleanup dailed");
+      exit(1);
+   }
    
    lnRetVal = pthread_mutex_destroy(&g_cProcessMutex);
    if (lnRetVal != 0)

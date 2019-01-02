@@ -103,7 +103,7 @@ void* CheckResponse(void*)
 
 void SetRand(char* cBuf,int nSize)
 {
-    srand ((time(NULL)));
+   
 	
     nSize--;
     int lnCharHalf = ceil(nSize/(13.33));
@@ -352,7 +352,7 @@ int PreSender(tagData& stData)
          
 
          printf("Hello message sent.\n");
-         memset(&stData, 0, sizeof(tagData));
+         
          memcpy(stData.cIdentifier, g_cIdentifier, 20);
          stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET;
 
@@ -417,6 +417,8 @@ int main(int argc,char* argv[])
 {
    g_nArgs = argc;
    g_pcParam = argv;
+   srand ((time(NULL)));
+   
    int lnRetVal = 0;
     
     if(argc == 4)
@@ -481,7 +483,7 @@ int main(int argc,char* argv[])
       pthread_mutex_lock(&g_SenderMutex);
       g_cSenderDataStore.push_front(lstData);
       pthread_mutex_unlock(&g_SenderMutex);
-      
+      cout << lstData.cUniqueMessageIdentifier << endl;
       memset (lstData.cBuffer, 0,sizeof(lstData.cBuffer));
       memset (lstData.cUniqueMessageIdentifier, 0,sizeof(lstData.cUniqueMessageIdentifier));
     
