@@ -1,43 +1,11 @@
-#include <math.h>
-#include <deque>
-#include <list>
 #include "includes.h"
 
 #pragma pack(1)
 
-using namespace std;
-
-
-
-
-void* CheckResponse(void*);
-
-void SetRand(char* cBuf,int nSize);
-
-int ExecuteResponse(tagData& stData);
-
-int CreateUDPSocketIP();
-
-void FillSockAddrin(long sin_family, unsigned short int sin_port, long long sin_addr, sockaddr_in* sockaddrin);
-
-int SendUDPData(int nSockFD, const void* cData, size_t nSize, const struct sockaddr_in* pstSockAddr, long nSockAddrLen);
-
-int RecvUDPData(int nSockFD, void* cData, size_t nSize, sockaddr_in* pstSockAddr, long pnSockAddrLen);
-
-void* SenderThread(void* pVData);
-
-void* RecieverThread(void* pVData);
-
-int PreSender(tagData& stData);
-
-int PostSender(tagData& stData);
-
-
-
 
 struct tagData;
 
-int    g_nTesting = 0;
+//int    g_nTesting = 0;
 char** g_pcParam = nullptr;
 short  g_nArgs = 0;
 
@@ -56,6 +24,7 @@ pthread_mutex_t         g_ReSenderMutex;
 struct sockaddr_in      servaddr = {0};
 
 
+int g_nTesting = 0;
 
 
 void* CheckResponse(void*)
@@ -94,10 +63,6 @@ void* CheckResponse(void*)
       }
       pthread_mutex_unlock(&g_ReSenderMutex);
       sleep(1);
-     // else
-     // {
-     ///    break;
-      //}
    }
 }
 
@@ -140,7 +105,7 @@ int ExecuteResponse(tagData& stData)
         
         case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE):
         {
-            cout << stData.cBuffer << endl;
+            cout << stData.cIdentifier << " : " <<stData.cBuffer << endl;
         }
         break;
         
@@ -194,14 +159,12 @@ int SendUDPData(int nSockFD, const void* cData, size_t nSize, const struct socka
 
 int RecvUDPData(int nSockFD, void* cData, size_t nSize, sockaddr_in* pstSockAddr, long pnSockAddrLen)
 {
-
    #ifndef WIN32
       return recvfrom(nSockFD, (void*)cData, nSize, MSG_WAITALL, (struct sockaddr *) pstSockAddr, (socklen_t*)&pnSockAddrLen);
    #endif
    #ifdef WIN32
       return recvfrom(nSockFD, (char*)cData, nSize, 0, (struct sockaddr *) pstSockAddr, (int*)&pnSockAddrLen);
    #endif
-
 }
 
 
@@ -227,8 +190,8 @@ void* SenderThread(void* pVData)
        
 	   if(!g_cSenderDataStore.empty())
       {
-         lstRecvData = g_cSenderDataStore.back();
-         g_cSenderDataStore.pop_back();
+         lstRecvData = g_cSenderDataStore.front();
+         g_cSenderDataStore.pop_front();
          pthread_mutex_unlock(&g_SenderMutex);
         
 		   pthread_mutex_lock(&g_ReSenderMutex);
@@ -248,10 +211,10 @@ void* SenderThread(void* pVData)
            tagTimeData lstTimeData((time(NULL) + rand()%10), lstRecvData);
            g_cEventResender.push_back(lstTimeData);
         }
-        else
-        {
-           
-        }
+//        else
+//        {
+//           
+//        }
          pthread_mutex_unlock(&g_ReSenderMutex);
          
          lnLen = sendto(lstThread.fd, (const char *)&lstRecvData, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &(lstThread.addr), sizeof((lstThread.addr))); 
@@ -260,7 +223,8 @@ void* SenderThread(void* pVData)
             printf("error");
             exit(1);
          }
-         printf("ChatSend message sent.\n");
+         //printf("ChatSend message sent.\n");    
+         
        }
        else
        {
@@ -481,7 +445,7 @@ int main(int argc,char* argv[])
       }
       
       pthread_mutex_lock(&g_SenderMutex);
-      g_cSenderDataStore.push_front(lstData);
+      g_cSenderDataStore.push_back(lstData);
       pthread_mutex_unlock(&g_SenderMutex);
       cout << lstData.cUniqueMessageIdentifier << endl;
       memset (lstData.cBuffer, 0,sizeof(lstData.cBuffer));

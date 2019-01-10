@@ -1,5 +1,11 @@
 #pragma once
 #ifndef WIN32
+#include <iostream>
+#include <map>
+#include <memory>
+#include <math.h>
+#include <deque>
+#include <list>
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <unistd.h> 
@@ -8,14 +14,14 @@
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
 #include <netinet/in.h> 
-#include <iostream>
-#include <map>
-#include <memory>
+
 #include <pthread.h>
 #include "structs.h"
 #include "defines.h"
 #include "enums.h"
 //#include "Functions.h"
+
+using namespace std;
 
 #endif
 #ifdef WIN32
