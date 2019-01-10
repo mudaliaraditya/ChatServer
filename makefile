@@ -3,13 +3,13 @@ all: UDPChatClient/a.out UDPChatServer/a.out
    make UDPChatServer/.
 
 clean:
-   cd UDPChatClient/. && make clean
-   cd UDPChatServer/. && make clean
+	cd UDPChatClient/. && make clean
+	cd UDPChatServer/. && make clean
 
 UDPChatClient/a.out:
-   cd UDPChatClient/. && make 
+	cd UDPChatClient/. && make 
 
 UDPChatServer/a.out:
-   cd UDPChatServer/. && make
+	cd UDPChatServer/. && make
 
 
