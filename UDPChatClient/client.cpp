@@ -384,7 +384,14 @@ int main(int argc,char* argv[])
    srand ((time(NULL)));
    
    int lnRetVal = 0;
-    
+   
+   pthread_t lnPThreadReciever;
+   pthread_t lnPThreadSender;
+   pthread_t lnPThreadCheckResponse;
+   
+   //if the user starts the program the following way
+    // ./a.out TEST ABC QWE
+    //where ABC will be the identififier and QWE be target
     if(argc == 4)
     {
        if( strncmp("TEST", g_pcParam[1], 4) == 0)
@@ -392,9 +399,10 @@ int main(int argc,char* argv[])
            g_nTesting = 1;
        }
     }
-    int lnSockFd                      = 0; 
-    tagData* lpstThreadData = NULL;
-    tagData* lpstThreadData1 = NULL;
+    int lnSockFd = 0;
+    
+    tagData* lpstThrdDataRcvr = NULL;
+    tagData* lpstThrdSndr = NULL;
   
 
     size_t lnLen = 0;
@@ -415,20 +423,17 @@ int main(int argc,char* argv[])
     lstData.stNetWork.addr      = servaddr;
     lstData.stNetWork.restrict  = sizeof(servaddr);
    
-   lpstThreadData = new tagData();
-   lpstThreadData1 = new tagData();
+   lpstThrdDataRcvr = new tagData();
+   lpstThrdSndr = new tagData();
    
-   cout << "sockfd is "<< lpstThreadData->stNetWork.fd << endl;
+   cout << "sockfd is "<< lpstThrdDataRcvr->stNetWork.fd << endl;
    
-   pthread_t lnPThread;
-   pthread_t lnPThread1;
-   pthread_t lnPThread2;
    //sleep(1);
-   memcpy(lpstThreadData, &lstData, sizeof(tagData));
-   memcpy(lpstThreadData1, &lstData, sizeof(tagData));
-   pthread_create(&lnPThread, NULL, RecieverThread, lpstThreadData);
-   pthread_create(&lnPThread1, NULL, SenderThread, lpstThreadData1);
-   pthread_create(&lnPThread2, NULL,  CheckResponse,NULL);
+   memcpy(lpstThrdDataRcvr, &lstData, sizeof(tagData));
+   memcpy(lpstThrdSndr, &lstData, sizeof(tagData));
+   pthread_create(&lnPThreadReciever, NULL, RecieverThread, lpstThrdDataRcvr);
+   pthread_create(&lnPThreadSender, NULL, SenderThread, lpstThrdSndr);
+   pthread_create(&lnPThreadCheckResponse, NULL,  CheckResponse,NULL);
    
    lstData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER;
    while(true)
@@ -459,10 +464,10 @@ int main(int argc,char* argv[])
       }
    }
 
-   pthread_join(lnPThread1,NULL);
-   pthread_join(lnPThread,NULL);
-   delete lpstThreadData;
-   delete lpstThreadData1;
+   pthread_join(lnPThreadSender,NULL);
+   pthread_join(lnPThreadReciever,NULL);
+   delete lpstThrdDataRcvr;
+   delete lpstThrdSndr;
    
    close(lnSockFd);
    return 0;

@@ -11,13 +11,20 @@
 #include <netinet/in.h> 
 #include <iostream>  
 #include <string.h>
-#include <map>
-#include <list>
-#include "structs.h"
-#include "defines.h"
-#include "enums.h"
 #include <pthread.h>
 #include <signal.h>
+#include <map>
+#include <list>
+#include <deque>
+
+#include "defines.h"
+#include "types.h"
+#include "structs.h"
+#include "enums.h"
+#include "globals.h"
+#include "AllClasses.h"
+#include "NetworkHeader.h"
+using namespace std;
 #endif
 #ifdef WIN32
 

@@ -35,7 +35,7 @@ struct tagData
 #ifndef WIN32
 
 
-#include "defines.h"
+//#include "defines.h"
 #include "includes.h"
 struct tagData;
 
