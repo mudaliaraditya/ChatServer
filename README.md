@@ -8,8 +8,13 @@ but around 30 clients can communicate as udp is being used there is a chance for
 
 Features To be Added
 1)Resending from server
+
 2)Shared memory Latency Tool
+
 3)removing logs
+
 4)OOPS
+
 5)adding event to functions
+
 6)variable data length
