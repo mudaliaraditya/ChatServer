@@ -19,3 +19,7 @@ Features To be Added
 5)adding event to functions
 
 6)variable data length
+
+7)GUI to client
+
+8) Cross platform client and server
