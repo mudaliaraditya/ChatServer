@@ -22,4 +22,4 @@ Features To be Added
 
 7)GUI to client
 
-8) Cross platform client and server
+8)Cross platform client and server
