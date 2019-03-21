@@ -961,7 +961,7 @@ void* SenderThread(void* pArg)
 #ifndef WIN32
 int main()
 {
-   g_nFlagDupliResend = 1;
+   g_nFlagDupliResend = 0;
    
    //SIgnal Handling
    signal(SIGINT,HandleSignal);
