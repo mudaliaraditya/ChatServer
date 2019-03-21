@@ -8,7 +8,7 @@ but around 30 clients can communicate as udp is being used there is a chance for
 
 Features To be Added
 
-1)Resending from server
+1)Resending from server[implemented]
 
 2)Shared memory Latency Tool
 
