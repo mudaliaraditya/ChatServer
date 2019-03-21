@@ -666,7 +666,7 @@ int PostSender(tagData& stData)
 int main(int argc,char* argv[])
 {
    g_nArgs = argc;
-   g_nFlagNoResendDupli = 1;
+   g_nFlagNoResendDupli = 0;
    g_pcParam = argv;
    srand ((time(NULL)));
    key_t key = ftok("shmfile",65); 
