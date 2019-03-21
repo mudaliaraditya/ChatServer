@@ -2,7 +2,7 @@
 
 void* CheckResponse(void*);
 
-void SetRand(char* cBuf,int nSize);
+tagCSequenceNo GenerateSequenceNo(char* cSequenceBuf,char* cIdentiferBuf,int nSizeOfFirstBuff,int nSizeOfSecondBuff);
 
 int ExecuteResponse(tagData& stData);
 

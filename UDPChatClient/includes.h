@@ -13,16 +13,16 @@
 #include <sys/types.h> 
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
+#include <sys/ipc.h> 
+#include <sys/shm.h> 
 #include <netinet/in.h> 
-
+#include <limits.h>
 #include <pthread.h>
 #include "structs.h"
 #include "defines.h"
 #include "enums.h"
 //#include "Functions.h"
-
 using namespace std;
-
 #endif
 #ifdef WIN32
 

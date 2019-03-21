@@ -18,6 +18,8 @@ CDataStore          g_cProcessList;
 
 pthread_mutex_t g_cProcessMutex;
 
+pthread_mutex_t g_cGlobalIdentifierMutex;
+
 pthread_mutex_t g_cResponseMutex;
 
 pthread_mutex_t g_cIdentifierMutex;
@@ -25,6 +27,21 @@ pthread_mutex_t g_cIdentifierMutex;
 pthread_mutex_t g_cDataStoreMutex;
 
 pthread_cond_t g_cCondVarForProcessThread;
+
+pthread_t lnSenderPThread;
+
+pthread_t lnProcessPThread[NO_OF_PROC_THREADS] = {0};
+
+pthread_t lnPThreadEventTime;
+
+pthread_mutex_t         g_ReSenderMutex;
+
+std::list<tagTimeData>       g_cEventResender;
+
+std::fstream g_cfstream;
+
+//int g_nFlagDupliResend = 0;
+int g_nFlagDupliResend = 0;
 
 #endif
 

@@ -1,4 +1,4 @@
-all: UDPChatClient/a.out UDPChatServer/a.out
+all: UDPChatClient/client.out UDPChatServer/server.out
 	make UDPChatClient/.
 	make UDPChatServer/.
 
@@ -6,10 +6,10 @@ clean:
 	cd UDPChatClient/. && make clean
 	cd UDPChatServer/. && make clean
 
-UDPChatClient/a.out:
+UDPChatClient/client.out:
 	cd UDPChatClient/. && make 
 
-UDPChatServer/a.out:
+UDPChatServer/server.out:
 	cd UDPChatServer/. && make
 
 

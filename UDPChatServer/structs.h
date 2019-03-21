@@ -1,37 +1,5 @@
 #pragma once
-#ifdef WIN32
 
-
-#include "defines.h"
-#include "Includes.h"
-//#pragma pack(pop)
-
-struct tagData;
-
-struct tagNetworkThread;
-
-
-struct tagNetworkThread
-{
-   int     fd;
-   //tagData buf;
-   size_t  n;
-   int     flags;
-   sockaddr_in addr;
-   size_t restrict;
-};
-
-struct tagData
-{
-   char cIdentifier[20 + 1];
-   long nMessageCode;
-   char cBuffer[MAXLINE + 1];
-   char cTarget[20 + 1];
-   long lnSockFD;
-   //long lnSockFD1;
-   tagNetworkThread stNetWork;
-};
-#endif
 #ifndef WIN32
 
 
@@ -41,6 +9,7 @@ struct tagData;
 
 
 struct tagNetworkThread;
+
 struct tagNetworkThread
 {
       int     fd;
@@ -51,15 +20,30 @@ struct tagNetworkThread
       socklen_t restrict;
 };
 
+struct tagCSequenceNo
+{
+   char cFinalSeqNo[30 + 1];
+};
+
 struct tagData
 {
+    short nCommand;
+    long long nGlobalIdentifier;
     char cIdentifier[20 + 1];
+    int nFrOrToServerFlg;    
     long nMessageCode;
     char cBuffer[MAXLINE + 1];
     char cTarget[20 + 1];
-    //long lnSockFD;
     char cUniqueMessageIdentifier[30 + 1];
     tagNetworkThread stNetWork;
+    //UDPChatServer 20-01-2019
+//    tagCSequenceNo stSenderSeqNo;
+//    tagCSequenceNo stRecieverSeqNo;
+    //UDPChatServer 20-01-2019
+    int nSeqNo;
+	 bool bFinalResponse;
+    int nLatestClntSeqNo;
+    int nSessionId;
 };
 
 
@@ -84,3 +68,36 @@ struct tagTimeData
 };
 
 #endif
+#ifdef WIN32
+
+
+#include "defines.h"
+#include "Includes.h"
+//#pragma pack(pop)
+
+struct tagData;
+
+struct tagNetworkThread;
+
+
+struct tagNetworkThread
+{
+   int     fd;
+   size_t  n;
+   int     flags;
+   sockaddr_in addr;
+   size_t restrict;
+};
+
+struct tagData
+{
+    short nCommand;
+    char cIdentifier[20 + 1];
+    long nMessageCode;
+    char cBuffer[MAXLINE + 1];
+    char cTarget[20 + 1];
+    char cUniqueMessageIdentifier[30 + 1];
+    tagNetworkThread stNetWork;
+};
+#endif
+  

@@ -2,21 +2,23 @@
 #ifndef WIN32
 #include <errno.h>
 #include <stdio.h> 
+#include <signal.h>
 #include <stdlib.h> 
 #include <unistd.h> 
 #include <string.h> 
+#include <string>
 #include <sys/types.h> 
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
-#include <netinet/in.h> 
-#include <iostream>  
+#include <netinet/in.h>  
+#include <iostream>
 #include <string.h>
 #include <pthread.h>
 #include <signal.h>
+#include <fstream>
 #include <map>
 #include <list>
 #include <deque>
-
 #include "defines.h"
 #include "types.h"
 #include "structs.h"

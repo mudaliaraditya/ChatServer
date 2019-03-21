@@ -1,10 +1,10 @@
 
 
 
-all : a.out
+all : server.out
 	
-a.out :  Source.cpp
-	g++ -o a.out Source.cpp NetworkSources.cpp globals.cpp -std=c++11 -lpthread -g
+server.out :  Source.cpp
+	g++ -o server.out Source.cpp NetworkSources.cpp globals.cpp -std=c++11 -lpthread -g
 	
 #Source.o :
 #	g++ -c Source.cpp -std=c++11 -lpthread -g

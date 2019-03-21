@@ -1,31 +1,45 @@
 #pragma once
-
+#ifndef WIN32
 #include "defines.h"
 #include "includes.h"
-#ifndef WIN32
+
 struct tagData;
 
+struct tagCSequenceNo;
 
 struct tagNetworkThread;
 struct tagNetworkThread
 {
    int     fd;
-   //struct tagData buf;
    size_t  n; 
    int     flags;
    struct sockaddr_in addr;
    socklen_t restrict;
 };
 
+struct tagCSequenceNo
+{
+   char cFinalSeqNo[30 + 1];
+};
 struct tagData
 {
+    short nCommand;
+    long long nGlobalIdentifier;
     char cIdentifier[20 + 1];
+    int nFrOrToServerFlg;
     long nMessageCode;
     char cBuffer[MAXLINE + 1];
     char cTarget[20 + 1];
-    //long lnSockFD;
     char cUniqueMessageIdentifier[30 + 1];
     tagNetworkThread stNetWork;
+    //UDPChatServer 20-01-2019
+//    tagCSequenceNo stSenderSeqNo;
+//    tagCSequenceNo stRecieverSeqNo;
+    //UDPChatServer 20-01-2019
+    int nSeqNo;
+	 bool bFinalResponse;
+    int nLatestClntSeqNo;
+    int nSessionId;
 };
 
 
@@ -43,11 +57,21 @@ struct tagTimeData
       stData =     stDatis;
    }
    
+   tagTimeData(const time_t& nTime,const tagData& stDatis,long long nCounter)
+   {
+      m_nCounter = nCounter;
+      m_nTime    = nTime;
+      stData =     stDatis;
+   } 
    bool  operator<(const tagTimeData& lstB) const
    {
       return m_nTime < lstB.m_nTime;
    }
 };
+
+
+
+
 #endif
 #ifdef WIN32
 struct tagData;

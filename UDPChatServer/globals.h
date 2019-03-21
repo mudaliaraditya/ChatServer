@@ -18,6 +18,7 @@ extern CDataStore          g_cProcessList;
 #ifndef WIN32
 
 extern pthread_mutex_t g_cProcessMutex;
+extern pthread_mutex_t g_cGlobalIdentifierMutex;
 
 extern pthread_mutex_t g_cResponseMutex;
 
@@ -26,6 +27,22 @@ extern pthread_mutex_t g_cIdentifierMutex;
 extern pthread_mutex_t g_cDataStoreMutex;
 
 extern pthread_cond_t g_cCondVarForProcessThread;
+
+
+
+extern pthread_t lnSenderPThread;
+
+extern pthread_t lnProcessPThread[NO_OF_PROC_THREADS];
+
+extern pthread_t lnPThreadEventTime;
+
+extern pthread_mutex_t         g_ReSenderMutex;
+
+extern std::list<tagTimeData>       g_cEventResender;
+
+extern std::fstream g_cfstream;
+
+extern int g_nFlagDupliResend;
 
 #endif
 
