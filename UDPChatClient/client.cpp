@@ -67,6 +67,7 @@ int g_nSeqNo = 0;
 /// here it majorly does the job of resending messages if there is no response yet            
 void* CheckResponse(void*)
 {
+   char lcIdentifier[31] = {0};
    while(true)
    {
       pthread_mutex_lock(&g_ReSenderMutex);
@@ -76,7 +77,7 @@ void* CheckResponse(void*)
          {
             if(lcIter->m_nTime <= time(NULL))
             {
-               //cout << "hello" << endl;
+               
                if(lcIter->m_nCounter <= 0)
                {
                   lcIter = g_cEventResender.erase(lcIter);
@@ -88,16 +89,17 @@ void* CheckResponse(void*)
                   {
                       do
                       {
-                         SetRand(lcIter->stData.cUniqueMessageIdentifier, strlen(lcIter->stData.cUniqueMessageIdentifier));
-                      }while(VerifyUniqueness(lcIter->stData.cUniqueMessageIdentifier) != 0);
-                      cout << "resending data" << endl;
-                      g_cSenderDataStore.push_front(lcIter->stData);
-                      pthread_mutex_unlock(&g_SenderMutex);
-				          lcIter->m_nCounter--;
-                      lcIter->m_nTime = time(NULL) + 10;
-                      lcIter++;
-                    }
+                         SetRand(lcIdentifier, 30);
+                      }while(VerifyUniqueness(lcIdentifier) != 0);
+                      strncpy(lcIter->stData.cUniqueMessageIdentifier, lcIdentifier,30);
                   }
+                  cout << "resending data" << endl;
+                  g_cSenderDataStore.push_front(lcIter->stData);
+                  pthread_mutex_unlock(&g_SenderMutex);
+	          lcIter->m_nCounter--;
+                  lcIter->m_nTime = time(NULL) + 10;
+                  lcIter++;  
+               }
             }
             else
             {
@@ -331,14 +333,14 @@ bool IsMessageUnique(tagData stData)
    {
        if(strcmp(lcTemp.stData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier) == 0)
        {
-          cout << "Resending Message as no response received yet" << endl;
+          //cout << "Resending Message as no response received yet" << endl;
           lbUniqueMessageSend = false;
        }
    }
 
    if(lbUniqueMessageSend == true)
    {
-      cout << "this is a new unique message" << endl;
+      cout << "This is a new unique message adding to Resender Store" << endl;
       tagTimeData lstTimeData((time(NULL) + 10), stData);
       g_cEventResender.push_back(lstTimeData);
    }
@@ -375,10 +377,11 @@ void* SenderThread(void* pVData)
          g_cSenderDataStore.pop_front();
          pthread_mutex_unlock(&g_SenderMutex);
 
-          if(g_nFlagNoResendDupli == 0)
+          if(g_nFlagNoResendDupli == 0 && lstToSendData.nMessageCode != CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY)
           {
               bool lbUniqueMessageSend = IsMessageUnique(lstToSendData);
           }
+         
           if(lstToSendData.nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY)
           {
               cout << "sending data delivery;" << lstThread.fd << endl;
@@ -405,7 +408,7 @@ void* SenderThread(void* pVData)
 
 void* RecieverThread(void* pVData)
 {
-	string lcKey ="";
+    string lcKey ="";
     int lnDataRecievedLen = 0;
     tagData* lpstData = (tagData*)pVData;
 
@@ -413,8 +416,8 @@ void* RecieverThread(void* pVData)
 
     tagData lstRecvData = {0};
     
-    int lnRetVal = 0;
-    bool lbToResend =false;
+    int  lnRetVal        = 0;
+    bool lbToResend      = false;
     bool lbDiscardPacket = false;
 	 //string lcKey = "";
     while(true)
@@ -432,20 +435,20 @@ void* RecieverThread(void* pVData)
         cout << lstRecvData.cUniqueMessageIdentifier << endl;
         cout << lstRecvData.cIdentifier << endl;
         cout << lstRecvData.cTarget << endl;
-      if(lstRecvData.bFinalResponse == true)
-      {
-          if(lstRecvData.nLatestClntSeqNo == g_nLatestRecivedSequenceNo)
-          {
-              g_nLastResRecSeq++;
-              g_nLatestRecivedSequenceNo++;
-          }
-          if(lstRecvData.nSeqNo == g_nLatestRecivedSequenceNo + 1)
-          {
-            // g_nLatestRecivedSequenceNo++;
-          }
-      }
+        if(lstRecvData.bFinalResponse == true)
+        {
+            if(lstRecvData.nLatestClntSeqNo == g_nLatestRecivedSequenceNo)
+            {
+                g_nLastResRecSeq++;
+                g_nLatestRecivedSequenceNo++;
+            }
+            if(lstRecvData.nSeqNo == g_nLatestRecivedSequenceNo + 1)
+            {
+              // g_nLatestRecivedSequenceNo++;
+            }
+        }
 
-	   if(g_nFlagNoResendDupli == 0)
+       if(g_nFlagNoResendDupli == 0)
        {
           pthread_mutex_lock( &g_cIdentifierMutex);
           
@@ -453,7 +456,7 @@ void* RecieverThread(void* pVData)
           {
              for(auto& lstIdentifiers : g_cIdentifierStore)
              {
-			   lcKey = SuffixAppropirateUniqueIdentifier(lstRecvData.cUniqueMessageIdentifier, lstRecvData.nCommand);
+               lcKey = SuffixAppropirateUniqueIdentifier(lstRecvData.cUniqueMessageIdentifier, lstRecvData.nCommand);
                if(0 == strcmp(lstIdentifiers.c_str(), lcKey.c_str()))
                {
                    cout << "duplicate packet" << endl;
@@ -495,8 +498,8 @@ void* RecieverThread(void* pVData)
           }
           // else
           {
-			    lcKey = SuffixAppropirateUniqueIdentifier(lstRecvData.cUniqueMessageIdentifier,lstRecvData.nCommand);
-             g_cIdentifierStore.push_back(lcKey);
+	    lcKey = SuffixAppropirateUniqueIdentifier(lstRecvData.cUniqueMessageIdentifier,lstRecvData.nCommand);
+            g_cIdentifierStore.push_back(lcKey);
           }
           //else
           {
@@ -743,7 +746,7 @@ int main(int argc,char* argv[])
      tagData lstDummyMessageData = {0};
      lstDummyMessageData.nMessageCode =   (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY;
      SetRand(lstDummyMessageData.cUniqueMessageIdentifier,30);
-	  tagTimeData lstTimeData(time(NULL)+3,lstDummyMessageData, INT_MAX) ;
+     tagTimeData lstTimeData(time(NULL)+3,lstDummyMessageData, INT_MAX) ;
      g_cEventResender.push_back(lstTimeData);
 //	 lstTimeData.stData = lstDummyMessageData;
 	 
