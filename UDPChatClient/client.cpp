@@ -377,7 +377,7 @@ void* SenderThread(void* pVData)
          g_cSenderDataStore.pop_front();
          pthread_mutex_unlock(&g_SenderMutex);
 
-          if(g_nFlagNoResendDupli == 0 && lstToSendData.nMessageCode != CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY)
+          if(g_nFlagNoResendDupli == 0 && lstToSendData.nMessageCode != (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY)
           {
               bool lbUniqueMessageSend = IsMessageUnique(lstToSendData);
           }

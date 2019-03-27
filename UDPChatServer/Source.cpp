@@ -1134,7 +1134,8 @@ int main()
                            lcIter++;
                       }
                }
-          } 
+          }
+		   pthread_mutex_unlock(&g_ReSenderMutex);
         }
          string lcKey = SuffixAppropirateUniqueIdentifier(lpstData->cUniqueMessageIdentifier, lpstData->nCommand);
          //if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
