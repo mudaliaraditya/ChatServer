@@ -35,17 +35,28 @@ struct tagData
     char cBuffer[MAXLINE + 1];
     char cTarget[20 + 1];
     char cUniqueMessageIdentifier[30 + 1];
-    tagNetworkThread stNetWork;
-    //UDPChatServer 20-01-2019
-//    tagCSequenceNo stSenderSeqNo;
-//    tagCSequenceNo stRecieverSeqNo;
-    //UDPChatServer 20-01-2019
     int nSeqNo;
 	 bool bFinalResponse;
     int nLatestClntSeqNo;
     int nSessionId;
+    tagNetworkThread stNetWork;
 };
 
+struct tagBufferData
+{
+    short   nCommand;
+    int64_t nGlobalIdentifier;
+    char    cIdentifier[20 + 1];
+    int32_t nFrOrToServerFlg;    
+    int32_t nMessageCode;
+    char    cBuffer[MAXLINE + 1];
+    char    cTarget[20 + 1];
+    char    cUniqueMessageIdentifier[30 + 1];
+    int32_t nSeqNo;
+    bool    bFinalResponse;
+    int32_t nLatestClntSeqNo;
+    int32_t nSessionId;
+};
 
 struct tagTimeData
 {
@@ -67,6 +78,23 @@ struct tagTimeData
    }
 };
 
+
+struct tagSessionIdentifierData
+{
+   int nGlobalIdentifier;
+   std::string sName;
+   tagSessionIdentifierData()
+   {
+      nGlobalIdentifier = 0;
+      sName             = "";
+   }
+};
+
+
+struct tagThreadData
+{
+    char cThreadId[20];
+};
 #endif
 #ifdef WIN32
 

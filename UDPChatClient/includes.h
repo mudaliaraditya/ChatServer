@@ -6,6 +6,9 @@
 #include <math.h>
 #include <deque>
 #include <list>
+#include <set>
+#include <fstream>
+#include <map>
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <unistd.h> 
@@ -21,7 +24,9 @@
 #include "structs.h"
 #include "defines.h"
 #include "enums.h"
-//#include "Functions.h"
+#include "Functions.h"
+#include "typedefs.h"
+#include "Globals.h"
 using namespace std;
 #endif
 #ifdef WIN32

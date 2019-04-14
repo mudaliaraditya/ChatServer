@@ -4,7 +4,7 @@
 
 long g_OS = 0;
 bool g_bProgramShouldWork = true;
-std::deque<std::string> g_cIdentifierStore;
+std::set<std::string> g_cIdentifierStore;
 struct sockaddr_in servaddr, cliaddr;
 
 int g_nTesting = 1;
@@ -26,6 +26,8 @@ pthread_mutex_t g_cIdentifierMutex;
 
 pthread_mutex_t g_cDataStoreMutex;
 
+pthread_mutex_t g_cDataGlobalPortStoreMutex;
+
 pthread_cond_t g_cCondVarForProcessThread;
 
 pthread_t lnSenderPThread;
@@ -40,6 +42,7 @@ std::list<tagTimeData>       g_cEventResender;
 
 std::fstream g_cfstream;
 
+std::fstream g_cDatafstream;
 //int g_nFlagDupliResend = 0;
 int g_nFlagDupliResend = 0;
 

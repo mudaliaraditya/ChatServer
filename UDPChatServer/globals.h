@@ -5,7 +5,7 @@
 #include "includes.h"
 extern long g_OS;
 extern bool g_bProgramShouldWork;
-extern std::deque<std::string> g_cIdentifierStore;
+extern std::set<std::string> g_cIdentifierStore;
 extern struct sockaddr_in servaddr, cliaddr;
 
 extern int g_nTesting;
@@ -26,6 +26,8 @@ extern pthread_mutex_t g_cIdentifierMutex;
 
 extern pthread_mutex_t g_cDataStoreMutex;
 
+extern pthread_mutex_t g_cDataGlobalPortStoreMutex;
+
 extern pthread_cond_t g_cCondVarForProcessThread;
 
 
@@ -41,6 +43,8 @@ extern pthread_mutex_t         g_ReSenderMutex;
 extern std::list<tagTimeData>       g_cEventResender;
 
 extern std::fstream g_cfstream;
+
+extern std::fstream g_cDatafstream;
 
 extern int g_nFlagDupliResend;
 

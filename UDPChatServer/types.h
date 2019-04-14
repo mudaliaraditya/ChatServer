@@ -13,3 +13,7 @@ typedef std::map<std::string, tagData*>::iterator CClientIdDataStoreIter;
 typedef  std::deque<tagData*>           CDataStore;
 typedef  std::deque<tagData*>::iterator CIteratorDataStore;
 
+
+typedef std::set<std::string>                              CIdentifierStringStore;
+typedef CIdentifierStringStore::iterator                   CIterIdentifierStringStore;
+typedef std::pair<CIterIdentifierStringStore, bool>        CRetValInsIterIdentifierStringStore;

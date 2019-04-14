@@ -17,8 +17,10 @@
 #include <signal.h>
 #include <fstream>
 #include <map>
+#include <set>
 #include <list>
 #include <deque>
+#include <stdint.h>
 #include "defines.h"
 #include "types.h"
 #include "structs.h"
@@ -26,6 +28,7 @@
 #include "globals.h"
 #include "AllClasses.h"
 #include "NetworkHeader.h"
+#include "functions.h"
 using namespace std;
 #endif
 #ifdef WIN32

@@ -1,7 +1,8 @@
 #pragma once
 
 #define NO_OF_PROC_THREADS 4
-#define PORT     8080
+#define PORT     9001
+#define SERVER_IP "192.168.56.101"
 #define PORT1     8081
 #define MAXLINE 1024
 #define LENGHT_OF_IDENTIFIER      20

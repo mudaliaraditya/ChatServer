@@ -1,48 +1,61 @@
 #include "includes.h"
-#include "Functions.h"
+
 
 #pragma pack(1)
 
+#define LOG_LOGGER(cToBeLogged, ...)             \
+{                                                 \
+  {                                                \
+   \
+   time_t lnTime = time(NULL);\
+   struct tm*  psttm =  localtime(&lnTime);\
+   char lcBuffer[200] = {0};                       \
+   snprintf(lcBuffer,200,"%d:%d:%d %d-%d-%d",psttm->tm_hour,psttm->tm_min,psttm->tm_sec,psttm->tm_mday,psttm->tm_mon,psttm->tm_year );\
+    char lcBuffer111[500] = {0};                       \
+    snprintf(lcBuffer111,500,cToBeLogged, ##__VA_ARGS__);         \
+    (g_cfstream <<  lcBuffer << " | " << lcBuffer111 <<  " | "<< __func__ <<"() | " <<__FILE__<< ":"<<__LINE__ <<endl);           \
+  }                                             \
+}
 
-struct tagData;
-char** g_pcParam = nullptr;
-short  g_nArgs = 0;
-pthread_mutex_t g_cIdentifierMutex;
+#define DATA_LOGGER(cToBeLogged, ...)             \
+{                                                 \
+  {                                                \
+   \
+   time_t lnTime = time(NULL);\
+   struct tm*  psttm =  localtime(&lnTime);\
+   char lcBuffer[200] = {0};                       \
+   snprintf(lcBuffer,200,"%d:%d:%d %d-%d-%d",psttm->tm_hour,psttm->tm_min,psttm->tm_sec,psttm->tm_mday,psttm->tm_mon,psttm->tm_year );\
+    char lcBuffer111[500] = {0};                       \
+    snprintf(lcBuffer111,500,cToBeLogged, ##__VA_ARGS__);         \
+    (g_cfstreamDataLogger <<  lcBuffer << " | " << lcBuffer111 <<  " | "<< __func__ <<"() | " <<__FILE__<< ":"<<__LINE__ <<endl);           \
+  }                                             \
+}
 
-tagCSequenceNo  g_cstSeqStruct;
+
 
 int VerifyUniqueness(char* cUniqueMessage);
 void SetRand(char* cBuf,int nSize);
 string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand);
 
-std::deque<std::string> g_cIdentifierStore;//store all reciever packets and reject duplicate
-list<tagTimeData>       g_cEventResender;
-
-char                    g_cIdentifier[20 + 1] = {0};
-
-map <string,tagData>    g_cMessageHolder;//this will contain the messages for duplicate check
-
-deque<tagData>          g_cSenderDataStore;
-
-deque<tagData>          g_cRecieverDataStore;
 
 
+#ifdef TESTLOGGING
 
-pthread_mutex_t         g_SenderMutex;
+#define TESTLOG(STRING, ...) \
+{\
+  /*printf(STRING, ##__VA_ARGS__);*/DATA_LOGGER(STRING, ##__VA_ARGS__)\
+}
+#endif
 
-pthread_mutex_t         g_ReSenderMutex;
+#ifndef TESTLOGGING
 
-struct sockaddr_in      servaddr = {0};
+#define TESTLOG(STRING, ...) \
+{                    \
+                     \
+}
 
-int g_nSockFd = 0;
+#endif
 
-int g_nLastResRecSeq = 0;
-int g_nLatestRecivedSequenceNo = 0;
-int g_nTesting = 0;
-int g_nFlagNoResendDupli = 0;
-int g_nSessionId = 0;
-int g_nGlobalIdentifier = 0;
-bool g_bWaitForResponse = false;
 
 
 struct tagSharedMem
@@ -65,7 +78,81 @@ int g_nSeqNo = 0;
 
 /// this function is the major event handler
 /// here it majorly does the job of resending messages if there is no response yet            
-void* CheckResponse(void*)
+/*void* CheckResponse(void*)
+{
+   while(true)
+   {
+      pthread_mutex_lock(&g_ReSenderMutex);
+      char lcUniqueIdentifierBuffer[30 + 1];
+      if(!g_cEventResender.empty())
+      {
+         CEventResenderStoreIterator lcIter = g_cEventResender.begin();
+         if(lcIter->first <= time(NULL) )
+         {
+            pthread_mutex_lock(&g_SenderMutex);
+            
+           // if((long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY == lcIter->second.stData.nMessageCode)
+           // {
+           //    do
+           //    {
+          //        SetRand(lcUniqueIdentifierBuffer, strlen(lcIter->second.stData.cUniqueMessageIdentifier));
+          //     }while(VerifyUniqueness(lcUniqueIdentifierBuffer) != 0);
+            //   strncpy(lcIter->second.stData.cUniqueMessageIdentifier, lcUniqueIdentifierBuffer,strlen(lcIter->second.stData.cUniqueMessageIdentifier));
+          //  }
+            cout << "resending data" << endl;
+            g_cSenderDataStore.push_front(lcIter->second.stData);
+            pthread_mutex_unlock(&g_SenderMutex);
+            if(lcIter->second.m_nCounter > 1)
+            {
+               lcIter->second.m_nCounter--;
+               lcIter->second.m_nTime = time(NULL) + 10;
+               g_cEventResender.insert(pair<time_t,tagTimeData>(lcIter->second.m_nTime,lcIter->second));
+            }   
+            g_cEventResender.erase(lcIter);
+            //lcIter++;
+         }
+        // sleep(lcIter->first - time(NULL));
+//         for(CEventResenderStoreIterator lcIter =  g_cEventResender.begin();lcIter !=  g_cEventResender.end();)
+//         {
+//            if(lcIter->first <= time(NULL))
+//            {
+//               //cout << "hello" << endl;
+//               if(lcIter->second.m_nCounter <= 0)
+//               {
+//                  lcIter = g_cEventResender.erase(lcIter);
+//               }
+//               else
+//               {
+//                  pthread_mutex_lock(&g_SenderMutex);
+//                  if((long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY == lcIter->stData.nMessageCode)
+//                  {
+//                      do
+//                      {
+//                         SetRand(lcIter->second.stData.cUniqueMessageIdentifier, strlen(lcIter->stData.cUniqueMessageIdentifier));
+//                      }while(VerifyUniqueness(lcIter->stData.cUniqueMessageIdentifier) != 0);
+//                  }    
+//                      cout << "resending data" << endl;
+//                      g_cSenderDataStore.push_front(lcIter->stData);
+//                      pthread_mutex_unlock(&g_SenderMutex);
+//                      lcIter->m_nCounter--;
+//                      lcIter->m_nTime = time(NULL) + 10;
+//                      lcIter++;
+//                  
+//               }
+//            }
+//            else
+//            {
+//               lcIter++;
+//            }
+//         }
+      }
+      pthread_mutex_unlock(&g_ReSenderMutex);
+      //checks for resender events only once a second
+      sleep(1);
+   }
+}*/
+
+/*void* CheckResponse(void*)
 {
    char lcIdentifier[31] = {0};
    while(true)
@@ -77,7 +164,7 @@ void* CheckResponse(void*)
          {
             if(lcIter->m_nTime <= time(NULL))
             {
-               
+               //cout << "hello" << endl;
                if(lcIter->m_nCounter <= 0)
                {
                   lcIter = g_cEventResender.erase(lcIter);
@@ -111,7 +198,126 @@ void* CheckResponse(void*)
       //checks for resender events only once a second
       sleep(1);
    }
+}*/
+
+tagBufferData ConvertToNetworkBuffer(tagData& stData)
+{
+    tagBufferData lstBufferData = {0};
+    lstBufferData.nCommand = stData.nCommand;
+    lstBufferData.nGlobalIdentifier = stData.nGlobalIdentifier;
+    strncpy(lstBufferData.cIdentifier ,stData.cIdentifier ,20);
+    lstBufferData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
+    lstBufferData.nMessageCode    = stData.nMessageCode;
+    strncpy(lstBufferData.cBuffer, stData.cBuffer, MAXLINE);
+    strncpy(lstBufferData.cTarget, stData.cTarget, 20 );
+    strncpy(lstBufferData.cUniqueMessageIdentifier,stData.cUniqueMessageIdentifier ,30);
+    lstBufferData.nSeqNo = stData.nSeqNo;
+    lstBufferData.bFinalResponse = stData.bFinalResponse;
+    lstBufferData.nLatestClntSeqNo = stData.nLatestClntSeqNo;
+    lstBufferData.nSessionId = stData.nSessionId;
+    return lstBufferData;
 }
+
+
+tagData ConvertToDataStruct(tagBufferData& stData)
+{
+    tagData lstBufferData = {0};
+    lstBufferData.nCommand = stData.nCommand;
+    lstBufferData.nGlobalIdentifier = stData.nGlobalIdentifier;
+    strncpy(lstBufferData.cIdentifier ,stData.cIdentifier ,20);
+    lstBufferData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
+    lstBufferData.nMessageCode    = stData.nMessageCode;
+    strncpy(lstBufferData.cBuffer, stData.cBuffer, MAXLINE);
+    strncpy(lstBufferData.cTarget, stData.cTarget, 20 );
+    strncpy(lstBufferData.cUniqueMessageIdentifier,stData.cUniqueMessageIdentifier ,30);
+    lstBufferData.nSeqNo = stData.nSeqNo;
+    lstBufferData.bFinalResponse = stData.bFinalResponse;
+    lstBufferData.nLatestClntSeqNo = stData.nLatestClntSeqNo;
+    lstBufferData.nSessionId = stData.nSessionId;
+    return lstBufferData;
+}
+
+
+
+void* CheckResponse(void*)
+{
+   char lcUniqueIdentifierBuffer[30 + 1];
+   int lnSleeptIme = 0;
+   //tagData lstData = {0};
+   while(true)
+   {
+      
+      pthread_mutex_lock(&g_ReSenderMutex);
+	  #ifdef LOGGING
+	  //cout << "taking resender lock" << endl;
+	  #endif
+	  pthread_mutex_lock(&g_SenderMutex);
+	  #ifdef LOGGING
+	  TESTLOG("taking sender lock \n");
+	  #endif
+      if(!g_cEventResender.empty())
+      {
+		 //pthread_mutex_unlock(&g_ReSenderMutex);
+		 //pthread_mutex_lock(&g_ReSenderMutex);
+         CEventResenderStoreIterator lcIter = g_cEventResender.begin();
+		 //cout << "iterator time " << lcIter->first << endl;
+         TESTLOG("iterator time %d \n", lcIter->first);
+         TESTLOG("current time %d \n",time(NULL));
+		 //cout << "current time " << time(NULL) << endl;
+         if(lcIter->first <= time(NULL) )
+         {
+            
+            		  
+            if((long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY == lcIter->second.stData.nMessageCode)
+            {
+                TESTLOG("Sending dummy message \n");
+               do
+               {
+                  SetRand(lcUniqueIdentifierBuffer, 30);
+               }while(VerifyUniqueness(lcUniqueIdentifierBuffer) != 0);
+               strncpy(lcIter->second.stData.cUniqueMessageIdentifier, lcUniqueIdentifierBuffer,strlen(lcIter->second.stData.cUniqueMessageIdentifier));
+               
+            }
+            lcIter->second.stData.nLatestClntSeqNo = g_nLatestRecivedSequenceNo;
+            TESTLOG("resending data \n");
+			//pthread_mutex_lock(&g_SenderMutex);
+            g_cSenderDataStore.push_front(lcIter->second.stData);
+            //pthread_mutex_unlock(&g_SenderMutex);
+			//memcpy(&lstData, &(lcIter->second.stData), sizeof(tagData));
+            if(lcIter->second.m_nCounter > 1)
+            {
+               TESTLOG("Resending Data :  %s %d %s %d %s %d %s %s %s %d","Message Code:", lcIter->second.stData.nMessageCode,"the seq no is ", lcIter->second.stData.nSeqNo , " the LatestRecieved Seq no is " , lcIter->second.stData.nLatestClntSeqNo , " from user id and name ", lcIter->second.stData.cIdentifier ," " , lcIter->second.stData.nGlobalIdentifier);
+               lcIter->second.m_nCounter--;
+               lcIter->second.m_nTime = time(NULL) + 3;
+               g_cEventResender.insert(pair<time_t,tagTimeData>(lcIter->second.m_nTime,lcIter->second));
+            }
+	         lnSleeptIme = lcIter->first;
+            g_cEventResender.erase(lcIter);
+            //lcIter++;
+         }
+		 
+		 //pthread_mutex_unlock(&g_ReSenderMutex);
+         //g_cSenderDataStore.push_front(lstData);
+         
+		 //memset(&lstData, 0,sizeof(tagData));
+         //sleep(lcIter->first - time(NULL));
+		 //continue;
+      }
+	  
+	  pthread_mutex_unlock(&g_SenderMutex);
+	  #ifdef LOGGING
+	  TESTLOG("releasing sender mutex \n");
+	  #endif
+	  pthread_mutex_unlock(&g_ReSenderMutex);
+	  #ifdef LOGGING
+	  TESTLOG("releasing resender mutex \n");
+	  #endif
+      //checks for resender events only once a second
+      sleep(1);
+	  //sleep(lnSleeptIme - time(NULL));
+   }
+}
+
 
 
 void SetRand(char* cBuf,int nSize)
@@ -135,12 +341,15 @@ void SetRand(char* cBuf,int nSize)
 int VerifyUniqueness(char* cUniqueMessage)
 {
     int lnCompRetVal = 0;
-    for(list<tagTimeData>::iterator lcItertagTimeDataStore = g_cEventResender.begin() ;lcItertagTimeDataStore != g_cEventResender.end() ;lcItertagTimeDataStore++)
+	//for(list<tagTimeData>::iterator lcItertagTimeDataStore = g_cEventResender.begin() ;lcItertagTimeDataStore != g_cEventResender.end() ;lcItertagTimeDataStore++)
+    for(CEventResenderStoreIterator lcItertagTimeDataStore = g_cEventResender.begin() ;lcItertagTimeDataStore != g_cEventResender.end() ;lcItertagTimeDataStore++)
     {
-       tagTimeData& lstagTimeData =  *(lcItertagTimeDataStore);
+       //tagTimeData& lstagTimeData =  *(lcItertagTimeDataStore);
+       tagTimeData& lstagTimeData =  (lcItertagTimeDataStore->second);
        lnCompRetVal = strncmp(lstagTimeData.stData.cUniqueMessageIdentifier, cUniqueMessage, strlen(cUniqueMessage));
        if(lnCompRetVal == 0)
        {
+		   //TESTLOG("verify uniqueness failed \n");
            return -1;
        }
     }
@@ -178,7 +387,8 @@ int ExecuteResponse(tagData& stData)
 
         case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_RESPONSE):
         {
-            cout << "response recieved" << stData.nGlobalIdentifier <<endl;
+            TESTLOG("response recieved %d \n",  stData.nGlobalIdentifier);
+            TESTLOG("Identifier Registered %s \n",  stData.cIdentifier);
             g_nGlobalIdentifier = stData.nGlobalIdentifier;
             g_bWaitForResponse = false;
         }
@@ -187,56 +397,60 @@ int ExecuteResponse(tagData& stData)
         case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET_RESPONSE):
         {
             g_nSessionId = stData.nSessionId;
-            cout << "target fixed" << endl;
+            TESTLOG( "target fixed \n");
             g_bWaitForResponse = false;
         }
         break;
         
         case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE):
         {
-            cout << stData.cIdentifier << " : " <<stData.cBuffer << endl;
-            tagData lstData = {0};
+            //printf("%s : %s", stData.cIdentifier, stData.cBuffer );
+			cout << stData.cIdentifier << " : " << stData.cBuffer << endl;
+            tagData lstSentDeliveryMessageData = {0};
             
-            lstData.nGlobalIdentifier                =  stData.nGlobalIdentifier;
-            lstData.nCommand                =  (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY;
-            strncpy(lstData.cIdentifier, stData.cIdentifier, 20);
-            lstData.nFrOrToServerFlg        =  (long)CEToFromServer::CEToFromServer_CLNT_TO_SERV;  
-            lstData.nMessageCode            =  (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY;
-            strncpy(lstData.cTarget, stData.cTarget, 20);//here target means u
-            strncpy(lstData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier, 30);
-            lstData.stNetWork.fd         =  g_nSockFd;
+            lstSentDeliveryMessageData.nGlobalIdentifier                =  stData.nGlobalIdentifier;
+            lstSentDeliveryMessageData.nCommand                =  (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY;
+            strncpy(lstSentDeliveryMessageData.cIdentifier, stData.cIdentifier, 20);
+            lstSentDeliveryMessageData.nFrOrToServerFlg        =  (long)CEToFromServer::CEToFromServer_CLNT_TO_SERV;  
+            lstSentDeliveryMessageData.nMessageCode            =  (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY;
+            strncpy(lstSentDeliveryMessageData.cTarget, stData.cTarget, 20);//here target means u
+            strncpy(lstSentDeliveryMessageData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier, 30);
+            lstSentDeliveryMessageData.stNetWork.fd         =  g_nSockFd;
             //lstData.fd                   =  g_nSockFd;
-            lstData.stNetWork.n          =  sizeof(tagData);
-            lstData.stNetWork.flags      =  MSG_WAITALL;
-            lstData.stNetWork.addr       =  servaddr;
-            lstData.stNetWork.restrict   =  sizeof(servaddr);
+            lstSentDeliveryMessageData.stNetWork.n          =  sizeof(tagData);
+            lstSentDeliveryMessageData.stNetWork.flags      =  MSG_WAITALL;
+            lstSentDeliveryMessageData.stNetWork.addr       =  servaddr;
+            lstSentDeliveryMessageData.stNetWork.restrict   =  sizeof(servaddr);
             //UDPChatServer 20-01-2019
             //UDPChatServer 20-01-2019
-            lstData.nSeqNo                  =  stData.nSeqNo;
-            cout << "sending data to sender threada" << endl;
+            lstSentDeliveryMessageData.nSeqNo                  =  stData.nSeqNo;
+            TESTLOG("sending delivery data message to sender threada \n");
             pthread_mutex_lock(&g_SenderMutex);
-            g_cSenderDataStore.push_back(lstData);
+            TESTLOG( "taking Sender lock : %d \n", __LINE__);
+            g_cSenderDataStore.push_back(lstSentDeliveryMessageData);
             pthread_mutex_unlock(&g_SenderMutex);
+            TESTLOG("releasing Sender lock %d \n",__LINE__);
  
         }
         break;
 
         case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_SERV_TO_CLI:
         {
-            cout << "msg delivered" << endl;
-            cout << endl <<stData.cIdentifier << " : " <<stData.cBuffer << endl;
+            TESTLOG( "msg delivered \n");
+            TESTLOG("\n %s : %s \n", stData.cIdentifier, stData.cBuffer);
+            //cout << endl <<stData.cIdentifier << " : " <<stData.cBuffer << endl;
         }
         break;
 		
         case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY_RES:
         {
-            cout << "delivery mesage reachd server" << endl;
+            TESTLOG("delivery mesage reachd server \n");
         }
         break;
         
         case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_RESPONSE):
         {
-            cout << "chat sent" << endl;    
+            TESTLOG("chat sent \n");    
         }
         break;
         
@@ -297,20 +511,22 @@ int RecvUDPData(int nSockFD, void* cData, size_t nSize, sockaddr_in* pstSockAddr
 //The job of this function is to erase the sender request when the final response has arrived
 int MakeReSender(tagData lstRecvData )
 {
-   string lcKey = "";
-   lcKey = SuffixAppropirateUniqueIdentifier(lstRecvData.cUniqueMessageIdentifier, lstRecvData.nCommand);
    
    if(lstRecvData.bFinalResponse == true)
    {
        pthread_mutex_lock(&g_ReSenderMutex);
-       for(list<tagTimeData>::iterator lcIter =  g_cEventResender.begin();lcIter != g_cEventResender.end();)
+	   #ifdef LOGGING
+	   TESTLOG("taking resender lock %d\n", __LINE__);
+	   #endif
+       //for(list<tagTimeData>::iterator lcIter =  g_cEventResender.begin();lcIter != g_cEventResender.end();)
+	   for(CEventResenderStoreIterator lcIter =  g_cEventResender.begin();lcIter != g_cEventResender.end();)
        {
 		   
-           tagTimeData& lstData = *lcIter;
-		   
+           //tagTimeData& lstData = *lcIter;
+           tagTimeData& lstData = lcIter->second;
            if(strcmp(lstData.stData.cUniqueMessageIdentifier,lstRecvData.cUniqueMessageIdentifier) == 0)
            {
-              cout << "response recieved now erasing" << endl;
+              TESTLOG( "response recieved now erasing from resender store\n");
               lcIter = g_cEventResender.erase( lcIter);
            }
            else
@@ -319,6 +535,9 @@ int MakeReSender(tagData lstRecvData )
            }
        }
        pthread_mutex_unlock(&g_ReSenderMutex);
+	   #ifdef LOGGING
+	    TESTLOG("releasing resender lock %d",  __LINE__ );
+	   #endif
    }
    return 0;
 }
@@ -326,25 +545,35 @@ int MakeReSender(tagData lstRecvData )
 //this func is located for SenderThread if this message is unique then it is added to resender store
 bool IsMessageUnique(tagData stData)
 {
+	
    pthread_mutex_lock(&g_ReSenderMutex);
+   #ifdef LOGGING
+   TESTLOG( "Taking Resender lock %d \n", __LINE__ );
+   #endif
    bool lbUniqueMessageSend = true;
 
-   for(auto& lcTemp : g_cEventResender)
+   //for(auto& lcTemp : g_cEventResender)
+   for(CEventResenderStoreIterator lcIter =  g_cEventResender.begin();lcIter != g_cEventResender.end();lcIter++)
    {
-       if(strcmp(lcTemp.stData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier) == 0)
+       //if(strcmp(lcTemp.stData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier) == 0)
+       if(strcmp(lcIter->second.stData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier) == 0)	   
        {
           //cout << "Resending Message as no response received yet" << endl;
           lbUniqueMessageSend = false;
+          break;
        }
    }
 
    if(lbUniqueMessageSend == true)
    {
-      cout << "This is a new unique message adding to Resender Store" << endl;
+      //cout << "this is a new unique message" << endl;
       tagTimeData lstTimeData((time(NULL) + 10), stData);
-      g_cEventResender.push_back(lstTimeData);
+      //g_cEventResender.push_back(lstTimeData);
+      g_cEventResender.insert(pair<time_t,tagTimeData>(lstTimeData.m_nTime,lstTimeData));
    }
-   
+   #ifdef LOGGING
+   TESTLOG( "releasing resender lock %d \n", __LINE__);
+   #endif
    pthread_mutex_unlock(&g_ReSenderMutex);
    return lbUniqueMessageSend;
 }
@@ -370,27 +599,32 @@ void* SenderThread(void* pVData)
       memset(&lstToSendData, 0 ,sizeof(tagData));       
 	   
       pthread_mutex_lock(&g_SenderMutex);
-       
+	  #ifdef LOGGING
+      TESTLOG("taking sender lock %d\n",  __LINE__ ); 
+	  #endif
       if(!g_cSenderDataStore.empty())
       {
          lstToSendData = g_cSenderDataStore.front();
          g_cSenderDataStore.pop_front();
          pthread_mutex_unlock(&g_SenderMutex);
+         TESTLOG ("Releasing sender lock %d \n",__LINE__);
 
           if(g_nFlagNoResendDupli == 0 && lstToSendData.nMessageCode != (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY)
           {
               bool lbUniqueMessageSend = IsMessageUnique(lstToSendData);
           }
-         
           if(lstToSendData.nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY)
           {
-              cout << "sending data delivery;" << lstThread.fd << endl;
+              TESTLOG( "sending data delivery; %d \n",lstThread.fd);
           }
-
-          lnLen = sendto(lstThread.fd, (const char *)&lstToSendData, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &(lstThread.addr), sizeof((lstThread.addr))); 
+          int lnDataStructSize = sizeof(tagBufferData);
+          char lcBuffer[lnDataStructSize] = { 0 };
+          tagBufferData lstBufferData = ConvertToNetworkBuffer(lstToSendData) ;
+          memcpy(&lcBuffer, (char*)&lstBufferData, lnDataStructSize);
+          lnLen = sendto(lstThread.fd, (const char *)&lcBuffer, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(lstThread.addr), sizeof((lstThread.addr))); 
           if(lnLen <= 0)
           {
-             printf("error");
+             TESTLOG("error");
              exit(1);
           }
 
@@ -399,6 +633,9 @@ void* SenderThread(void* pVData)
        else
        {
          pthread_mutex_unlock(&g_SenderMutex);
+		 #ifdef LOGGING
+		  TESTLOG("Releasing sender lock %d \n", __LINE__ );
+		 #endif
        }
     }
 }
@@ -408,61 +645,68 @@ void* SenderThread(void* pVData)
 
 void* RecieverThread(void* pVData)
 {
-    string lcKey ="";
-    int lnDataRecievedLen = 0;
-    tagData* lpstData = (tagData*)pVData;
+   string lcKey ="";
+   int lnDataRecievedLen = 0;
+   tagData* lpstData = (tagData*)pVData;
 
-    tagNetworkThread& lstThread = lpstData->stNetWork;
+   tagNetworkThread& lstThread = lpstData->stNetWork;
 
-    tagData lstRecvData = {0};
+   tagData lstRecvData = {0};
     
-    int  lnRetVal        = 0;
-    bool lbToResend      = false;
-    bool lbDiscardPacket = false;
+   int lnRetVal = 0;
+   bool lbToResend =false;
+   bool lbDiscardPacket = false;
 	 //string lcKey = "";
-    while(true)
-    {
-       lbToResend = true;
-       memset(&lstRecvData, 0 ,sizeof(tagData));       
-	   
-       lnDataRecievedLen  = recvfrom(lstThread.fd, (char *)&lstRecvData, sizeof(tagData), MSG_WAITALL, (struct sockaddr *) &(lstThread.addr),(socklen_t*)&(lstThread.restrict));
-       if(0 >= lnDataRecievedLen)
-       {
-           cout << "data reception error" << endl;
-           cout << strerror(errno) << endl;
-           //exit(1);
-       }
-        cout << lstRecvData.cUniqueMessageIdentifier << endl;
-        cout << lstRecvData.cIdentifier << endl;
-        cout << lstRecvData.cTarget << endl;
-        if(lstRecvData.bFinalResponse == true)
-        {
-            if(lstRecvData.nLatestClntSeqNo == g_nLatestRecivedSequenceNo)
-            {
-                g_nLastResRecSeq++;
-                g_nLatestRecivedSequenceNo++;
-            }
-            if(lstRecvData.nSeqNo == g_nLatestRecivedSequenceNo + 1)
-            {
-              // g_nLatestRecivedSequenceNo++;
-            }
-        }
+   while(true)
+   {
+      lbToResend = true;
+      memset(&lstRecvData, 0 ,sizeof(tagData));       
+	   tagBufferData lstBufferData;
+      lnDataRecievedLen  = recvfrom(lstThread.fd, (char *)&lstBufferData, sizeof(tagBufferData), MSG_WAITALL, (struct sockaddr *) &(lstThread.addr),(socklen_t*)&(lstThread.restrict));
+      if(0 >= lnDataRecievedLen)
+      {
+          cout << "data reception error" << endl;
+          cout << strerror(errno) << endl;
+          LOG_LOGGER("data reception error : [%d] %s ",errno,strerror(errno));
+          exit(1);
+      }
+	  lstRecvData = ConvertToDataStruct(lstBufferData);
+#ifdef LOGGING
+       TESTLOG("%s \n", lstRecvData.cUniqueMessageIdentifier);
+       TESTLOG("%s \n",lstRecvData.cIdentifier );
+       TESTLOG("%s \n", lstRecvData.cTarget );
+#endif
+       
+       if(lstRecvData.bFinalResponse == true)
+     {
+         if(lstRecvData.nSeqNo == g_nLatestRecivedSequenceNo)
+         {
+             //g_nLastResRecSeq++;
+             g_nLatestRecivedSequenceNo++;
+         }
+         if(lstRecvData.nSeqNo == g_nLatestRecivedSequenceNo + 1)
+         {
+           // g_nLatestRecivedSequenceNo++;
+         }
+     }
 
-       if(g_nFlagNoResendDupli == 0)
-       {
-          pthread_mutex_lock( &g_cIdentifierMutex);
-          
-          //if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
-          {
+         if(g_nFlagNoResendDupli == 0)
+         {
+            pthread_mutex_lock( &g_cIdentifierMutex);
+			#ifdef LOGGING
+			TESTLOG( "Taking identifier lock %d \n" , __LINE__ );
+			#endif
+            //if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
+            {
              for(auto& lstIdentifiers : g_cIdentifierStore)
              {
                lcKey = SuffixAppropirateUniqueIdentifier(lstRecvData.cUniqueMessageIdentifier, lstRecvData.nCommand);
                if(0 == strcmp(lstIdentifiers.c_str(), lcKey.c_str()))
                {
-                   cout << "duplicate packet" << endl;
-                   cout << lstIdentifiers.c_str() << " duplicated " << "rejected code "<< lpstData->nMessageCode << " command : " <<lpstData->nCommand << endl;;
-                   lbDiscardPacket = true;
-                   break;
+                   TESTLOG("duplicate packet \n");
+                  TESTLOG("%s %s %s %d %s %d",lstIdentifiers.c_str() ," duplicated ","rejected code ",lpstData->nMessageCode," command : " ,lpstData->nCommand);
+                  lbDiscardPacket = true;
+                  break;
                }
              }
              if(true == lbDiscardPacket)
@@ -471,22 +715,33 @@ void* RecieverThread(void* pVData)
 //              lpstData = nullptr;
                 lbDiscardPacket = false;
                 pthread_mutex_unlock(&g_cIdentifierMutex);
+				#ifdef LOGGING
+				 TESTLOG("reeleasing identifier lock %d\n", __LINE__);
+				#endif
                 continue;
              }
           }
-          cout << endl << g_nLatestRecivedSequenceNo << "latest recieved sequene no" << endl;
+#ifdef LOGGING
+			  TESTLOG("%d %s \n", g_nLatestRecivedSequenceNo, "latest recieved sequene no");
           //cout << endl;
           //if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
-
+#endif
           if(lstRecvData.bFinalResponse == true)
           {
               //pthread_mutex_lock();
               pthread_mutex_lock(&g_ReSenderMutex);
-              for(list<tagTimeData>::iterator lcIter = g_cEventResender.begin(); lcIter != g_cEventResender.end();)
+			  #ifdef LOGGING
+			  TESTLOG("Taking resender lock %d\n", __LINE__ );
+			  #endif
+              //for(list<tagTimeData>::iterator lcIter = g_cEventResender.begin(); lcIter != g_cEventResender.end();)
+	           for(CEventResenderStoreIterator lcIter = g_cEventResender.begin(); lcIter != g_cEventResender.end();)
               {
-                 tagTimeData& lstData = *lcIter; 
+                 //tagTimeData& lstData = *lcIter; 
+		           tagTimeData& lstData = lcIter->second;
                  if(strcmp(lstData.stData.cUniqueMessageIdentifier, lstRecvData.cUniqueMessageIdentifier) == 0)
                  {
+                     TESTLOG( "response recieved now erasing from resender store early\n");
+                     TESTLOG( "data being removed for %s mesage code %d seqno %d current latestseqno %d \n",lstData.stData.cIdentifier,lstData.stData.nMessageCode,lstData.stData.nSeqNo,lstData.stData.nLatestClntSeqNo);
                      lcIter = g_cEventResender.erase(lcIter);
                  }
                  else
@@ -495,28 +750,36 @@ void* RecieverThread(void* pVData)
                  }   
               }
               pthread_mutex_unlock(&g_ReSenderMutex);
+			  #ifdef LOGGING
+			  TESTLOG( " releasing resender lock %d \n");
+			  #endif
           }
           // else
           {
-	    lcKey = SuffixAppropirateUniqueIdentifier(lstRecvData.cUniqueMessageIdentifier,lstRecvData.nCommand);
-            g_cIdentifierStore.push_back(lcKey);
+			    lcKey = SuffixAppropirateUniqueIdentifier(lstRecvData.cUniqueMessageIdentifier,lstRecvData.nCommand);
+             g_cIdentifierStore.push_back(lcKey);
           }
           //else
           {
              //cout << "delivery Operation recive" << endl;
           }
           pthread_mutex_unlock( &g_cIdentifierMutex);
+		  #ifdef LOGGING
+		  TESTLOG("Realeasing identifier lock %d\n", __LINE__ );
+		  #endif
        }
 
        lnRetVal = ExecuteResponse(lstRecvData);
        if(lnRetVal == -1)
        {
-           cout << "response handling error " << endl;
-          //exit(1);
+           TESTLOG("response handling error \n");
+           LOG_LOGGER("response handling error for message code %d",lstRecvData.nMessageCode);
+           exit(1);
        }
 	   
        if(MakeReSender(lstRecvData) != EXIT_SUCCESS)
        {
+          LOG_LOGGER("")
           exit(1);
        }
 //       int MakeReSender(tagData& lstRecvData )
@@ -553,7 +816,7 @@ void* RecieverThread(void* pVData)
 //        }
 //        pthread_mutex_unlock(&g_ReSenderMutex);
         
-       printf("Server : %d\n", lstRecvData.nMessageCode);
+       TESTLOG("Server : %d\n", lstRecvData.nMessageCode);
     }
     
 }
@@ -583,12 +846,12 @@ int PreSender(tagData& stData)
 //
           stData.nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST;
           stData.nFrOrToServerFlg = (long)CEToFromServer::CEToFromServer_CLNT_TO_SERV;
-          sleep(5);
+          //sleep(5);
       }
       break;
       case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET:
       {
-         printf("Registering message sent.\n");
+         TESTLOG("Registering message sent.\n");
          
          memcpy(stData.cIdentifier, g_cIdentifier, 20);
 
@@ -607,7 +870,7 @@ int PreSender(tagData& stData)
          }
          stData.nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST;
          stData.nFrOrToServerFlg = (long)CEToFromServer::CEToFromServer_CLNT_TO_SERV;
-         sleep(2);
+         //sleep(2);
       }
       break;
       case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT:
@@ -654,6 +917,7 @@ int PostSender(tagData& stData)
          stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT;
          do{}
          while(g_bWaitForResponse == true);
+         sleep(5);
       }
       break;
       case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT:
@@ -684,6 +948,20 @@ int main(int argc,char* argv[])
    lpstSharedmemData->nState = STATE_INITIALIZE;
    //shared mem use
     int lnRetVal = 0;
+    
+    
+   time_t lnTime;
+   lnTime = time(NULL);
+   struct tm*  psttm =  gmtime(&lnTime);
+   char lcBuffera[200] = {0};
+   int lnRandNo =rand()%100;
+   //snprintf(lcBuffera,200,"%d:%d:%d%d-%d-%d",psttm->tm_hour,psttm->tm_min,psttm->tm_sec,psttm->tm_mday,psttm->tm_mon,psttm->tm_year );
+   snprintf(lcBuffera,200,"%s/%s-%s%d-%d-%d-%d_%d%d%d.%s","Logs","log","randno",lnRandNo,psttm->tm_mday,psttm->tm_mon +1  ,psttm->tm_year + 1900,psttm->tm_hour,psttm->tm_min,psttm->tm_sec,"log");
+   
+   TESTLOG(" log file name %s \n", lcBuffera );
+   g_cfstream.open(lcBuffera,ios::in|ios::out | ios::app);
+   snprintf(lcBuffera,200,"%s/%s-%s%d-%d-%d-%d_%d%d%d.%s","Logs","Data","randno",lnRandNo,psttm->tm_mday,psttm->tm_mon +1  ,psttm->tm_year + 1900,psttm->tm_hour,psttm->tm_min,psttm->tm_sec,"log");
+   g_cfstreamDataLogger.open(lcBuffera,ios::in|ios::out | ios::app);
    
    pthread_t lnPThreadReciever;
    pthread_t lnPThreadSender;
@@ -716,7 +994,7 @@ int main(int argc,char* argv[])
     }
 
     //FillSockAddrin(AF_INET, htons(PORT), (in_addr_t)(inet_addr("127.0.0.1")), &servaddr);
-    FillSockAddrin(AF_INET, htons(PORT), (in_addr_t)(inet_addr("172.25.1.8")), &servaddr);
+    FillSockAddrin(AF_INET, htons(PORT), (in_addr_t)(inet_addr(SERVER_IP)), &servaddr);
 
     tagData lstData = {0};
     
@@ -728,9 +1006,9 @@ int main(int argc,char* argv[])
    
    lpstThrdDataRcvr = new tagData();
    lpstThrdSndr = new tagData();
-   
-   cout << "sockfd is "<< lpstThrdDataRcvr->stNetWork.fd << endl;
-   
+#ifdef LOGGING
+   TESTLOG( "sockfd is %d\n", lpstThrdDataRcvr->stNetWork.fd );
+#endif
    //sleep(1);
    memcpy(lpstThrdDataRcvr, &lstData, sizeof(tagData));
    memcpy(lpstThrdSndr, &lstData, sizeof(tagData));
@@ -746,8 +1024,10 @@ int main(int argc,char* argv[])
      tagData lstDummyMessageData = {0};
      lstDummyMessageData.nMessageCode =   (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY;
      SetRand(lstDummyMessageData.cUniqueMessageIdentifier,30);
-     tagTimeData lstTimeData(time(NULL)+3,lstDummyMessageData, INT_MAX) ;
-     g_cEventResender.push_back(lstTimeData);
+	  //tagTimeData lstTimeData(time(NULL)+3,lstDummyMessageData, INT_MAX) ;
+     //g_cEventResender.push_back(lstTimeData);
+      tagTimeData lstTimeData(time(NULL)+3,lstDummyMessageData, INT_MAX) ;
+      g_cEventResender.insert(pair<time_t,tagTimeData>(lstTimeData.m_nTime, lstTimeData)); //to Uncomment
 //	 lstTimeData.stData = lstDummyMessageData;
 	 
 //	 g_cEventResender.push_back()
@@ -768,28 +1048,33 @@ int main(int argc,char* argv[])
       lstData.nFrOrToServerFlg = 100001;
       lstData.nSessionId = g_nSessionId;
       lstData.nGlobalIdentifier = g_nGlobalIdentifier;
-      cout << "lstData.nGlobalIdentifier is set as " << lstData.nGlobalIdentifier; 
+      TESTLOG ("lstData.nGlobalIdentifier is set as %d \n", lstData.nGlobalIdentifier); 
       lnRetVal = PreSender(lstData);
       if(0 != lnRetVal)
       {
-         cout << "error occured at Presender" << endl;
+         TESTLOG( "error occured at Presender \n");
          exit(1);  
       }
       
       //Taking Lock so that the other thread doesnt corrupt g_cSenderDataStore
       pthread_mutex_lock(&g_SenderMutex); 
-      
+	  #ifdef LOGGING
+      TESTLOG("Taking Sender lock %d" , __LINE__ );
+	  #endif
       //Sending data to the Sender thread
       g_cSenderDataStore.push_back(lstData); 
       
       // unlocking the mutex
       pthread_mutex_unlock(&g_SenderMutex);
-      cout << lstData.cUniqueMessageIdentifier << endl;
+	  #ifdef LOGGING
+	  TESTLOG("Releasing Sender lock %d" ,__LINE__ );
+	  #endif
+      TESTLOG("%s \n", lstData.cUniqueMessageIdentifier);
       memset (lstData.cBuffer, 0,sizeof(lstData.cBuffer));
       memset (lstData.cUniqueMessageIdentifier, 0, sizeof(lstData.cUniqueMessageIdentifier));
      
       //shared memory usage
-      pthread_mutex_lock(&(lpstSharedmemData->m_cSharedMemMutex));
+     /* pthread_mutex_lock(&(lpstSharedmemData->m_cSharedMemMutex));
       if(lpstSharedmemData->nState == STATE_INITIALIZE)
       {
          cout << "shared mem data " << lpstSharedmemData->cBuffer << endl;
@@ -797,13 +1082,13 @@ int main(int argc,char* argv[])
          lpstSharedmemData->nState = STATE_WRITING_DONE;
          cout << "shared mem data " << lpstSharedmemData->cBuffer << endl;
       }
-      pthread_mutex_unlock(&(lpstSharedmemData->m_cSharedMemMutex));
+      pthread_mutex_unlock(&(lpstSharedmemData->m_cSharedMemMutex));*/
       //shared memory usage
 
       lnRetVal = PostSender(lstData);
       if(0 != lnRetVal)
       {
-         cout << "error occured at PostSender" << endl;
+          TESTLOG("error occured at PostSender \n");
          exit(1);  
       }
 
@@ -826,40 +1111,40 @@ string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand)
   switch(nCommand)
   {
       case (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST:
-	  {
-	      lcKey += lcKey + REQ_SUF_IDN;
-	  }
-	  break;
+      {
+          lcKey += lcKey + REQ_SUF_IDN;
+      }
+      break;
 	  
       case (short)CCOMMAND_TYPE::CCOMMAND_TYPE_RESPONSE:
-	  {
-	      lcKey += lcKey + RES_SUF_IDN;
-	  }
-	  break;
+      {
+             lcKey += lcKey + RES_SUF_IDN;
+      }
+      break;
 	  
-	  case (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY:
-	  {
-	      lcKey += lcKey + DEQ_SUF_IDN;
-	  }
-	  break;
+      case (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY:
+      {
+          lcKey += lcKey + DEQ_SUF_IDN;
+      }
+      break;
+
+      case (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_RES:
+      {
+          lcKey += lcKey + DES_SUF_IDN;
+      }
+      break;
 	  
-	  case (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_RES:
-	  {
-	      lcKey += lcKey + DES_SUF_IDN;
-	  }
-	  break;
-	  
-     case (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_CONF:
-     { 
-	      lcKey += lcKey + DEC_SUF_IDN;
-     }
+      case (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_CONF:
+      { 
+               lcKey += lcKey + DEC_SUF_IDN;
+      }
 
 
-	  default:
-	  {
-	  
-	  }
-	  break;
+      default:
+      {
+
+      }
+      break;
   
   }
   return lcKey;

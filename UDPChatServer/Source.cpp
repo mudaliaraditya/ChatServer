@@ -15,12 +15,25 @@
     (g_cfstream <<  lcBuffer << " | " << lcBuffer111 <<  " | "<< __func__ <<"() | " <<__FILE__<< ":"<<__LINE__ <<endl);           \
   }                                             \
 }
+#define TESTLOG(cToBeLogged, ...)             \
+{                                                 \
+  {                                                \
+   \
+   time_t lnTime = time(NULL);\
+   struct tm*  psttm =  localtime(&lnTime);\
+   char lcBuffer[200] = {0};                       \
+   snprintf(lcBuffer,200,"%d:%d:%d %d-%d-%d",psttm->tm_hour,psttm->tm_min,psttm->tm_sec,psttm->tm_mday,psttm->tm_mon,psttm->tm_year );\
+    char lcBuffer111[500] = {0};                       \
+    snprintf(lcBuffer111,500,cToBeLogged, ##__VA_ARGS__);         \
+    (g_cDatafstream <<  lcBuffer << " | " << lcBuffer111 <<  " | "<< __func__ <<"() | " <<__FILE__<< ":"<<__LINE__ <<endl);           \
+  }                                             \
+}
 class CSession;
 typedef list<CSession*>                     CSessionMangerStore;
 typedef list<CSession*>::iterator           CSessionManagerStoreIterator;
-typedef vector<string>                      CSessionStore;
-typedef vector<string>::iterator            CSessionStoreIterator;
-list<pair<string,tagData>> cDataStore;
+typedef vector<tagSessionIdentifierData>                      CSessionStore;
+typedef vector<tagSessionIdentifierData>::iterator            CSessionStoreIterator;
+//list<pair<string,tagData>> cDataStore;
 int g_nClientIdentifier = 0;
 CClientIdDataStore g_cClientIDStore;
 int g_nMainSockFd = 0;
@@ -30,7 +43,7 @@ class CSession
 {
    private:
 
-   vector<string> cStore;
+   vector<tagSessionIdentifierData> cStore;
    int nSize;
    int nNoOfElements;
    bool m_bRestricted; //if truw then its a normal chat between two people
@@ -43,7 +56,7 @@ class CSession
        //cStore.
       cStore.reserve(nA);
       nSize = nA;
-      nNoOfElements = cStore.size();
+      nNoOfElements = 0;
       m_bRestricted = bRestricted;
    }
    int SetNewRandomSessionId()
@@ -53,18 +66,20 @@ class CSession
    }
    
 
-   int AddNextName(string cString)
-   { 
+   int AddNextName(tagSessionIdentifierData stSessionIdentifierData)
+   {
+      TESTLOG(" stSessionIdentifierData.nGlobalIdentifier ","");
+      TESTLOG("%s", stSessionIdentifierData.sName.c_str());
       if((nSize >  cStore.size()) && (m_bRestricted == true))
       {
-         cStore.push_back(cString);
-         nNoOfElements = cStore.size();
+         cStore.push_back(stSessionIdentifierData);
+         nNoOfElements += 1;
          return 0;
       }
       else
       {
-         cStore.push_back(cString);
-         nNoOfElements = cStore.size();
+         cStore.push_back(stSessionIdentifierData);
+         nNoOfElements += 1;
          return 0;
       }
       return -1;
@@ -74,7 +89,7 @@ class CSession
    {
       for(CSessionStoreIterator lcIter =   cStore.begin();lcIter != cStore.end();lcIter++)
       {
-         if(*lcIter == cName)
+         if((*lcIter).sName == cName)
          {
             return 0;
          }
@@ -88,7 +103,7 @@ class CSession
       {
          for(CSessionStoreIterator lcIter =   cStore.begin();lcIter != cStore.end();lcIter++)
          {
-            if(*lcIter == cName)
+            if((*lcIter).sName == cName)
             {
                return 0;
             }
@@ -102,13 +117,30 @@ class CSession
       {
          for(CSessionStoreIterator lcIter =   cStore.begin();lcIter != cStore.end();lcIter++)
          {
-            if(*lcIter == cName)
+            if((*lcIter).sName == cName)
             {
                return m_nSessionId;
             }
          }
       }
+      return -1;
    }
+   
+   int GetGlobalClientIdentifierBySessionIdAndName(int nSessionId,string cName)
+   {
+      //if(nNoOfElements < nSize)
+      {
+         for(CSessionStoreIterator lcIter =   cStore.begin();lcIter != cStore.end();lcIter++)
+         {
+            if(((*lcIter).sName == cName) && m_nSessionId == nSessionId) 
+            {
+               return (*lcIter).nGlobalIdentifier;
+            }
+         }
+      }
+      return -1;
+   }
+   
    
    int GetSessionId()
    {
@@ -124,6 +156,7 @@ class CSession
 class CSessionManager
 {
    private:
+   pthread_mutex_t m_cMutex;
    list<CSession*> m_cSessionStore;
    int IsSessionUnique(int nSessionId)
    {
@@ -132,57 +165,63 @@ class CSessionManager
       {
          if((*lcIter)->GetSessionId() == nSessionId)
          {
-            //lnRetVal = (*lcIter)->AddNextName(cSecondName);
-            //if(lnRetVal == 0)
-            //{
-            //   break;
-            //}
             return -1;
          }
       }
       return 0;
    } 
    public:
-      
-   int CreateASession(string cFirstName,int nLength,bool bRestricted)
+   int TakeLock()
+   {
+      return pthread_mutex_lock(&m_cMutex);
+   }  
+   
+   
+   int ReleaseLock()
+   {
+      return pthread_mutex_unlock(&m_cMutex);
+   }
+   
+   int CreateASession(tagSessionIdentifierData stData,int nLength,bool bRestricted)
    {
        CSession* lcSession = new CSession(nLength,bRestricted);
        //lcSession->Initialize();
        int lnSessionNo = 0;
        do
        {
-          lnSessionNo = lcSession->SetNewRandomSessionId();
+         lnSessionNo = lcSession->SetNewRandomSessionId();
        }while(IsSessionUnique(lnSessionNo) != 0);
-       lcSession->AddNextName(cFirstName);
+       lcSession->AddNextName(stData);
+       lcSession->SetSessionId(lnSessionNo);
        m_cSessionStore.push_back(lcSession);
        return 0;
    }
    
-   int AddSecondUserToSession(string cFirstName,string cSecondName)
-   {
-      int lnRetVal = 0;
-      for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();lcIter++)
-      {
-         if((*lcIter)->UserExistsinSession(cFirstName) == 0)
-         {
-            lnRetVal = (*lcIter)->AddNextName(cSecondName);
-            if(lnRetVal == 0)
-            {
-               break;
-            }
-         }
-      }
-      return lnRetVal;
-   }
+//   int AddSecondUserToSession(string cFirstName,string cSecondName)
+//   {
+//      int lnRetVal = 0;
+//      for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();lcIter++)
+//      {
+//         if((*lcIter)->UserExistsinSession(cFirstName) == 0)
+//         {
+//            lnRetVal = (*lcIter)->AddNextName(cSecondName);
+//            if(lnRetVal == 0)
+//            {
+//               break;
+//            }
+//         }
+//      }
+//      return lnRetVal;
+//   }
    
-   int AddMoreUserToSession(int nSessionId,string cSecondName)
+   int AddMoreUserToSession(int nSessionId,tagSessionIdentifierData stData)
    {
       int lnRetVal = 0;
       for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();lcIter++)
       {
          if((*lcIter)->GetSessionId() == nSessionId)
          {
-            lnRetVal = (*lcIter)->AddNextName(cSecondName);
+            lnRetVal = (*lcIter)->AddNextName(stData);
             if(lnRetVal == 0)
             {
                break;
@@ -203,6 +242,7 @@ class CSessionManager
             return 0;
          }
       }
+      return -1;
    }
    
    int DoesFreeSessionExistForUser(string cName)
@@ -215,6 +255,7 @@ class CSessionManager
             return 0;
          }
       }
+      return -1;
    }
    
    
@@ -222,12 +263,42 @@ class CSessionManager
    {
       for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();lcIter++)
       {
-         if((*lcIter)->FreeUserExistsinSession(cName) == 0)
+         int lnSessionId = (*lcIter)->GetFreeSessionIdForUser(cName);
+         if( lnSessionId != -1)
          {
             //cout << "yes the user exists" << endl;
-            return 0;
+            return lnSessionId;
          }
       }
+      return -1;
+   }
+   
+   CSession* GetSessionBySessionId(int nSessionId)
+   {
+      for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();lcIter++)
+      {
+         if((*lcIter)->GetSessionId() == nSessionId)
+         {
+            //cout << "yes the user exists" << endl;
+            return (*lcIter);
+         }
+      }
+      return NULL;
+   }
+   
+   
+   int GetGlobalClientIdentifierBySessionIdAndName(int nSessionId,string cName)
+   {
+      for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();lcIter++)
+      {
+         if((*lcIter)->GetSessionId() == nSessionId)
+         {
+            //cout << "yes the user exists" << endl;
+            //return (*lcIter);
+            return (*lcIter)->GetGlobalClientIdentifierBySessionIdAndName(nSessionId,cName);
+         }
+      }
+      return -1;
    }
 
 };
@@ -282,6 +353,45 @@ string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand)
   
   }
   return lcKey;
+}
+
+
+
+tagBufferData ConvertToNetworkBuffer(tagData& stData)
+{
+    tagBufferData lstBufferData = {0};
+    lstBufferData.nCommand = stData.nCommand;
+    lstBufferData.nGlobalIdentifier = stData.nGlobalIdentifier;
+    strncpy(lstBufferData.cIdentifier ,stData.cIdentifier ,20);
+    lstBufferData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
+    lstBufferData.nMessageCode    = stData.nMessageCode;
+    strncpy(lstBufferData.cBuffer, stData.cBuffer, MAXLINE);
+    strncpy(lstBufferData.cTarget, stData.cTarget, 20 );
+    strncpy(lstBufferData.cUniqueMessageIdentifier,stData.cUniqueMessageIdentifier ,30);
+    lstBufferData.nSeqNo = stData.nSeqNo;
+    lstBufferData.bFinalResponse = stData.bFinalResponse;
+    lstBufferData.nLatestClntSeqNo = stData.nLatestClntSeqNo;
+    lstBufferData.nSessionId = stData.nSessionId;
+    return lstBufferData;
+}
+
+
+tagData ConvertToDataStruct(tagBufferData& stData)
+{
+    tagData lstBufferData = {0};
+    lstBufferData.nCommand = stData.nCommand;
+    lstBufferData.nGlobalIdentifier = stData.nGlobalIdentifier;
+    strncpy(lstBufferData.cIdentifier ,stData.cIdentifier ,20);
+    lstBufferData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
+    lstBufferData.nMessageCode    = stData.nMessageCode;
+    strncpy(lstBufferData.cBuffer, stData.cBuffer, MAXLINE);
+    strncpy(lstBufferData.cTarget, stData.cTarget, 20 );
+    strncpy(lstBufferData.cUniqueMessageIdentifier,stData.cUniqueMessageIdentifier ,30);
+    lstBufferData.nSeqNo = stData.nSeqNo;
+    lstBufferData.bFinalResponse = stData.bFinalResponse;
+    lstBufferData.nLatestClntSeqNo = stData.nLatestClntSeqNo;
+    lstBufferData.nSessionId = stData.nSessionId;
+    return lstBufferData;
 }
 
 
@@ -414,11 +524,16 @@ int ExecuteFunction(tagData& stData)
    {
       case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER) :
       {
-          pthread_mutex_lock(&g_cGlobalIdentifierMutex);
+         pthread_mutex_lock(&g_cGlobalIdentifierMutex);
          stData.nGlobalIdentifier = g_nClientIdentifier++;
-          pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
+         pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
          lpstData = new tagData(stData);
          //g_cClientIDStore.insert()
+         if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
+         {
+              LOG_LOGGER("unable to take Lock on %s","g_cDataGlobalPortStoreMutex");
+              exit(1);
+         }
          bool lbVal1 = (g_cClientIDStore.insert(pair<int , tagData*>(stData.nGlobalIdentifier, lpstData))).second;
          if (lbVal1 == false)
          {
@@ -427,6 +542,11 @@ int ExecuteFunction(tagData& stData)
             printf("duplicate identifier insert to identifier(%s) store failed ", stData.cIdentifier);
             printf("%s %d", strerror(errno), __LINE__);
             exit(EXIT_FAILURE);
+         }
+         if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+         { 
+              LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+              exit(1);
          }
         // bool lbVal = (g_cPortIdentifier.insert(pair<string, tagData*>(stData.cIdentifier, lpstData))).second;
         // if (lbVal == false)
@@ -443,6 +563,11 @@ int ExecuteFunction(tagData& stData)
 
       case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET) :
       {
+         if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
+         {
+              LOG_LOGGER("unable to take Lock on %s","g_cDataGlobalPortStoreMutex");
+              exit(1);
+         }
          map<int , tagData*>::iterator lcIteratoor = g_cClientIDStore.find(stData.nGlobalIdentifier);
          if (lcIteratoor == g_cClientIDStore.end())
          {
@@ -460,35 +585,47 @@ int ExecuteFunction(tagData& stData)
          //}
          if(lcIteratoor->second == nullptr)
          {
-            cout << "invalid ptr" << endl;
+            LOG_LOGGER("invalid ptr");
             exit(EXIT_FAILURE);
          }
          tagData& lcData = *(lcIteratoor->second);
          strncpy(lcData.cTarget, stData.cTarget, 20);
-         
+         tagSessionIdentifierData lstSessionIdentifier;
+         lstSessionIdentifier.sName = stData.cIdentifier;
+         lstSessionIdentifier.nGlobalIdentifier = stData.nGlobalIdentifier;
+         g_cSessionManager.TakeLock();
          int lnSessionExists = g_cSessionManager.DoesFreeSessionExistForUser(stData.cTarget);
          if(lnSessionExists != 0)
          {
-            lnRetVal = g_cSessionManager.CreateASession(stData.cIdentifier,2,true);
+            lnRetVal = g_cSessionManager.CreateASession(lstSessionIdentifier,2,true);
             if(lnRetVal != 0)
             {
                LOG_LOGGER("Unable to create a session for %s",stData.cIdentifier);
+               g_cSessionManager.ReleaseLock();
                return -1;
             }
             int lnSessionId =   g_cSessionManager.GetFreeUserSessionIdForUser(stData.cIdentifier);
-           // stData.nSessionId = lnSessionId;
+            stData.nSessionId = lnSessionId;
+            lcData.nSessionId = lnSessionId;
          }
          else
          {
             int lnSessionId =   g_cSessionManager.GetFreeUserSessionIdForUser(stData.cTarget);
-            lnRetVal = g_cSessionManager.AddMoreUserToSession(lnSessionId,stData.cIdentifier);
+            lnRetVal = g_cSessionManager.AddMoreUserToSession(lnSessionId,lstSessionIdentifier);
             if(lnRetVal != 0)
             {
                LOG_LOGGER("Unable to add user %s to session %d", stData.cIdentifier, lnSessionId);
                return -1;
             }
-            //stData.nSessionId = lnSessionId;
+            stData.nSessionId = lnSessionId;
+            lcData.nSessionId = lnSessionId;
          }
+         if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+         { 
+              LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+              exit(1);
+         }
+         g_cSessionManager.ReleaseLock();
       }
       break;
 
@@ -498,7 +635,11 @@ int ExecuteFunction(tagData& stData)
 
          tagData lstData = stData;
          lstData.nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE;
-         
+         if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
+         { 
+              LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+              exit(1);
+         }
          map<int , tagData*>::iterator lcIter = g_cClientIDStore.find(stData.nGlobalIdentifier);
          if (lcIter== g_cClientIDStore.end())
          {
@@ -513,24 +654,37 @@ int ExecuteFunction(tagData& stData)
          //   printf("%s %d", strerror(errno), __LINE__);
            // exit(EXIT_FAILURE);
          //}
-
+         
+         int lnGlobalTargetIdentifier = g_cSessionManager.GetGlobalClientIdentifierBySessionIdAndName(stData.nSessionId, stData.cTarget);
+         if(lnGlobalTargetIdentifier < 0)
+         {
+            LOG_LOGGER("ERROR");
+            exit(1);
+         }
+         
          map<int , tagData*>::iterator lcIter1;// = //g_cClientIDStore.find(lcIter->second->cTarget);
          for(map<int,tagData*>::iterator lcIterClientIdentityStore = g_cClientIDStore.begin(); lcIterClientIdentityStore != g_cClientIDStore.end() ; lcIterClientIdentityStore++)
          {
-              if(strcmp(lcIterClientIdentityStore->second->cIdentifier, lcIter->second->cTarget) == 0)
+              if(lcIterClientIdentityStore->second->nGlobalIdentifier == lnGlobalTargetIdentifier)
               {
                   lcIter1 = lcIterClientIdentityStore;
+                  break;
               }
          }
          if (lcIter1 == g_cClientIDStore.end())
          {
-            cout << "Target not found" << lcIter->second->cTarget <<  "By Identifier " << stData.cIdentifier <<endl;
+            LOG_LOGGER("%s %s %s %s","Target not found" ,lcIter->second->cTarget ,  "By Identifier " , stData.cIdentifier );
             printf("%s %d", strerror(errno), __LINE__);
             exit(EXIT_FAILURE);
          }
          
          tagData* lpNewData = new tagData();
          memcpy(lpNewData, lcIter1->second, sizeof(tagData));
+         if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+         {
+              LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+              exit(1);
+         }
          lpNewData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
          strncpy(lpNewData->cIdentifier, lstData.cIdentifier, 20);
          lpNewData->nMessageCode = lstData.nMessageCode;
@@ -551,19 +705,27 @@ int ExecuteFunction(tagData& stData)
 
          tagData lstData = stData;
          lstData.nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_SERV_TO_CLI;
-		 //lstData.nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
+	    	//lstData.nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
          //memcpy(&lcBuffer, (char*)&lstData, sizeof(tagData));
          //map<string, tagData*>::iterator lcIter = g_cPortIdentifier.find(stData.cIdentifier);
+         if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
+         {
+            
+         }
          map<int, tagData*>::iterator lcIter = g_cClientIDStore.find(stData.nGlobalIdentifier);
          if (lcIter == g_cClientIDStore.end())
          {
-            cout << stData.cIdentifier << "not found";
+            LOG_LOGGER("%s %s", stData.cIdentifier , "not found");
             printf("%s %d", strerror(errno), __LINE__);
            // exit(EXIT_FAILURE);
          }
-         cout << "Delivery Handling " << endl;
+         TESTLOG("Delivery Handling ","");
          tagData* lpNewData = new tagData();
          memcpy(lpNewData, lcIter->second, sizeof(tagData));
+         if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+         {
+            
+         }
          lpNewData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_CONF;
          lpNewData->bFinalResponse = true;
          strncpy(lpNewData->cIdentifier, lstData.cIdentifier, 20);
@@ -579,6 +741,12 @@ int ExecuteFunction(tagData& stData)
          
          pthread_mutex_unlock(&g_cResponseMutex);
      }
+     break;
+     default :
+     {
+         TESTLOG("invalid or dummy message code","" );
+     }
+	 break;
     
    }
 
@@ -646,11 +814,14 @@ int GetResponseForFunction(tagData& stData)
 
 
 #ifndef WIN32
-void* CheckResponse(void*)
+void* EventThread(void*)
 {
   while(true == g_bProgramShouldWork)
   {
      pthread_mutex_lock(&g_ReSenderMutex);
+      #ifdef LOGGING
+      //cout << "Taking Resender Mutex" << __LINE__ <<endl;
+      #endif
      if(!g_cEventResender.empty())
      {
         for(list<tagTimeData>::iterator lcIter =  g_cEventResender.begin();lcIter !=  g_cEventResender.end();)
@@ -665,7 +836,7 @@ void* CheckResponse(void*)
               else
               {
                  pthread_mutex_lock(&g_cResponseMutex);
-                 cout << "resending data" << endl;
+                 TESTLOG( "resending data","");
                  g_cResponseList.push_front(new tagData(lcIter->stData));
                  pthread_mutex_unlock(&g_cResponseMutex);
                  
@@ -681,11 +852,14 @@ void* CheckResponse(void*)
         }
      }
      pthread_mutex_unlock(&g_ReSenderMutex);
+      #ifdef LOGGING
+     // cout << "Releasing Resender Mutex" << __LINE__ <<endl;
+      #endif
      sleep(1);
    }
 }
 
-int MakeReSender(const tagData lstRecvData )
+int DeleteMsgFromResenderStoreByUniqueIdentifier(const tagData lstRecvData )
 {
    int lnRetval = 0;
    string lcKey = "";
@@ -696,19 +870,32 @@ int MakeReSender(const tagData lstRecvData )
 	   perror("mutex lock error");
 	   exit(1);
    }
-   
+      #ifdef LOGGING
+      TESTLOG("%s %d", "Taking Resender Mutex" ,__LINE__ );
+      #endif
+      TESTLOG("%s %d %s %d %s %s %s %d", "the seq no is ", lstRecvData.nSeqNo , " the LatestRecieved Seq no is " , lstRecvData.nLatestClntSeqNo , " from user id and name ", lstRecvData.cIdentifier ," " , lstRecvData.nGlobalIdentifier);
    for(list<tagTimeData>::iterator lcIter =  g_cEventResender.begin();lcIter != g_cEventResender.end();)
    {
       tagTimeData& lstData = *lcIter;
-      if(strcmp(lstData.stData.cUniqueMessageIdentifier,lstRecvData.cUniqueMessageIdentifier) == 0)
+      TESTLOG("%s", lstData.stData.cUniqueMessageIdentifier );
+      
+      if((lstData.stData.nSeqNo < lstRecvData.nLatestClntSeqNo) && (lstData.stData.nSessionId == lstRecvData.nSessionId) && (strcmp(lstData.stData.cIdentifier,lstRecvData.cIdentifier) == 0))
       {
-         cout << "response recieved now erasing" << endl;
+         TESTLOG( "deleting all lower seqno for user id %d" , lstRecvData.nGlobalIdentifier );
          lcIter = g_cEventResender.erase( lcIter);
+         //continue;
+      }
+      else if((strcmp(lstData.stData.cUniqueMessageIdentifier,lstRecvData.cUniqueMessageIdentifier) == 0) && (lstData.stData.nSessionId == lstRecvData.nSessionId))
+      {
+         TESTLOG( "response recieved now erasing","" );
+         lcIter = g_cEventResender.erase( lcIter);
+         //continue;
       }
       else
       {
          lcIter++;
-      }
+      } 
+      
    }
    
    lnRetval = pthread_mutex_unlock(&g_ReSenderMutex);
@@ -718,11 +905,14 @@ int MakeReSender(const tagData lstRecvData )
 	   exit(1);
    
    }
+      #ifdef LOGGING
+      cout << "Releasing Resender Mutex" << __LINE__ <<endl;
+      #endif
    
    return 0;
 }
 
-bool IsMessageUnique(tagData stData)
+bool IsMessageUniqueSoAddToResenderStore(tagData stData)
 {
    pthread_mutex_lock(&g_ReSenderMutex);
    bool lbUniqueMessageSend = true;
@@ -730,14 +920,14 @@ bool IsMessageUnique(tagData stData)
    {
        if(strcmp(lcTemp.stData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier) == 0)
        {
-          cout << "Resending Message as no response received yet" << endl;
+          TESTLOG("Resending Message as no response received yet","" );
           lbUniqueMessageSend = false;
        }
    }
 
    if(lbUniqueMessageSend == true)
    {
-      cout << "this is a new unique message" << endl;
+      TESTLOG("this is a new unique message","");
       tagTimeData lstTimeData((time(NULL) + 10), stData);
       g_cEventResender.push_back(lstTimeData);
    }
@@ -758,7 +948,7 @@ void* EventHandling(void* pEventHandlingArg)
       if(!(g_cIdentifierStore.empty()))
       {
           sleep(10);
-          g_cIdentifierStore.pop_front();
+          //g_cIdentifierStore.pop_front();
           pthread_mutex_unlock(&g_cIdentifierMutex);
       }
       else
@@ -768,7 +958,7 @@ void* EventHandling(void* pEventHandlingArg)
    }
 }
 
-int CheckIfNotDummyMessageCode(long long nMessageCode)
+int RejectDummyMsgCode(long long nMessageCode)
 {
    if(nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY)
    {
@@ -793,8 +983,11 @@ void* ProcessThread(void* pArg)
             perror("unable to take lock");
             exit(EXIT_FAILURE);
       }
+      #ifdef LOGGING
+      TESTLOG("%s %d","Taking Process Mutex in Process Thread" , __LINE__);
+      #endif
 #ifdef LOGGING
-         printf("In funtion \nthread id = %d\n", pthread_self());
+         TESTLOG("In funtion \nthread id = %d\n", pthread_self());
 #endif
 
       
@@ -802,10 +995,10 @@ void* ProcessThread(void* pArg)
       {
 
 #ifdef LOGGING
-         cout << "process thread process mutex acquired" << endl;
+         TESTLOG("%s", "process thread process mutex acquired" );
 #endif
          lstData = g_cProcessList.front();
-         cout << "Process fired" << endl;
+         TESTLOG( "Process fired","" );
          g_cProcessList.pop_front();         
       }
       else
@@ -818,9 +1011,12 @@ void* ProcessThread(void* pArg)
             perror("unable to unlock");      
             exit(EXIT_FAILURE);
          }
+         #ifdef LOGGING
+         TESTLOG("%s %d", "Releasing Process Mutex" , __LINE__ );
+         #endif
          continue;
       }
-      cout << "the thread no is"<< pthread_self() << lstData->cBuffer << endl;
+      TESTLOG("%s %d %s ","the thread no is",pthread_self(), lstData->cBuffer );
       
       lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
       if (lnReturnVal != 0)
@@ -829,29 +1025,33 @@ void* ProcessThread(void* pArg)
          perror("unable to unlock");
          exit(EXIT_FAILURE);
       }
+      #ifdef LOGGING
+      TESTLOG( "Releasing Process Mutex %d", __LINE__ );
+      #endif
 #ifdef LOGGING           
-         cout << "process thread process mutex acquired" << endl;
+      TESTLOG("%s", "process thread process mutex acquired");
 #endif
       
       //sleep(3);
       int lnVal = ExecuteFunction(*lstData);
       if (lnVal != 0)
       {
-         printf("%s, %d", strerror(errno), __LINE__);
+         LOG_LOGGER("%s, %d", strerror(errno), __LINE__);
          perror("Failure in Execute Function");
          exit(EXIT_FAILURE);
       }
-      lnVal =  CheckIfNotDummyMessageCode(lstData->nMessageCode);
+      lnVal =  RejectDummyMsgCode(lstData->nMessageCode);
       if(lnVal != 0)
       {
+         TESTLOG( "dummy message","" );
            delete lstData;
            continue;
       }
-
+      TESTLOG( "not a dummy message","");
       lnReturnVal = GetResponseForFunction(*lstData);
       if (0 > lnReturnVal)
       {
-            cout << "wrong response code" << lstData->nMessageCode << endl;
+            TESTLOG("%s %n", "wrong response code" , lstData->nMessageCode );
             printf("%s", strerror(errno));
             exit(EXIT_FAILURE);
       }
@@ -859,12 +1059,12 @@ void* ProcessThread(void* pArg)
       lnReturnVal = pthread_mutex_lock(&g_cResponseMutex);
       if (lnReturnVal != 0)
       {
-         printf("%s, %d", strerror(errno), __LINE__);
+         LOG_LOGGER("%s, %d", strerror(errno), __LINE__);
          perror("unable to take lock");
          exit(EXIT_FAILURE);
       }
 #ifdef LOGGING
-         cout << "processthread mutex lock acquired" << endl;
+         TESTLOG ("%s","processthread mutex lock acquired");
 #endif
       g_cResponseList.push_back(lstData);
       
@@ -876,7 +1076,7 @@ void* ProcessThread(void* pArg)
          exit(EXIT_FAILURE);
       }
 #ifdef LOGGING
-         cout << "processthread mutex lock released" << endl;
+         TESTLOG("%s","processthread mutex lock released");
 #endif
    }
    //}
@@ -903,7 +1103,7 @@ void* SenderThread(void* pArg)
       lpstData = g_cResponseList.front();
       if(nullptr == lpstData)
       {
-         cout << "error nullptr" << endl;
+         LOG_LOGGER("error nullptr");
          printf("%s, %d", strerror(errno), __LINE__);
          exit(EXIT_FAILURE);
       }
@@ -918,15 +1118,15 @@ void* SenderThread(void* pArg)
       }
       if(g_nFlagDupliResend == 0)
       {
-         bool lbUniqueMesg = IsMessageUnique(*lpstData);
+         bool lbUniqueMesg = IsMessageUniqueSoAddToResenderStore(*lpstData);
       }
-      int lnDataStructSize = sizeof(tagData);
+      int lnDataStructSize = sizeof(tagBufferData);
       char lcBuffer[lnDataStructSize] = { 0 };
-   
-      memcpy(&lcBuffer, (char*)lpstData, lnDataStructSize);
+      tagBufferData lstBufferData = ConvertToNetworkBuffer(*lpstData) ;
+      memcpy(&lcBuffer, (char*)&lstBufferData, lnDataStructSize);
       //sendto(lcIter1->second->stNetWork.fd, (const char *)&lcBuffer, sizeof(tagData), 0, (const struct sockaddr *) &(lcIter1->second->stNetWork.addr), lcIter1->second->stNetWork.restrict);
       //cout << "network arams";
-      lnReturnVal = sendto(lpstData->stNetWork.fd, (const char *)&lcBuffer, sizeof(tagData), MSG_CONFIRM, (const struct sockaddr *) &(lpstData->stNetWork.addr), lpstData->stNetWork.restrict);
+      lnReturnVal = sendto(lpstData->stNetWork.fd, (const char *)&lcBuffer, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(lpstData->stNetWork.addr), lpstData->stNetWork.restrict);
       if (0 > lnReturnVal)
       {
          printf("%s, %d", strerror(errno), __LINE__);
@@ -961,7 +1161,13 @@ void* SenderThread(void* pArg)
 #ifndef WIN32
 int main()
 {
-   g_nFlagDupliResend = 0;
+  cout << "size of int " << sizeof(int) << endl;  
+  cout << "size of long " << sizeof(long) << endl;  
+  cout << "size of short " << sizeof(short) << endl;  
+  cout << "size of bool " << sizeof(bool) << endl;  
+  cout << "size of char " << sizeof(char) << endl;  
+  cout << sizeof(tagBufferData) << endl;
+  g_nFlagDupliResend = 0;
    
    //SIgnal Handling
    signal(SIGINT,HandleSignal);
@@ -972,22 +1178,40 @@ int main()
    
    //LOG File Handling START
    time_t lnTime;
-   lnTime = time(NULL);
-   struct tm*  psttm =  gmtime(&lnTime);
+   struct tm*  psttm = NULL; 
    char lcBuffera[200] = {0};
+   lnTime = time(NULL);
+   psttm  = gmtime(&lnTime);
    //snprintf(lcBuffera,200,"%d:%d:%d%d-%d-%d",psttm->tm_hour,psttm->tm_min,psttm->tm_sec,psttm->tm_mday,psttm->tm_mon,psttm->tm_year );
-   snprintf(lcBuffera,200,"%s-%d-%d-%d_%d%d%d.%s","log",psttm->tm_mday,psttm->tm_mon +1  ,psttm->tm_year + 1900,psttm->tm_hour,psttm->tm_min,psttm->tm_sec,"log");
-   cout << " log file name "<< lcBuffera << endl;
+   snprintf(lcBuffera,200,"%s/%s-%d-%d-%d_%d%d%d.%s","Logs","log",psttm->tm_mday,psttm->tm_mon +1  ,psttm->tm_year + 1900,psttm->tm_hour,psttm->tm_min,psttm->tm_sec,"log");
+   TESTLOG( "%s %s"," log file name ", lcBuffera );
    g_cfstream.open(lcBuffera,ios::in|ios::out | ios::app);
    if(g_cfstream.fail())
    {
-      cout << "g_cfstream failed truncating or creating new file" << endl; 
-      LOG_LOGGER( "g_cfstream failed truncating or creating new file");
+      LOG_LOGGER("%s","g_cfstream failed truncating or creating new file"); 
+      LOG_LOGGER( "%s","g_cfstream failed truncating or creating new file");
       g_cfstream.open(lcBuffera,ios::in|ios::out|ios::trunc);
       g_cfstream.clear();
    }
    g_cfstream.seekp(ios::end); //output
    g_cfstream.seekg(ios::end);
+
+   memset(lcBuffera,0,sizeof(lcBuffera));
+   lnTime = time(NULL);
+   psttm  = gmtime(&lnTime);
+   //snprintf(lcBuffera,200,"%d:%d:%d%d-%d-%d",psttm->tm_hour,psttm->tm_min,psttm->tm_sec,psttm->tm_mday,psttm->tm_mon,psttm->tm_year );
+   snprintf(lcBuffera,200,"%s/%s-%d-%d-%d_%d%d%d.%s","Logs","data",psttm->tm_mday,psttm->tm_mon +1  ,psttm->tm_year + 1900,psttm->tm_hour,psttm->tm_min,psttm->tm_sec,"log");
+   g_cDatafstream.open(lcBuffera,ios::in|ios::out | ios::app);
+   if(g_cDatafstream.fail())
+   {
+      LOG_LOGGER("%s","g_cDatafstream failed truncating or creating new file"); 
+      LOG_LOGGER( "g_cDatafstream failed truncating or creating new file");
+      g_cDatafstream.open(lcBuffera,ios::in|ios::out|ios::trunc);
+      g_cDatafstream.clear();
+   }
+   g_cDatafstream.seekp(ios::end); //output
+   g_cDatafstream.seekg(ios::end);
+   
    //LOG File Handling END
    //LOG_LOGGER("%d",1);
    
@@ -1038,6 +1262,13 @@ int main()
       return 1;
    }
    
+   if (pthread_mutex_init(&g_cDataGlobalPortStoreMutex, NULL) != 0)
+   {
+      LOG_LOGGER("%s : mutex init has failed", strerror(errno));
+      return 1;
+   }
+   
+   
    lnRetVal = pthread_create(&lnSenderPThread, NULL, SenderThread, NULL);
    if(0 > lnRetVal)
    {
@@ -1049,7 +1280,7 @@ int main()
 
    if(  g_nFlagDupliResend == 0) 
    {
-      lnRetVal = pthread_create(&lnPThreadEventTime, NULL, CheckResponse,NULL);
+      lnRetVal = pthread_create(&lnPThreadEventTime, NULL, EventThread,NULL);
       if(0 > lnRetVal)
       {
          //printf("%s, %d", strerror(errno), __LINE__);
@@ -1089,8 +1320,12 @@ int main()
    while (true == g_bProgramShouldWork)
    {
       lpstData = new tagData();
+      tagBufferData lstBufferData;
       lnSockAddrlen = sizeof(cliaddr);
-      lnNoOfBytes = RecvUDPData(g_nMainSockFd, (char *)lpstData, sizeof(tagData), &cliaddr, lnSockAddrlen);
+      #ifdef LOGGING
+      cout << "Recieving.." << endl;
+      #endif
+      lnNoOfBytes = RecvUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &cliaddr, lnSockAddrlen);
       if (lnNoOfBytes <= 0)
       {
          cout << "" << endl;
@@ -1100,8 +1335,15 @@ int main()
          LOG_LOGGER("%s : RecvUDPData failed", strerror(errno));
          exit(EXIT_FAILURE);
       }
-      cout << lpstData->cUniqueMessageIdentifier << endl;
-      cout << " packet from " << lpstData->cIdentifier << endl;
+      *lpstData = ConvertToDataStruct(lstBufferData);
+      #ifdef LOGGING
+      TESTLOG("Recieved");
+      #endif
+      TESTLOG("%s %s"," message identifier : ",lpstData->cUniqueMessageIdentifier);
+      TESTLOG("%s %s" ," packet from " , lpstData->cIdentifier );
+      TESTLOG("%s %d"," packet from ", lpstData->nMessageCode );
+      TESTLOG("%s %d"," packet with current seqno ", lpstData->nSeqNo );
+      TESTLOG("%s %d"," packet last recieved seqno ", lpstData->nLatestClntSeqNo );
       if(g_nFlagDupliResend == 0)
       {
          lnRetVal = pthread_mutex_lock( &g_cIdentifierMutex);
@@ -1113,10 +1355,21 @@ int main()
             exit(EXIT_FAILURE);
          }
         
+         #ifdef LOGGING
+         cout << "Taking Identifier Mutex" << __LINE__ <<endl;
+         #endif
 //!        Rejecting duplicates any extra packets are discarded
-        if(lpstData->nLatestClntSeqNo >lpstData->nSeqNo)
-        {
+         #ifdef LOGGING
+		 //TO COmment
+		 
+         cout << "Recived duplicate packet Rejction started" << endl;
+         #endif
+         if(lpstData->nLatestClntSeqNo >lpstData->nSeqNo)
+         {
            pthread_mutex_lock(&g_ReSenderMutex);
+           #ifdef LOGGING
+           cout << "Taking Resender Mutex" << __LINE__ <<endl;
+           #endif
            if(!g_cEventResender.empty())
            {
                for(list<tagTimeData>::iterator lcIter =  g_cEventResender.begin();lcIter !=  g_cEventResender.end();)
@@ -1124,34 +1377,47 @@ int main()
                       tagTimeData& lstData = *lcIter;
                       if( lpstData->nLatestClntSeqNo > lstData.stData.nSeqNo)
                       {
-                           if(strcmp(lstData.stData.cIdentifier,lpstData->cIdentifier) == 0)
+                           if((strcmp(lstData.stData.cIdentifier,lpstData->cIdentifier) == 0) && ( lstData.stData.nGlobalIdentifier == lpstData->nGlobalIdentifier))
                            {
+                               
                                lcIter =g_cEventResender.erase(lcIter);
                            }
+                           lcIter++;
                       }
                       else
                       {
                            lcIter++;
                       }
                }
-          }
-		   pthread_mutex_unlock(&g_ReSenderMutex);
+          } 
+           pthread_mutex_unlock(&g_ReSenderMutex);
+           #ifdef LOGGING
+           cout << "Releasing Resender Mutex" << __LINE__ <<endl;
+           #endif
         }
          string lcKey = SuffixAppropirateUniqueIdentifier(lpstData->cUniqueMessageIdentifier, lpstData->nCommand);
          //if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
          {
-             for(auto& lstIdentifiers : g_cIdentifierStore)
-             {
+            // for(auto& lstIdentifiers : g_cIdentifierStore)
+             //{
                 // cout << lstIdentifiers.c_str() << " ";
-                if(0 == strcmp(lstIdentifiers.c_str(),lcKey.c_str()))
-                {
-                   LOG_LOGGER("%s : Duplicate Packet with identifier %s", strerror(errno), lstIdentifiers.c_str());
+           //     if(0 == strcmp(lstIdentifiers.c_str(),lcKey.c_str()))
+           //     {
+           //        LOG_LOGGER("%s : Duplicate Packet with identifier %s", strerror(errno), lstIdentifiers.c_str());
+           //        cout << "duplicate packet" << endl;
+           //        cout << lstIdentifiers.c_str() << " duplicated" << endl;;
+           //        lbDiscardPacket = true;
+           //        break;
+           //     }
+           CIterIdentifierStringStore lcIterIdentifierStringStore  = g_cIdentifierStore.find(lcKey);
+           if( lcIterIdentifierStringStore != g_cIdentifierStore.end())
+           {
+                   LOG_LOGGER("%s : Duplicate Packet with identifier %s", strerror(errno), lcKey.c_str());
                    cout << "duplicate packet" << endl;
-                   cout << lstIdentifiers.c_str() << " duplicated" << endl;;
+                   cout << lpstData->cUniqueMessageIdentifier << " duplicated" << endl;;
                    lbDiscardPacket = true;
-                   break;
-                }
-             }
+           }
+         //}
              if(true == lbDiscardPacket)
             {
                 delete lpstData;
@@ -1160,18 +1426,32 @@ int main()
                 pthread_mutex_unlock(&g_cIdentifierMutex);
                 continue;
             }
-            g_cIdentifierStore.push_back(lcKey);
-      }
+            CRetValInsIterIdentifierStringStore lcRetValIterIdentifierStringStore = g_cIdentifierStore.insert(lcKey);
+           if( lcRetValIterIdentifierStringStore.second == false)
+           {
+                
+             LOG_LOGGER("%s : Duplicate Packet with identifier %s after checking for duplicate packets\n", strerror(errno), lcKey.c_str());
+              exit(-1);     
+           }
+          }
 	  
+      #ifdef LOGGING
+      cout << "Done with Duplicate Packet Rejection" << endl;
+      #endif
       pthread_mutex_unlock( &g_cIdentifierMutex);
+      #ifdef LOGGING
+      cout << "Releasing Identifier Mutex" << __LINE__ <<endl;
+      #endif
 	  
      // if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
       {
-         if(MakeReSender(*lpstData) != EXIT_SUCCESS)
+         cout << "deleting all old data" << endl;
+                
+         if(DeleteMsgFromResenderStoreByUniqueIdentifier(*lpstData) != EXIT_SUCCESS)
          {
              exit(1);
          }
-	  }
+      }
     }
       if (lpstData->nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER)
       {
@@ -1191,12 +1471,13 @@ int main()
       {
          delete lpstData;
          lpstData = nullptr;
-         printf("%s %d", strerror(errno), __LINE__);
+         //printf("%s %d", strerror(errno), __LINE__);
+         LOG_LOGGER( "unable to take mutex lock %s",strerror(errno));
          exit(EXIT_FAILURE);
       }
 
 #ifdef LOGGING
-      cout << "mtex acquired process main" << endl;
+      TESTLOG("%s","mtex acquired process main");
 #endif
       g_cProcessList.push_back(lpstData);
       
@@ -1205,12 +1486,13 @@ int main()
       if (lnRetVal != 0)
       {
          printf("%s %d", strerror(errno), __LINE__);
+         LOG_LOGGER( "unable to take mutex lock %s",strerror(errno));
          exit(EXIT_FAILURE);
       }
       
       pthread_cond_signal(&g_cCondVarForProcessThread);
 #ifdef LOGGING
-      cout << "mtex Released process main" << endl;
+      TESTLOG("%s","mtex Released process main" );
 #endif
 
    }
@@ -1399,7 +1681,6 @@ DWORD WINAPI SenderThread(LPVOID pArg)
       //}
    }
 }
-
 
 
 
