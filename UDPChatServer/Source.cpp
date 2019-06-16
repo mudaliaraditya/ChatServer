@@ -301,6 +301,18 @@ class CSessionManager
       return -1;
    }
 
+   ~CSessionManager()
+   {
+
+      for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();)
+      {
+             CSession* lpcSession = *lcIter;
+             delete(lpcSession); 
+             lpcSession = NULL;
+             lcIter = m_cSessionStore.erase(lcIter);          
+      }
+   }
+
 };
 
 
@@ -398,8 +410,26 @@ tagData ConvertToDataStruct(tagBufferData& stData)
 ////////////////////FINIALIZINGyyyy FUNCTIONS/////////////////////////
 int CleanUp()
 {
-   close(g_nMainSockFd);
    g_bProgramShouldWork = false;
+   int lnRetVal = 0;
+   tagBufferData lstBufferData = {0}; 
+   int lnSockAddrlen = sizeof(servaddr);
+   int lnDataStructSize = sizeof(tagBufferData);
+   //int lnNoOfBytes = SendUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &servaddr, lnSockAddrlen);
+   lnRetVal = sendto(g_nMainSockFd, (const char *)&lstBufferData, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(servaddr), lnSockAddrlen);
+   if (0 > lnRetVal)
+   {
+         printf("%s, %d", strerror(errno), __LINE__);
+         exit(EXIT_FAILURE);
+   }
+   lnRetVal = close(g_nMainSockFd);
+   if(lnRetVal != 0)
+   {
+      cout << "issue in closing socket" << endl;
+      LOG_LOGGER("unable to close reciver socket %s","");
+      exit(1);
+   }
+   shutdown(g_nMainSockFd , SHUT_RDWR);
    for(CIteratotrIdentiferDataStore lcIter = g_cPortIdentifier.begin(); lcIter != g_cPortIdentifier.end();lcIter++)
    {
       tagData* lpstData = lcIter->second;
@@ -429,7 +459,17 @@ int CleanUp()
          lpstData = nullptr;
       }
    }
-   
+    for(CClientIdDataStore::iterator lcIter = g_cClientIDStore.begin();lcIter != g_cClientIDStore.end();)
+    {
+                    tagData* lpstData = lcIter->second;
+                    if(lpstData != NULL)
+                    {
+                        delete lpstData;
+                        lpstData = NULL;
+                    }
+                    lcIter = g_cClientIDStore.erase(lcIter);
+    }
+
    return 0;
 }
 
@@ -450,6 +490,26 @@ void HandleSignal(int nSignal)
             printf("Caught SIGINT, exiting now\n");
             g_bProgramShouldWork = false;
             CleanUp();
+            if(pConfigObject != NULL)
+            {
+               DeleteNewMap(pConfigObject);
+               pConfigObject = NULL;
+            }
+            lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
+            if(lnRetVal != 0)
+            {
+               printf("%s, %d", strerror(errno), __LINE__);
+               perror("unable to join lnPThreadEventTime");
+               exit(EXIT_FAILURE);
+            }
+
+            lnRetVal = pthread_join(lnRecieverThread, NULL);
+            if (lnRetVal != 0)
+            {
+               printf("%s, %d", strerror(errno), __LINE__);
+               perror("unable to join reciverthread Variable");
+               exit(EXIT_FAILURE);
+            }
             //lnRetVal = pthread_join(lnSenderPThread,NULL);
             if (lnRetVal != 0)
             {
@@ -814,6 +874,230 @@ int GetResponseForFunction(tagData& stData)
 
 
 #ifndef WIN32
+void* RecieverThread(void* pData)
+{
+  tagData* lpstData = NULL;
+  int lnRetVal = 0;
+  int lnNoOfBytes = 0;
+  int lnSockAddrlen = 0;
+  bool lbDiscardPacket = false;
+  while (true == g_bProgramShouldWork)
+  {
+      lpstData = new tagData();
+      tagBufferData lstBufferData;
+      lnSockAddrlen = sizeof(cliaddr);
+      #ifdef LOGGING
+      cout << "Recieving.." << endl;
+      #endif
+      lnNoOfBytes = RecvUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &cliaddr, lnSockAddrlen);
+      if (lnNoOfBytes <= 0)
+      {
+         cout << "" << endl;
+         if(lpstData != NULL)
+         {
+            delete lpstData;
+            lpstData = nullptr;
+         }
+         //printf("%s, %d", strerror(errno), __LINE__);
+         LOG_LOGGER("%s : RecvUDPData failed", strerror(errno));
+         exit(EXIT_FAILURE);
+      }
+      *lpstData = ConvertToDataStruct(lstBufferData);
+      #ifdef LOGGING
+      TESTLOG("Recieved");
+      #endif
+      TESTLOG("%s %s"," message identifier : ",lpstData->cUniqueMessageIdentifier);
+      TESTLOG("%s %s" ," packet from " , lpstData->cIdentifier );
+      TESTLOG("%s %d"," packet from ", lpstData->nMessageCode );
+      TESTLOG("%s %d"," packet with current seqno ", lpstData->nSeqNo );
+      TESTLOG("%s %d"," packet last recieved seqno ", lpstData->nLatestClntSeqNo );
+      if(g_nFlagDupliResend == 0)
+      {
+         lnRetVal = pthread_mutex_lock( &g_cIdentifierMutex);
+         if (lnRetVal != EXIT_SUCCESS)
+         {
+            if(lpstData != NULL)
+            {
+               delete lpstData;
+               lpstData = nullptr;
+            }
+            //printf("%s, %d", strerror(errno), __LINE__);
+            //perror("pthread mutex lock error");
+            LOG_LOGGER("%s : mutex lock failed", strerror(errno));
+            exit(EXIT_FAILURE);
+         }
+        
+         #ifdef LOGGING
+         cout << "Taking Identifier Mutex" << __LINE__ <<endl;
+         #endif
+//!        Rejecting duplicates any extra packets are discarded
+         #ifdef LOGGING
+		 //TO COmment
+		 
+         cout << "Recived duplicate packet Rejction started" << endl;
+         #endif
+         if(lpstData->nLatestClntSeqNo >lpstData->nSeqNo)
+         {
+           pthread_mutex_lock(&g_ReSenderMutex);
+           #ifdef LOGGING
+           cout << "Taking Resender Mutex" << __LINE__ <<endl;
+           #endif
+           if(!g_cEventResender.empty())
+           {
+               for(list<tagTimeData>::iterator lcIter =  g_cEventResender.begin();lcIter !=  g_cEventResender.end();)
+               {
+                      tagTimeData& lstData = *lcIter;
+                      if( lpstData->nLatestClntSeqNo > lstData.stData.nSeqNo)
+                      {
+                           if((strcmp(lstData.stData.cIdentifier,lpstData->cIdentifier) == 0) && ( lstData.stData.nGlobalIdentifier == lpstData->nGlobalIdentifier))
+                           {
+                               
+                               lcIter =g_cEventResender.erase(lcIter);
+                           }
+                           lcIter++;
+                      }
+                      else
+                      {
+                           lcIter++;
+                      }
+               }
+          } 
+           pthread_mutex_unlock(&g_ReSenderMutex);
+           #ifdef LOGGING
+           cout << "Releasing Resender Mutex" << __LINE__ <<endl;
+           #endif
+        }
+         string lcKey = SuffixAppropirateUniqueIdentifier(lpstData->cUniqueMessageIdentifier, lpstData->nCommand);
+         //if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
+         {
+            // for(auto& lstIdentifiers : g_cIdentifierStore)
+             //{
+                // cout << lstIdentifiers.c_str() << " ";
+           //     if(0 == strcmp(lstIdentifiers.c_str(),lcKey.c_str()))
+           //     {
+           //        LOG_LOGGER("%s : Duplicate Packet with identifier %s", strerror(errno), lstIdentifiers.c_str());
+           //        cout << "duplicate packet" << endl;
+           //        cout << lstIdentifiers.c_str() << " duplicated" << endl;;
+           //        lbDiscardPacket = true;
+           //        break;
+           //     }
+           CIterIdentifierStringStore lcIterIdentifierStringStore  = g_cIdentifierStore.find(lcKey);
+           if( lcIterIdentifierStringStore != g_cIdentifierStore.end())
+           {
+                   LOG_LOGGER("%s : Duplicate Packet with identifier %s", strerror(errno), lcKey.c_str());
+                   cout << "duplicate packet" << endl;
+                   cout << lpstData->cUniqueMessageIdentifier << " duplicated" << endl;;
+                   lbDiscardPacket = true;
+           }
+         //}
+             if(true == lbDiscardPacket)
+            {
+                if(lpstData != NULL)
+                {
+                   delete lpstData;
+                   lpstData = nullptr;
+                }
+                //delete lpstData;
+                //lpstData = nullptr;
+                lbDiscardPacket = false;
+                pthread_mutex_unlock(&g_cIdentifierMutex);
+                continue;
+            }
+            CRetValInsIterIdentifierStringStore lcRetValIterIdentifierStringStore = g_cIdentifierStore.insert(lcKey);
+           if( lcRetValIterIdentifierStringStore.second == false)
+           {
+              if(lpstData != NULL)
+              {
+                 delete lpstData;
+                 lpstData = nullptr;
+              }
+                
+             LOG_LOGGER("%s : Duplicate Packet with identifier %s after checking for duplicate packets\n", strerror(errno), lcKey.c_str());
+              exit(-1);     
+           }
+          }
+	  
+      #ifdef LOGGING
+      cout << "Done with Duplicate Packet Rejection" << endl;
+      #endif
+      pthread_mutex_unlock( &g_cIdentifierMutex);
+      #ifdef LOGGING
+      cout << "Releasing Identifier Mutex" << __LINE__ <<endl;
+      #endif
+	  
+     // if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
+      {
+         cout << "deleting all old data" << endl;
+                
+         if(DeleteMsgFromResenderStoreByUniqueIdentifier(*lpstData) != EXIT_SUCCESS)
+         {
+             if(lpstData != NULL)
+            {
+               delete lpstData;
+               lpstData = nullptr;
+            } 
+             exit(1);
+         }
+      }
+    }
+      if (lpstData->nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER)
+      {
+         lpstData->stNetWork.fd = g_nMainSockFd;
+      }
+      memcpy(&(lpstData->stNetWork.addr), &cliaddr, sizeof(sockaddr_in));
+      lpstData->stNetWork.fd = g_nMainSockFd;
+      lpstData->stNetWork.restrict = sizeof(sockaddr_in);
+      lpstData->stNetWork.flags = MSG_CONFIRM;
+//##ifdef LOGGING        
+      cout << "chat data " << lpstData->cBuffer << endl;
+      cout << "identifier " << lpstData->cIdentifier << endl;
+      cout << "target " << lpstData->cTarget << endl;
+//##endif        
+      lnRetVal = pthread_mutex_lock(&g_cProcessMutex);
+      if (lnRetVal != 0)
+      {
+         if(lpstData != NULL)
+         {
+            delete lpstData;
+            lpstData = nullptr;
+         }
+         //printf("%s %d", strerror(errno), __LINE__);
+         LOG_LOGGER( "unable to take mutex lock %s",strerror(errno));
+         exit(EXIT_FAILURE);
+      }
+
+#ifdef LOGGING
+      TESTLOG("%s","mtex acquired process main");
+#endif
+      g_cProcessList.push_back(lpstData);
+      
+     
+      lnRetVal = pthread_mutex_unlock(&g_cProcessMutex);
+      if (lnRetVal != 0)
+      {
+         printf("%s %d", strerror(errno), __LINE__);
+         LOG_LOGGER( "unable to take mutex lock %s",strerror(errno));
+         exit(EXIT_FAILURE);
+      }
+      
+      pthread_cond_signal(&g_cCondVarForProcessThread);
+#ifdef LOGGING
+      TESTLOG("%s","mtex Released process main" );
+#endif
+
+   } 
+   
+   cout << "deleting newly created struct" << endl;
+   if(lpstData != NULL)
+   {
+      delete lpstData;
+      lpstData = NULL;
+   }
+   return NULL;
+   //pthread_exit(NULL);
+}
+
+
 void* EventThread(void*)
 {
   while(true == g_bProgramShouldWork)
@@ -1045,6 +1329,7 @@ void* ProcessThread(void* pArg)
       {
          TESTLOG( "dummy message","" );
            delete lstData;
+           lstData = NULL;
            continue;
       }
       TESTLOG( "not a dummy message","");
@@ -1161,6 +1446,8 @@ void* SenderThread(void* pArg)
 #ifndef WIN32
 int main()
 {
+  int lnRetVal =0;
+  //int* lnA = new int();
   cout << "size of int " << sizeof(int) << endl;  
   cout << "size of long " << sizeof(long) << endl;  
   cout << "size of short " << sizeof(short) << endl;  
@@ -1170,12 +1457,21 @@ int main()
   g_nFlagDupliResend = 0;
    
    //SIgnal Handling
-   signal(SIGINT,HandleSignal);
-   struct sigaction lstSigAction;
+   signal(SIGINT, HandleSignal);
+   struct sigaction lstSigAction = {0};
    lstSigAction.sa_flags = 0;
    lstSigAction.sa_handler  = HandleSignal;
    sigaction(SIGINT, &lstSigAction, NULL);
-   
+   pConfigObject = CreateNewMap();
+   if(pConfigObject == NULL)
+   {
+       return -1;
+   } 
+   lnRetVal =  GetConfig(CNF_FILE_NAME,pConfigObject); 
+   if(0 != lnRetVal)
+   {
+      return -1;
+   }
    //LOG File Handling START
    time_t lnTime;
    struct tm*  psttm = NULL; 
@@ -1217,8 +1513,16 @@ int main()
    
    g_OS = 1;
 
-   int lnRetVal = 0;
+   lnRetVal = 0;
 
+   lnRetVal = NetWorkInitialize(g_nMainSockFd);
+   if (lnRetVal != EXIT_SUCCESS)
+   {
+      //printf("%s, %d", strerror(errno), __LINE__);
+      //perror("Network Initialize failed");
+      LOG_LOGGER("%s : NetWorkInitialize failed", strerror(errno));
+      exit(EXIT_FAILURE);
+   }
 
 //initializing all - conditional variables and creating threads
    if (pthread_cond_init(&g_cCondVarForProcessThread,NULL) != 0)
@@ -1267,8 +1571,15 @@ int main()
       LOG_LOGGER("%s : mutex init has failed", strerror(errno));
       return 1;
    }
-   
-   
+
+   lnRetVal = pthread_create( &lnRecieverThread, NULL, RecieverThread, NULL);
+   if(0 > lnRetVal)
+   {
+      //printf("%s, %d", strerror(errno), __LINE__);
+      //perror("pthread create thread");
+      LOG_LOGGER("%s : thread creation failed", strerror(errno));
+      exit(EXIT_FAILURE);
+   }
    lnRetVal = pthread_create(&lnSenderPThread, NULL, SenderThread, NULL);
    if(0 > lnRetVal)
    {
@@ -1302,14 +1613,6 @@ int main()
       }
    }
    
-   lnRetVal = NetWorkInitialize(g_nMainSockFd);
-   if (lnRetVal != EXIT_SUCCESS)
-   {
-      //printf("%s, %d", strerror(errno), __LINE__);
-      //perror("Network Initialize failed");
-      LOG_LOGGER("%s : NetWorkInitialize failed", strerror(errno));
-      exit(EXIT_FAILURE);
-   }
 
    long long lnSockAddrlen = 0, lnNoOfBytes = 0;
    tagData* lpstData = nullptr;
@@ -1319,7 +1622,7 @@ int main()
 
    while (true == g_bProgramShouldWork)
    {
-      lpstData = new tagData();
+      /*lpstData = new tagData();
       tagBufferData lstBufferData;
       lnSockAddrlen = sizeof(cliaddr);
       #ifdef LOGGING
@@ -1494,9 +1797,47 @@ int main()
 #ifdef LOGGING
       TESTLOG("%s","mtex Released process main" );
 #endif
-
+*/
+     string lcVal = "";
+     cin >> lcVal;
+     if(strncmp(lcVal.c_str(),"S",lcVal.length())== 0)
+     {
+        g_bProgramShouldWork = false;
+     }
+     else
+     {
+        cout << "type S to Stop" << endl;
+     }
    }
-   
+   if(CleanUp() != 0)
+   {
+      printf("%s, %d", strerror(errno), __LINE__);
+      perror("cleanup dailed");
+      exit(EXIT_FAILURE);
+   }
+ /*  tagBufferData lstBufferData = {0};
+   lnSockAddrlen = sizeof(sockaddr);
+   lnNoOfBytes = SendUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &servaddr, lnSockAddrlen);
+*/
+   if(pConfigObject != NULL)
+   {
+       DeleteNewMap(pConfigObject);
+       pConfigObject = NULL;
+   }
+   lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
+   if(lnNoOfBytes > 0)
+   {
+      printf("%s, %d", strerror(errno), __LINE__);
+      perror("unable to join lnPThreadEventTime");
+      exit(EXIT_FAILURE);
+   }
+   lnRetVal = pthread_join(lnRecieverThread,NULL);
+   if (lnRetVal != 0)
+   {
+      printf("%s, %d", strerror(errno), __LINE__);
+      perror("unable to join lnPThreadEventTime");
+      exit(EXIT_FAILURE);
+   }
    lnRetVal = pthread_join(lnPThreadEventTime,NULL);
    if (lnRetVal != 0)
    {
@@ -1525,12 +1866,6 @@ int main()
    }
    
    //close(g_nMainSockFd);
-   if(CleanUp() != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("cleanup dailed");
-      exit(EXIT_FAILURE);
-   }
    
    lnRetVal = pthread_cond_destroy(&g_cCondVarForProcessThread);
    if (lnRetVal != 0)

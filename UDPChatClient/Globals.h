@@ -36,6 +36,13 @@ std::fstream g_cfstream;
 std::fstream g_cfstreamDataLogger;
 char** g_pcParam = nullptr;
 short  g_nArgs = 0;
-
+bool g_bProgramShouldWork = true;
+pthread_t lnPThreadReciever;
+pthread_t lnPThreadSender;
+pthread_t lnPThreadCheckResponse;
+pthread_t lnPThreadMain;
+tagData* lpstThrdDataRcvr = NULL;
+tagData* lpstThrdSndr = NULL;
+void* pConfigObject;
 #endif /* GLOBALS_H */
 

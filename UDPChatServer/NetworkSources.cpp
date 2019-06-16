@@ -18,17 +18,32 @@ void FillSockAddrin(long sin_family, unsigned short int sin_port, long long sin_
 
 int NetWorkInitialize(int& nSockfd)
 {
+   if(pConfigObject == NULL)
+   {
+      return -1;
+   }
+
+   char* lcPorti  =  ((GetValueForKey(CNF_PORT_TAG, CNF_FILE_NAME , pConfigObject)));
+   if(lcPorti == NULL)
+   {
+      return -1;
+   }
+   string lcPort = lcPorti;
+   if(0 !=  DeleteKeyVal(lcPorti))
+   {
+      return -1; 
+   }
    if ((nSockfd = CreateUDPSocketIP()) < 0)//socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
    {
       perror("socket creation failed");
       exit(EXIT_FAILURE);
    }
-
-
+   long lnPort = atol(lcPort.c_str());
+   cout << "PortVal is "<< lcPort << endl;
    memset(&servaddr, 0, sizeof(servaddr));
    memset(&cliaddr, 0, sizeof(cliaddr));
 
-   FillSockAddrin(AF_INET, htons(PORT), INADDR_ANY, &servaddr);
+   FillSockAddrin(AF_INET, htons(lnPort), INADDR_ANY, &servaddr);
 
    if (bind(nSockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
    {

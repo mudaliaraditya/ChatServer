@@ -13,6 +13,7 @@
 #include <stdlib.h> 
 #include <unistd.h> 
 #include <string.h> 
+#include <signal.h>
 #include <sys/types.h> 
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
@@ -27,6 +28,7 @@
 #include "Functions.h"
 #include "typedefs.h"
 #include "Globals.h"
+#include "ConfigParser.h"
 using namespace std;
 #endif
 #ifdef WIN32

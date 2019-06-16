@@ -1,5 +1,7 @@
 #pragma once
 #include "includes.h"
+#define CNF_FILE_NAME "config.txt"
+#define CNF_PORT_TAG  "PORT"
 #define NO_OF_PROC_THREADS 4
 #define PORT    9001 
 #define PORT1     8081

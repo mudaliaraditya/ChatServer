@@ -241,10 +241,10 @@ tagData ConvertToDataStruct(tagBufferData& stData)
 
 void* CheckResponse(void*)
 {
-   char lcUniqueIdentifierBuffer[30 + 1];
+   char lcUniqueIdentifierBuffer[30 + 1] = {0};
    int lnSleeptIme = 0;
    //tagData lstData = {0};
-   while(true)
+   while(g_bProgramShouldWork == true)
    {
       
       pthread_mutex_lock(&g_ReSenderMutex);
@@ -592,7 +592,7 @@ void* SenderThread(void* pVData)
     
     int lnRetVal = 0;
     bool lbUniqueMessageSend = false;
-    while(true)
+    while(g_bProgramShouldWork == true)
     {
       lbUniqueMessageSend = true;
 	   
@@ -638,6 +638,7 @@ void* SenderThread(void* pVData)
 		 #endif
        }
     }
+    return NULL;
 }
 
 
@@ -657,7 +658,7 @@ void* RecieverThread(void* pVData)
    bool lbToResend =false;
    bool lbDiscardPacket = false;
 	 //string lcKey = "";
-   while(true)
+   while(g_bProgramShouldWork == true)
    {
       lbToResend = true;
       memset(&lstRecvData, 0 ,sizeof(tagData));       
@@ -818,7 +819,7 @@ void* RecieverThread(void* pVData)
         
        TESTLOG("Server : %d\n", lstRecvData.nMessageCode);
     }
-    
+   return NULL;    
 }
 
 
@@ -838,6 +839,7 @@ int PreSender(tagData& stData)
          }
          else
          {
+             //while ((getchar()) != '\n');
              cin >> stData.cIdentifier;
              //strncpy( lstData.cIdentifier, "ABC", 3);
          }
@@ -866,6 +868,7 @@ int PreSender(tagData& stData)
          }
          else
          {
+           //while ((getchar()) != '\n');
             cin >> stData.cTarget;
          }
          stData.nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST;
@@ -886,10 +889,15 @@ int PreSender(tagData& stData)
          {
            
            cout << "Enter Chat Data" << endl;
-           cin  >> stData.cBuffer; 
-           //string lcInput(stData.cBuffer);
-           //getline(cin, lcInput);
-           //strncpy(stData.cBuffer, lcInput.c_str(), MAXLINE); 
+           //cin  >> stData.cBuffer; 
+           string lcInput;
+           //while ((getchar()) != '\n');
+           getline(cin, lcInput);
+           strncpy(stData.cBuffer, lcInput.c_str(), MAXLINE); 
+           if(*(stData.cBuffer) == '\n')
+           {
+              return -2;
+           }
          }
          stData.nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST;
          stData.nFrOrToServerFlg = (long)CEToFromServer::CEToFromServer_CLNT_TO_SERV;
@@ -928,10 +936,157 @@ int PostSender(tagData& stData)
    }
    return 0;
 }
+void HandleSignal(int nSignal)
+{
+    const char *signal_name;
+    signal(SIGINT,HandleSignal);
+    sigset_t pending;
+    int lnRetVal = 0;
 
+    // Handling SIGINT
+    switch (nSignal)
+    {
+        case SIGINT:
+        {
+            cout << "signalling thread" << pthread_self() << endl;
+            printf("Caught SIGINT, exiting now\n");
+            g_bProgramShouldWork = false;
+            //CleanUp();
+            //lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
+           // if(lnRetVal != 0)
+          //  {
+          //     printf("%s, %d", strerror(errno), __LINE__);
+          //     perror("unable to join lnPThreadEventTime");
+         //      exit(EXIT_FAILURE);
+         //   }
+            DeleteNewMap(pConfigObject);
+            if(lnRetVal != 0 )
+            {
+              printf("failure");
+            }   
+            lnRetVal = pthread_kill(lnPThreadReciever, SIGKILL);
+            if (lnRetVal != 0)
+            {
+               printf("%s, %d", strerror(errno), __LINE__);
+               perror("unable to kill reciverthread Variable");
+               exit(EXIT_FAILURE);
+            }
+                     //lnPThreadMain
+            lnRetVal = pthread_join(lnPThreadReciever, NULL);
+            if (lnRetVal != 0)
+            {
+               printf("%s, %d", strerror(errno), __LINE__);
+               perror("unable to join reciverthread Variable");
+               exit(EXIT_FAILURE);
+            }
+            lnRetVal = pthread_join(lnPThreadSender,NULL);
+            if (lnRetVal != 0)
+            {
+               printf("%s, %d", strerror(errno), __LINE__);
+               perror("unable to destroy Conditional Variable");
+               exit(EXIT_FAILURE);
+            }
+
+             lnRetVal = pthread_join(lnPThreadCheckResponse,NULL);
+            if (lnRetVal != 0)
+            {
+               printf("%s, %d", strerror(errno), __LINE__);
+               perror("unable to destroy Conditional Variable");
+               exit(EXIT_FAILURE);
+            }
+
+            if(lpstThrdDataRcvr != NULL)
+            {
+               delete lpstThrdDataRcvr;
+               lpstThrdDataRcvr = NULL;
+            }
+
+            if( lpstThrdSndr != NULL)
+            {
+               delete lpstThrdSndr;
+               lpstThrdSndr = NULL;
+            }
+            //lnRetVal = pthread_kill(lnPThreadMain, SIGKILL);
+            if (lnRetVal != 0)
+            {
+               printf("%s, %d", strerror(errno), __LINE__);
+               perror("unable to kill reciverthread Variable");
+               exit(EXIT_FAILURE);
+            }
+             lnRetVal = pthread_join(lnPThreadMain  ,NULL);
+            if (lnRetVal != 0)
+            {
+               printf("%s, %d", strerror(errno), __LINE__);
+               perror("unable to destroy Conditional Variable");
+               exit(EXIT_FAILURE);
+            }
+            //for (int lnCounter = 0; lnCounter< NO_OF_PROC_THREADS; lnCounter++)
+            //{
+            //   lnRetVal = pthread_join(lnProcessPThread[lnCounter],NULL);
+            //   if (lnRetVal != 0)
+           //    {
+            //      printf("%s, %d", strerror(errno), __LINE__);
+            //      perror("unable to destroy Conditional Variable");
+            //      exit(EXIT_FAILURE);
+           // //   }
+           // }
+
+         //   lnRetVal = pthread_cond_destroy(&g_cCondVarForProcessThread);
+         //   if (lnRetVal != 0)
+         //   {
+         //      printf("%s, %d", strerror(errno), __LINE__);
+         //      perror("unable to destroy Conditional Variable");
+         //      exit(EXIT_FAILURE);
+         //   }
+
+
+         //   lnRetVal = pthread_mutex_destroy(&g_cProcessMutex);
+         //   if (lnRetVal != 0)
+         //   {
+        //       printf("%s, %d", strerror(errno), __LINE__);
+        //       perror("unable to destroy mnutex");
+        //       exit(EXIT_FAILURE);
+        //    }
+
+       //     lnRetVal = pthread_mutex_destroy(&g_cResponseMutex);
+       //     if (lnRetVal != 0)
+       //     {
+      //         printf("%s, %d", strerror(errno), __LINE__);
+      //         perror("unable to destroy mnutex");
+      //         exit(EXIT_FAILURE);
+      //      }
+
+
+     //       lnRetVal = pthread_mutex_destroy(&g_cIdentifierMutex);
+     //       if (lnRetVal != 0)
+     //       {
+     //          printf("%s, %d", strerror(errno), __LINE__);
+     //          perror("unable to destroy mnutex");
+     //          exit(EXIT_FAILURE);
+     //       }
+            exit(EXIT_SUCCESS);
+        }
+        break;
+
+       default:
+       {
+          fprintf(stderr, "Caught wrong signal: %d\n", nSignal);
+          return;
+       }
+    }
+}
 //UDpChatServer 21/12/2018 Aditya M.:END
 int main(int argc,char* argv[])
 {
+   cout << "main thread" << pthread_self() << endl;
+   lnPThreadMain = pthread_self();
+   //SIgnal Handling
+   signal(SIGINT, HandleSignal);
+   struct sigaction lstSigAction = {0};
+   lstSigAction.sa_flags = 0;
+   lstSigAction.sa_handler  = HandleSignal;
+   sigaction(SIGINT, &lstSigAction, NULL);
+
    g_nArgs = argc;
    g_nFlagNoResendDupli = 0;
    g_pcParam = argv;
@@ -947,9 +1102,17 @@ int main(int argc,char* argv[])
    memset(lpstSharedmemData, 0,sizeof(tagSharedMem));
    lpstSharedmemData->nState = STATE_INITIALIZE;
    //shared mem use
-    int lnRetVal = 0;
-    
-    
+   int lnRetVal = 0;
+   pConfigObject = CreateNewMap();
+   if(pConfigObject == NULL)
+   {
+       return -1;
+   } 
+   lnRetVal =  GetConfig(CNF_FILE_NAME,pConfigObject);
+   if(0 != lnRetVal)
+   {
+      return -1;
+   } 
    time_t lnTime;
    lnTime = time(NULL);
    struct tm*  psttm =  gmtime(&lnTime);
@@ -962,12 +1125,12 @@ int main(int argc,char* argv[])
    g_cfstream.open(lcBuffera,ios::in|ios::out | ios::app);
    snprintf(lcBuffera,200,"%s/%s-%s%d-%d-%d-%d_%d%d%d.%s","Logs","Data","randno",lnRandNo,psttm->tm_mday,psttm->tm_mon +1  ,psttm->tm_year + 1900,psttm->tm_hour,psttm->tm_min,psttm->tm_sec,"log");
    g_cfstreamDataLogger.open(lcBuffera,ios::in|ios::out | ios::app);
-   
+/*   
    pthread_t lnPThreadReciever;
    pthread_t lnPThreadSender;
    pthread_t lnPThreadCheckResponse;
    
-   
+  */ 
    char lcSeqIdentifier[LENGHT_OF_BASE_SEQ_NO + 1];
    
    
@@ -982,8 +1145,8 @@ int main(int argc,char* argv[])
        }
     }
     
-    tagData* lpstThrdDataRcvr = NULL;
-    tagData* lpstThrdSndr = NULL;
+    //tagData* lpstThrdDataRcvr = NULL;
+    //tagData* lpstThrdSndr = NULL;
   
 
     size_t lnLen = 0;
@@ -993,8 +1156,49 @@ int main(int argc,char* argv[])
         exit(EXIT_FAILURE);
     }
 
+    const char* lcPorti  =  ((GetValueForKey(CNF_PORT_TAG, CNF_FILE_NAME , pConfigObject)));
+    if(lcPorti == NULL)
+    {
+      return -1;
+    }
+    char* lcFindPoint = NULL;
+    //int lnSize = 0;//strchr(lcPorti,'\0');
+    int lnSize = strlen(lcPorti);
+    //lcFindPoint = strchr(lcPorti,'\0');
+    //lnSize = lcFindPoint - lcPorti; 
+    char lcBufferPort[lnSize + 1] = {0};
+    //string lcPort ;// lcBuffer;
+    {
+       strncpy(lcBufferPort, lcPorti, lnSize);
+       //lcPort = lcBuffer;
+    }
+    if(0 !=  DeleteKeyVal((char**)&lcPorti))
+    {
+      return -1;
+    }
+
+    const char* lcServerIPi  =  ((GetValueForKey(CNF_SERVER_IP_TAG, CNF_FILE_NAME , pConfigObject)));
+    if(lcServerIPi == NULL)
+    {
+      return -1;
+    }
+    lnSize = strlen(lcServerIPi);
+    //lnSize = lcFindPoint - lcServerIPi; 
+    //string lcServerIP;
+    char lcBufferServerIP[lnSize + 1] = {0};
+    {
+       strncpy(lcBufferServerIP, lcServerIPi, lnSize);
+      // lcServerIP = lcBuffer;
+    }
+    if(0 !=  DeleteKeyVal((char**)&lcServerIPi))
+    {
+      return -1;
+    }
+
     //FillSockAddrin(AF_INET, htons(PORT), (in_addr_t)(inet_addr("127.0.0.1")), &servaddr);
-    FillSockAddrin(AF_INET, htons(PORT), (in_addr_t)(inet_addr(SERVER_IP)), &servaddr);
+    //FillSockAddrin(AF_INET, htons(atol(lcPort.c_str())), (in_addr_t)(inet_addr(lcServerIP.c_str())), &servaddr);
+    FillSockAddrin(AF_INET, htons(atol(lcBufferPort)), (in_addr_t)(inet_addr(lcBufferServerIP)), &servaddr);
+    //FillSockAddrin(AF_INET, htons((PORT)), (in_addr_t)(inet_addr(SERVER_IP)), &servaddr);
 
     tagData lstData = {0};
     
@@ -1032,7 +1236,7 @@ int main(int argc,char* argv[])
 	 
 //	 g_cEventResender.push_back()
    } 
-    while(true)
+    while(g_bProgramShouldWork == true)
     {
       do
       {
@@ -1093,7 +1297,11 @@ int main(int argc,char* argv[])
       }
 
    }
-
+   DeleteNewMap(pConfigObject);
+   if(lnRetVal != 0 )
+   {
+      printf("failure");
+   }
    pthread_join(lnPThreadSender,NULL);
    pthread_join(lnPThreadReciever,NULL);
    delete lpstThrdDataRcvr;

@@ -38,6 +38,8 @@ extern pthread_t lnProcessPThread[NO_OF_PROC_THREADS];
 
 extern pthread_t lnPThreadEventTime;
 
+extern pthread_t lnRecieverThread;
+
 extern pthread_mutex_t         g_ReSenderMutex;
 
 extern std::list<tagTimeData>       g_cEventResender;
@@ -47,7 +49,9 @@ extern std::fstream g_cfstream;
 extern std::fstream g_cDatafstream;
 
 extern int g_nFlagDupliResend;
+extern std::map<std::string,std::string> g_cMap;
 
+extern void* pConfigObject;
 #endif
 
 

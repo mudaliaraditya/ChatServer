@@ -29,6 +29,8 @@
 #include "AllClasses.h"
 #include "NetworkHeader.h"
 #include "functions.h"
+#include "func.h"
+#include "ConfigParser.h"
 using namespace std;
 #endif
 #ifdef WIN32

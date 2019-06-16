@@ -36,6 +36,8 @@ pthread_t lnProcessPThread[NO_OF_PROC_THREADS] = {0};
 
 pthread_t lnPThreadEventTime;
 
+pthread_t lnRecieverThread;
+
 pthread_mutex_t         g_ReSenderMutex;
 
 std::list<tagTimeData>       g_cEventResender;
@@ -46,5 +48,8 @@ std::fstream g_cDatafstream;
 //int g_nFlagDupliResend = 0;
 int g_nFlagDupliResend = 0;
 
+std::map<std::string, std::string> g_cMap;
+
+void* pConfigObject = NULL;
 #endif
 
