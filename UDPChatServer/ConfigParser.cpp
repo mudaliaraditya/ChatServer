@@ -5,7 +5,7 @@
 #include <errno.h>
 #include<fstream>
 #include<malloc.h>
-#include "configparser.h"
+#include "Configparser.h"
 using namespace std;
 //map<string,string> g_cMap;
 //map< string,map < string,string > > g_cBigMap;
