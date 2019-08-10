@@ -10,7 +10,8 @@
 #include <sys/types.h> 
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
-#include <netinet/in.h>  
+#include <netinet/in.h>
+#include <sys/time.h>  
 #include <iostream>
 #include <string.h>
 #include <pthread.h>
@@ -20,18 +21,20 @@
 #include <set>
 #include <list>
 #include <deque>
+#include <vector>
 #include <stdint.h>
 #include "defines.h"
-#include "types.h"
 #include "structs.h"
 #include "enums.h"
+#include "types.h"
 #include "globals.h"
+#include "CSessionManager.h"
 #include "AllClasses.h"
 #include "NetworkHeader.h"
 #include "functions.h"
 #include "func.h"
 #include "ConfigParser.h"
-using namespace std;
+#include "Source.h"
 #endif
 #ifdef WIN32
 

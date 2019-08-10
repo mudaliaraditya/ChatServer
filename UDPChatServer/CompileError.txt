@@ -1,0 +1,5 @@
+NetworkSources.cpp: In function ‘int NetWorkInitialize(int&)’:
+NetworkSources.cpp:26:82: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    char* lcPorti  =  ((GetValueForKey(CNF_PORT_TAG, CNF_FILE_NAME , pConfigObject)));
+                                                                                  ^
+NetworkSources.cpp:26:82: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
