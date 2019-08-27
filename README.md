@@ -1,4 +1,4 @@
-**ChatServer**
+<h1>**ChatServer**</h1>
 
 Contact [mudaliar.aditya@gmail.com](mailto:mudaliar.aditya@gmail.com)
 
