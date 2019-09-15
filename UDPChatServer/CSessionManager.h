@@ -1,18 +1,8 @@
 #ifndef CSESSION_H
 #define CSESSION_H
-#include "includes.h"
+
 class CSession;
-//typedef list<CSession*>                     CSessionMangerStore;
-//typedef list<CSession*>::iterator           CSessionManagerStoreIterator;
-//typedef vector<tagSessionIdentifierData>                      CSessionStore;
-//typedef vector<tagSessionIdentifierData>::iterator            CSessionStoreIterator;
-//list<pair<string,tagData>> cDataStore;
-//CClientIdDataStore g_cClientIDStore;
-//int g_nMainSockFd = 0;
-//int g_nClientIdentifier = 0;
 
-
-using namespace std;
 
 
 
@@ -21,7 +11,7 @@ class CSession
 {
    private:
 
-      vector<tagSessionIdentifierData> cStore;
+      std::vector<tagSessionIdentifierData> cStore;
       int nSize;
       int nNoOfElements;
       bool m_bRestricted; //if truw then its a normal chat between two people
@@ -76,7 +66,7 @@ class CSession
          return -1;
       }
 
-      int UserExistsinSession(string cName)
+      int UserExistsinSession(std::string cName)
       {
          for(CSessionStoreIterator lcIter =   cStore.begin();lcIter != cStore.end();lcIter++)
          {
@@ -88,7 +78,7 @@ class CSession
       }
 
 
-  int FreeUserExistsinSession(string cName)
+      int FreeUserExistsinSession(std::string cName)
       {
          if(nNoOfElements < nSize)
          {
@@ -102,7 +92,7 @@ class CSession
          }
       }
 
-      int GetFreeSessionIdForUser(string cName)
+      int GetFreeSessionIdForUser(std::string cName)
       {
          if(nNoOfElements < nSize)
          {
@@ -117,7 +107,7 @@ class CSession
          return -1;
       }
 
-      int GetGlobalClientIdentifierBySessionIdAndName(int nSessionId,string cName)
+      int GetGlobalClientIdentifierBySessionIdAndName(int nSessionId,std::string cName)
       {
          //if(nNoOfElements < nSize)
          {
@@ -150,7 +140,7 @@ class CSessionManager
 {
    private:
       pthread_mutex_t m_cMutex;
-      list<CSession*> m_cSessionStore;
+      std::list<CSession*> m_cSessionStore;
       int IsSessionUnique(int nSessionId)
       {
 
@@ -192,7 +182,7 @@ class CSessionManager
          return 0;
       }
 
-     //   int AddSecondUserToSession(string cFirstName,string cSecondName)
+     //   int AddSecondUserToSession(std::string cFirstName,std::string cSecondName)
       //   {
       //      int lnRetVal = 0;
       //      for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();lcIter++)
@@ -227,7 +217,7 @@ class CSessionManager
       }
              
 
-      int DoesSessionExistForUser(string cName)
+      int DoesSessionExistForUser(std::string cName)
       {
          for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();lcIter++)
          {
@@ -240,7 +230,7 @@ class CSessionManager
          return -1;
       }
 
-      int DoesFreeSessionExistForUser(string cName)
+      int DoesFreeSessionExistForUser(std::string cName)
       {
          for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();lcIter++)
          {
@@ -254,7 +244,7 @@ class CSessionManager
       }
 
 
-      int GetFreeUserSessionIdForUser(string cName)
+      int GetFreeUserSessionIdForUser(std::string cName)
       {
          for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();lcIter++)
          {
@@ -283,7 +273,7 @@ class CSessionManager
 
 
 
-      int GetGlobalClientIdentifierBySessionIdAndName(int nSessionId,string cName)
+      int GetGlobalClientIdentifierBySessionIdAndName(int nSessionId,std::string cName)
       {
          for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();lcIter++)
          {

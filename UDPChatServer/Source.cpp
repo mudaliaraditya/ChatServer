@@ -1,14 +1,14 @@
 #include "includes.h"
-
+using namespace std;
 #define LOG_LOGGER(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
       \
-       LOGGING(g_cfstream,cToBeLogged,##__VA_ARGS__)\
+       LOGGINGI(g_cfstream,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 
-#define LOGGING(cFileStream,cToBeLogged, ...)\
+#define LOGGINGI(cFileStream,cToBeLogged, ...)\
 {\
     \
    {                                                \
@@ -37,7 +37,7 @@
 #define TESTLOG(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
-     LOGGING(g_cDatafstream,cToBeLogged,##__VA_ARGS__)\
+     LOGGINGI(g_cDatafstream,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 
@@ -156,6 +156,7 @@ tagData ConvertToDataStruct(tagBufferData& stData)
 ////////////////////FINIALIZINGyyyy FUNCTIONS/////////////////////////
 int CleanUp()
 {
+   TESTLOG("%s","Doing Cleanup");
    g_bProgramShouldWork = false;
    int lnRetVal = 0;
    tagBufferData lstBufferData = {0}; 
@@ -547,7 +548,7 @@ int ExecuteFunction(tagData& stData)
             {
                LOG_LOGGER("%s %s", stData.cIdentifier , "not found");
                printf("%s %d", strerror(errno), __LINE__);
-               exit (0); 
+               exit (EXIT_FAILURE); 
             }
             lpNewData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_CONF;
             lpNewData->bFinalResponse = true;
@@ -702,6 +703,7 @@ void* RecieverThread(void* pData)
          TESTLOG("%s","duplicate packet Rejction started and lesser seq no rejection ");
          if(lpstData->nLatestClntSeqNo > lpstData->nSeqNo)
          {
+            TESTLOG("%s with latest seq cntr %d message clnt seq cntr %d","weird",lpstData->nLatestClntSeqNo,lpstData->nSeqNo);
             pthread_mutex_lock(&g_ReSenderMutex);
 #ifdef LOGGING
             //cout << "Taking Resender Mutex" << __LINE__ <<endl;
@@ -934,7 +936,7 @@ int DeleteMsgFromResenderStoreByUniqueIdentifier(const tagData lstRecvData )
    {
       tagTimeData& lstData = *lcIter;
       TESTLOG("%s", lstData.stData.cUniqueMessageIdentifier );
-
+      //message instore whose sequenceno is less than the latest clnt seqno that is recieved for the same user with same session id
       if((lstData.stData.nSeqNo < lstRecvData.nLatestClntSeqNo) && (lstData.stData.nSessionId == lstRecvData.nSessionId) && (strcmp(lstData.stData.cIdentifier,lstRecvData.cIdentifier) == 0))
       {
          TESTLOG( "deleting all lower seqno for user id %d" , lstRecvData.nGlobalIdentifier );
@@ -1276,7 +1278,7 @@ int InitiateLogging()
    lnTime = time(NULL);
    lpsttm  = gmtime(&lnTime);
    //snprintf(lcBuffera,200,"%d:%d:%d%d-%d-%d",psttm->tm_hour,psttm->tm_min,psttm->tm_sec,psttm->tm_mday,psttm->tm_mon,psttm->tm_year );
-   snprintf(lcErrorLogFileName,200,"%s/%s-%d-%d-%d_%d%d%d.%s","Logs","log",lpsttm->tm_mday,lpsttm->tm_mon +1  ,lpsttm->tm_year + 1900,lpsttm->tm_hour,lpsttm->tm_min,lpsttm->tm_sec,"log");
+   snprintf(lcErrorLogFileName,200,"%s/%s-%02d-%02d-%04d_%02d%02d%02d.%s","Logs","log",lpsttm->tm_mday,lpsttm->tm_mon +1  ,lpsttm->tm_year + 1900,lpsttm->tm_hour,lpsttm->tm_min,lpsttm->tm_sec,"log");
    TESTLOG( "%s %s"," log file name ", lcErrorLogFileName );
    g_cfstream.open(lcErrorLogFileName,ios::in|ios::out | ios::app);
    if(g_cfstream.fail())
@@ -1294,7 +1296,7 @@ int InitiateLogging()
    g_cfstream.seekg(ios::end);
 
    char lcDataLogFileName[200] = {0};
-   snprintf(lcDataLogFileName, 200, "%s/%s-%d-%d-%d_%d%d%d.%s", "Logs", "data", lpsttm->tm_mday, lpsttm->tm_mon + 1  , lpsttm->tm_year + 1900, lpsttm->tm_hour, lpsttm->tm_min, lpsttm->tm_sec,"log");
+   snprintf(lcDataLogFileName, 200, "%s/%s-%02d-%02d-%04d_%02d%02d%02d.%s", "Logs", "data", lpsttm->tm_mday, lpsttm->tm_mon + 1  , lpsttm->tm_year + 1900, lpsttm->tm_hour, lpsttm->tm_min, lpsttm->tm_sec,"log");
    g_cDatafstream.open(lcDataLogFileName,ios::in|ios::out | ios::app);
    if(g_cDatafstream.fail())
    {

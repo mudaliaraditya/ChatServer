@@ -3,8 +3,12 @@
 #ifndef WIN32
 
 
-//#include "defines.h"
-#include "includes.h"
+#include "defines.h"
+#include <sys/types.h> 
+#include <sys/socket.h> 
+#include <arpa/inet.h> 
+#include <netinet/in.h>
+
 struct tagData;
 
 
@@ -36,12 +40,25 @@ struct tagData
     char cTarget[20 + 1];
     char cUniqueMessageIdentifier[30 + 1];
     int nSeqNo;
-	 bool bFinalResponse;
+    bool bFinalResponse;
     int nLatestClntSeqNo;
     int nSessionId;
     tagNetworkThread stNetWork;
 };
 
+
+/*
+   nGlobalIdentifier == unique Identifier so that each client can be uniquely identified
+   cIdentifier       == client declared identifer,a name which the client uses 
+   nMessageCode      == the action which the target server/client has to perform
+   cBuffer           == the data container
+   cTarget           == the target client Identifier,the target where the message has to be delivered to
+   cUniqueMessageIdentifier == each message send by the client is unique so this is used for identifing uniqueness
+   nSeqNo            == the seqno of the messages of the corresponding client
+   bFinalResponse    == last packet of a transaction/action which was triggered by a initial transcode
+   nLatestClntSeqNo  == the latest client seqno
+   nSessionId        == the session Id for a particular message session
+*/
 struct tagBufferData
 {
     short   nCommand;

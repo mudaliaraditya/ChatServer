@@ -2,14 +2,14 @@
 #define SOURCE_H
 
 #include <vector>
-#include "includes.h"
+
 
 class CSession;
-typedef list<CSession*>                     CSessionMangerStore;
-typedef list<CSession*>::iterator           CSessionManagerStoreIterator;
-typedef vector<tagSessionIdentifierData>                      CSessionStore;
-typedef vector<tagSessionIdentifierData>::iterator            CSessionStoreIterator;
-//list<pair<string,tagData>> cDataStore;
+typedef std::list<CSession*>                                       CSessionMangerStore;
+typedef std::list<CSession*>::iterator                             CSessionManagerStoreIterator;
+typedef std::vector<tagSessionIdentifierData>                      CSessionStore;
+typedef std::vector<tagSessionIdentifierData>::iterator            CSessionStoreIterator;
+
 #pragma pack(1)
 
 
@@ -20,7 +20,7 @@ typedef vector<tagSessionIdentifierData>::iterator            CSessionStoreItera
 
 
 
-string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand);
+std::string SuffixAppropirateUniqueIdentifier(std::string lcString,short nCommand);
 
 
 
@@ -91,7 +91,7 @@ void* SenderThread(void* pArg);
 
 
 
-int AddDataToStore(list<tagData> cList, pthread_mutex_t cMutex);
+int AddDataToStore(std::list<tagData> cList, pthread_mutex_t cMutex);
 
 int InitializeAllMutex();
    #endif

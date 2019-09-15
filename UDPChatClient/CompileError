@@ -1,0 +1,29 @@
+client.cpp: In function ‘long int GetResendingTime()’:
+client.cpp:121:62: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    int lnRetVal = GetConfig(CNF_RESEND_TIME_TAG,pConfigObject);
+                                                              ^
+client.cpp:126:98: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    const char* lcResendTime = ((GetValueForKey(CNF_RESEND_TIME_TAG, CNF_FILE_NAME , pConfigObject)));
+                                                                                                  ^
+client.cpp:126:98: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+client.cpp: In function ‘void* CheckResponse(void*)’:
+client.cpp:316:1: warning: no return statement in function returning non-void [-Wreturn-type]
+ }
+ ^
+client.cpp: In function ‘int GetConfiguration(char*, int, char*, int)’:
+client.cpp:1030:99: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    const char* lcPortOfServerOnHeap = ((GetValueForKey(CNF_PORT_TAG, CNF_FILE_NAME , pConfigObject)));
+                                                                                                   ^
+client.cpp:1030:99: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+client.cpp:1045:93: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    const char* lcServerIPi=((GetValueForKey(CNF_SERVER_IP_TAG, CNF_FILE_NAME , pConfigObject)));
+                                                                                             ^
+client.cpp:1045:93: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+client.cpp: In function ‘int main(int, char**)’:
+client.cpp:1084:51: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    lnRetVal =GetConfig(CNF_FILE_NAME,pConfigObject);
+                                                   ^
+client.cpp: In function ‘int GetConfiguration(char*, int, char*, int)’:
+client.cpp:1062:1: warning: control reaches end of non-void function [-Wreturn-type]
+ }
+ ^

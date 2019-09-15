@@ -1,6 +1,11 @@
 #pragma once
-#include "includes.h"
-
+#include "structs.h"
+#include <string>
+#include <deque>
+#include <vector>
+#include <map>
+#include <set>
+#include <list>
 struct tagData;
 class CSession;
 

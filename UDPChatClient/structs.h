@@ -3,6 +3,8 @@
 #include "defines.h"
 #include "includes.h"
 
+#pragma pack(1)
+
 struct tagData;
 
 struct tagCSequenceNo;
@@ -59,9 +61,9 @@ struct tagBufferData
 struct tagTimeData
 {
    public:
-   tagData stData;
-   time_t m_nTime;
-   long m_nCounter;
+   tagData  stData;
+   time_t   m_nTime;
+   long     m_nCounter;
    
    tagTimeData(const time_t& nTime,const tagData& stDatis)
    {

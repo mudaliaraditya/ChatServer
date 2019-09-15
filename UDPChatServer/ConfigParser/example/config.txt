@@ -1,0 +1,18 @@
+
+
+#  this is an example config file
+
+#  any value after the starting # is a comment but the first char needs to be # not after spaces or any thing
+#  the following cases are invalid
+#            abc =
+#            = abc
+#            abc = a b c 
+
+
+
+             KEY_OF_CONFIG = VAL_OF_KEY
+
+             PORT          = 100
+
+             HOSTNAME      = localhost
+               

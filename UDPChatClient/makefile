@@ -1,19 +1,31 @@
 
 
 
-all : client.out
+all : client.out CompileError Logs
+
+Logs :
+	mkdir Logs
+
+CompileError :
+	touch CompileError
 
 client.out : client.cpp libconfigparse.so
-	g++ -o client.out client.cpp -std=c++11 -lpthread -g -DLOGGING -DTESTLOGGING -Wall -lconfigparse -L.
+	g++ -o client.out client.cpp -std=c++11 -lpthread -g -DLOGGING -DTESTLOGGING  -lconfigparse -L. -IConfigParser/hdr/ 2> CompileError
 #	g++ -o client.out client.cpp -lEventResenderFunctions.cpp -std=c++11 -lpthread -g 
 
-libconfigparse.so : ConfigParser.o
-	g++ -o libconfigparse.so ConfigParser.o -g -shared
+warn : client.cpp libconfigparse.so
+	g++ -o client.out client.cpp -std=c++11 -lpthread -g -DLOGGING -Wall -DTESTLOGGING  -lconfigparse -L. -IConfigParser/hdr/ 2> CompileError
+
+libconfigparse.so : ConfigParser/.Complete
+	cd ConfigParser && make
+	cp ConfigParser/bin/*.so .
    
-ConfigParser.o : ConfigParser.cpp ConfigParser.h
-	g++ -c ConfigParser.cpp -fPIC -g
 
 
 clean :
 	rm *.out || true
 	rm *.so || true
+	rm *.o || true
+	rm warn || true
+	rm CompileError || true
+	cd ConfigParser && make clean

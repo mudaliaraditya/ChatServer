@@ -44,5 +44,6 @@ pthread_t lnPThreadMain;
 tagData* lpstThrdDataRcvr = NULL;
 tagData* lpstThrdSndr = NULL;
 void* pConfigObject;
+int g_nSeqNo = 0;
 #endif /* GLOBALS_H */
 

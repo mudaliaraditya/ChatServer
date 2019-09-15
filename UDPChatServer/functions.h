@@ -1,6 +1,6 @@
 #pragma once
-#include "includes.h"
 
+#include "structs.h"
 
 tagBufferData ConvertToNetworkBuffer(tagData& stData);
 tagData ConvertToDataStruct(tagBufferData& stData);

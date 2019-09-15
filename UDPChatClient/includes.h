@@ -15,6 +15,7 @@
 #include <string.h> 
 #include <signal.h>
 #include <sys/types.h> 
+#include <sys/time.h>
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
 #include <sys/ipc.h> 
@@ -29,6 +30,7 @@
 #include "typedefs.h"
 #include "Globals.h"
 #include "ConfigParser.h"
+#include "client.h"
 using namespace std;
 #endif
 #ifdef WIN32

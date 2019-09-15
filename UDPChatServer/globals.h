@@ -2,7 +2,15 @@
 
 #ifndef GLOBAL
 #define GLOBAL
-#include "includes.h"
+
+#include <pthread.h>
+#include <fstream>
+#include <map>
+#include <string>
+#include <set>
+#include "types.h"
+#include "structs.h"
+
 extern long g_OS;
 extern bool g_bProgramShouldWork;
 extern std::set<std::string> g_cIdentifierStore;

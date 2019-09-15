@@ -1,5 +1,7 @@
 #include "includes.h"
 
+using namespace std;
+
 int CreateUDPSocketIP()
 {
    int lnSockFD = socket(AF_INET, SOCK_DGRAM, 0);
