@@ -3,7 +3,7 @@
 Contact [mudaliar.aditya@gmail.com](mailto:mudaliar.aditya@gmail.com)
 
 A Basic Chat Application made with CUI client and server,the network is my major concern and priority,only one to one chat is supported, as udp is being used there is a chance for losses but still each packet which is not yet recieved a response is sent again
-there is no handling for out of order packets it is as intended
+there is no handling for out of order packets.
 
 I have developed/tested on debian,trying to keep it working across all linux distros
 
