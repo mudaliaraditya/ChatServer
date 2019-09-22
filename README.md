@@ -16,3 +16,4 @@ Features To be Added
  6. variable data length{Done}
  7. GUI to client{Pending}
  8. Cross platform client and server{Dont think server will be made cross platform,client code has to be merged}
+ 9. Encryption of messages(Encryption should be supplied through an shared object and configuration)
