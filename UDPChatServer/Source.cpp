@@ -219,9 +219,9 @@ int CleanUp()
       lcIter = g_cClientIDStore.erase(lcIter);
    }
 
-   for( std::list<tagTimeData>::iterator lcIter = g_cEventResender.begin(); g_cEventResender.end() != lcIter; lcIter++)
+   for( CEventResenderStoreIterator lcIter = g_cEventResender.begin(); g_cEventResender.end() != lcIter; lcIter++)
    {
-      tagTimeData lstData = *lcIter;
+      tagTimeData lstData = (lcIter->second);
       TESTLOG("message code :  %d, Identifier :  %d, data : %s \n",lstData.stData.nMessageCode,lstData.stData.nGlobalIdentifier,lstData.stData.cBuffer);
       //if(lpstData != nullptr)
       //{
@@ -503,7 +503,7 @@ int ExecuteFunction(tagData& stData)
             if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
-               exit(1);
+               exit(EXIT_FAILURE);
             }
             lpNewData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
             strncpy(lpNewData->cIdentifier, lstData.cIdentifier, 20);
@@ -582,7 +582,7 @@ int GetResponseForFunction(tagData& stData)
    long& lnMessageCode = stData.nMessageCode;
    switch (lnMessageCode)
    {
-      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER) :
+         case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER) :
          {
 
             stData.nMessageCode = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_RESPONSE);
@@ -592,7 +592,7 @@ int GetResponseForFunction(tagData& stData)
          }
          break;
 
-      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET) :
+         case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET) :
          {
 
             stData.nMessageCode = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET_RESPONSE);
@@ -602,7 +602,7 @@ int GetResponseForFunction(tagData& stData)
          }
          break;
 
-      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT) :
+         case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT) :
          {
 
             stData.nMessageCode = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_RESPONSE);
@@ -611,7 +611,7 @@ int GetResponseForFunction(tagData& stData)
          }
          break;
 
-      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY) :
+         case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY) :
          {
 
             stData.nMessageCode = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY_RES);
@@ -620,15 +620,16 @@ int GetResponseForFunction(tagData& stData)
          }
          break;
 
-      case ((long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY)) :
+         case ((long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY)) :
          {
 
             return 0;
          }
 
-      default :
+         default :
          {
-            perror("invalid case in GetResponseForFunc");
+            TESTLOG("%s","Invalid case");
+            //perror("invalid case in GetResponseForFunc");
          }
    }
 
@@ -640,6 +641,7 @@ int GetResponseForFunction(tagData& stData)
 #ifndef WIN32
 void* RecieverThread(void* pData)
 {
+   TESTLOG("%s","Thread : Reciever Thread");
    tagData* lpstData = NULL;
    int lnRetVal = 0;
    int lnNoOfBytes = 0;
@@ -668,7 +670,7 @@ void* RecieverThread(void* pData)
       }
       *lpstData = ConvertToDataStruct(lstBufferData);
 #ifdef LOGGING
-      TESTLOG("Recieved");
+      TESTLOG("%s","Recieved");
 #endif
       TESTLOG("%s %s", " packet with message identifier : ",lpstData->cUniqueMessageIdentifier);
       TESTLOG("%s %s" ," packet with data from " , lpstData->cIdentifier );
@@ -685,8 +687,6 @@ void* RecieverThread(void* pData)
                delete lpstData;
                lpstData = nullptr;
             }
-            //printf("%s, %d", strerror(errno), __LINE__);
-            //perror("pthread mutex lock error");
             LOG_LOGGER("%s : mutex lock failed", strerror(errno));
             exit(EXIT_FAILURE);
          }
@@ -696,31 +696,31 @@ void* RecieverThread(void* pData)
 #endif
          //!        Rejecting duplicates any extra packets are discarded
 #ifdef LOGGING
-         //TO COmment
-
-         //cout << "Recived duplicate packet Rejction started" << endl;
 #endif
          TESTLOG("%s","duplicate packet Rejction started and lesser seq no rejection ");
          if(lpstData->nLatestClntSeqNo > lpstData->nSeqNo)
          {
-            TESTLOG("%s with latest seq cntr %d message clnt seq cntr %d","weird",lpstData->nLatestClntSeqNo,lpstData->nSeqNo);
             pthread_mutex_lock(&g_ReSenderMutex);
 #ifdef LOGGING
             //cout << "Taking Resender Mutex" << __LINE__ <<endl;
 #endif
             if(!g_cEventResender.empty())
             {
-               for(list<tagTimeData>::iterator lcIter =  g_cEventResender.begin();lcIter !=  g_cEventResender.end();)
+               for(CEventResenderStoreIterator lcIter =  g_cEventResender.begin();lcIter !=  g_cEventResender.end();)
                {
-                  tagTimeData& lstData = *lcIter;
+                  tagTimeData& lstData = (lcIter->second);
                   if( lpstData->nLatestClntSeqNo > lstData.stData.nSeqNo)
                   {
                      if((strcmp(lstData.stData.cIdentifier,lpstData->cIdentifier) == 0) && ( lstData.stData.nGlobalIdentifier == lpstData->nGlobalIdentifier))
                      {
+                        TESTLOG("%s with latest seq cntr %d message clnt seq cntr %d","weird",lpstData->nLatestClntSeqNo,lpstData->nSeqNo);
 
                         lcIter =g_cEventResender.erase(lcIter);
                      }
-                     lcIter++;
+                     else
+                     {
+                        lcIter++;
+                     }
                   }
                   else
                   {
@@ -796,7 +796,7 @@ void* RecieverThread(void* pData)
          // if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
          {
             cout << "deleting all old data" << endl;
-            TESTLOG("DeleteMsgFromResenderStoreByUniqueIdentifier started")
+            TESTLOG("%s","DeleteMsgFromResenderStoreByUniqueIdentifier started")
             if(DeleteMsgFromResenderStoreByUniqueIdentifier(*lpstData) != EXIT_SUCCESS)
             {
                if(lpstData != NULL)
@@ -840,17 +840,18 @@ void* RecieverThread(void* pData)
       g_cProcessList.push_back(lpstData);
       lpstData = nullptr; 
 
+      
+
+      if ( 0  != pthread_cond_signal(&g_cCondVarForProcessThread))
+      {
+         LOG_LOGGER( "unable to signal process thread %s",strerror(errno));
+         exit(EXIT_FAILURE);
+      }
       lnRetVal = pthread_mutex_unlock(&g_cProcessMutex);
       if (lnRetVal != 0)
       {
          printf("%s %d", strerror(errno), __LINE__);
          LOG_LOGGER( "unable to take mutex lock %s",strerror(errno));
-         exit(EXIT_FAILURE);
-      }
-
-      if ( 0  != pthread_cond_signal(&g_cCondVarForProcessThread))
-      {
-         LOG_LOGGER( "unable to signal process thread %s",strerror(errno));
          exit(EXIT_FAILURE);
       }
 #ifdef LOGGING
@@ -870,7 +871,79 @@ void* RecieverThread(void* pData)
 }
 
 
+//========================================================================
+
+
+
+
 void* EventThread(void*)
+{
+   char lcUniqueIdentifierBuffer[30 + 1] = {0};
+   int lnSleeptIme = 0;
+   tagData* lpstData = NULL;
+   while(g_bProgramShouldWork == true)
+   {
+
+          pthread_mutex_lock(&g_ReSenderMutex);
+#ifdef LOGGING
+#endif
+          pthread_mutex_lock(&g_cResponseMutex);
+#ifdef LOGGING
+          TESTLOG("taking sender lock \n");
+#endif
+          if(!g_cEventResender.empty())
+          {
+            CEventResenderStoreIterator lcIter = g_cEventResender.begin();
+            TESTLOG("iterator time %d \n", lcIter->first);
+            TESTLOG("current time %d \n",time(NULL));
+            if(lcIter->first <= time(NULL) )
+            {
+
+
+               if((long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY == lcIter->second.stData.nMessageCode)
+               {
+                     // TESTLOG("Sending dummy message \n");
+                     // do
+                     // {
+                     //   SetRand(lcUniqueIdentifierBuffer, 30);
+                     // }while(VerifyUniqueness(lcUniqueIdentifierBuffer) != 0);
+                     // strncpy(lcIter->second.stData.cUniqueMessageIdentifier, lcUniqueIdentifierBuffer,strlen(lcIter->second.stData.cUniqueMessageIdentifier)); 
+               }
+               //lcIter->second.stData.nLatestClntSeqNo = g_nLatestRecivedSequenceNo;
+               TESTLOG("resending data \n");
+               lpstData = new tagData();
+               memcpy(lpstData,&(lcIter->second.stData),sizeof(tagData));
+               g_cResponseList.push_front(lpstData);
+               if(lcIter->second.m_nCounter > 1)
+               {
+                      TESTLOG("Resending Data :%s %d %s %d %s %d %s %s %s %d","Message Code:", lcIter->second.stData.nMessageCode,"the seq no is ", lcIter->second.stData.nSeqNo , " the LatestRecieved Seq no is " , lcIter->second.stData.nLatestClntSeqNo , " from user id and name ", lcIter->second.stData.cIdentifier ," " , lcIter->second.stData.nGlobalIdentifier);
+                      lcIter->second.m_nCounter--;
+                      lcIter->second.m_nTime = time(NULL) + 3;
+                      g_cEventResender.insert(pair<time_t,tagTimeData>(lcIter->second.m_nTime,lcIter->second));
+               }
+               lnSleeptIme = lcIter->first;
+               g_cEventResender.erase(lcIter);
+            }
+
+          }
+
+          pthread_mutex_unlock(&g_cResponseMutex);
+#ifdef LOGGING
+          TESTLOG("releasing sender mutex \n");
+#endif
+          pthread_mutex_unlock(&g_ReSenderMutex);
+#ifdef LOGGING
+          TESTLOG("releasing resender mutex \n");
+#endif
+          //checks for resender events only once a second
+          //sleep(1);
+          sleep(lnSleeptIme - time(NULL));
+   }
+}
+
+//===========================================================================
+/*
+void* aEventThread(void*)
 {
    while(true == g_bProgramShouldWork)
    {
@@ -915,7 +988,7 @@ void* EventThread(void*)
    }
    return NULL;
 }
-
+*/
 int DeleteMsgFromResenderStoreByUniqueIdentifier(const tagData lstRecvData )
 {
    TESTLOG("%s","started deleting messages");
@@ -932,9 +1005,9 @@ int DeleteMsgFromResenderStoreByUniqueIdentifier(const tagData lstRecvData )
    TESTLOG("%s %d", "Taking Resender Mutex" ,__LINE__ );
 #endif
    TESTLOG("%s %d %s %d %s %s %s %d", "the seq no is ", lstRecvData.nSeqNo , " the LatestRecieved Seq no is " , lstRecvData.nLatestClntSeqNo , " from user id and name ", lstRecvData.cIdentifier ," " , lstRecvData.nGlobalIdentifier);
-   for(list<tagTimeData>::iterator lcIter =  g_cEventResender.begin();lcIter != g_cEventResender.end();)
+   for(CEventResenderStoreIterator lcIter =  g_cEventResender.begin();lcIter != g_cEventResender.end();)
    {
-      tagTimeData& lstData = *lcIter;
+      tagTimeData& lstData = lcIter->second;
       TESTLOG("%s", lstData.stData.cUniqueMessageIdentifier );
       //message instore whose sequenceno is less than the latest clnt seqno that is recieved for the same user with same session id
       if((lstData.stData.nSeqNo < lstRecvData.nLatestClntSeqNo) && (lstData.stData.nSessionId == lstRecvData.nSessionId) && (strcmp(lstData.stData.cIdentifier,lstRecvData.cIdentifier) == 0))
@@ -977,7 +1050,7 @@ bool IsMessageUniqueSoAddToResenderStore(tagData stData)
    bool lbUniqueMessageSend = true;
    for(auto& lcTemp : g_cEventResender)
    {
-      if(strcmp(lcTemp.stData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier) == 0)
+      if(strcmp(lcTemp.second.stData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier) == 0)
       {
          TESTLOG("Resending Message as no response received yet","" );
          lbUniqueMessageSend = false;
@@ -988,7 +1061,7 @@ bool IsMessageUniqueSoAddToResenderStore(tagData stData)
    {
       TESTLOG("this is a new unique message","");
       tagTimeData lstTimeData((time(NULL) + 10), stData);
-      g_cEventResender.push_back(lstTimeData);
+      g_cEventResender.insert(pair<long long,tagTimeData>(lstTimeData.m_nTime,lstTimeData));
    }
 
    pthread_mutex_unlock(&g_ReSenderMutex);
@@ -1030,12 +1103,14 @@ int RejectDummyMsgCode(long long nMessageCode)
 
 void* ProcessThread(void* pArg)
 {
+   TESTLOG("%s","Thread : Process Thread");
    int lnReturnVal = 0;
 
    tagData* lstData = nullptr;
    while (true == g_bProgramShouldWork)
    {
 
+      TESTLOG("%s ","Thread getting inside loop");
       lnReturnVal = pthread_mutex_lock(&g_cProcessMutex);
       if (lnReturnVal != 0)
       {
@@ -1051,7 +1126,24 @@ void* ProcessThread(void* pArg)
 #endif
 
 
-      if(!g_cProcessList.empty())
+      while(g_cProcessList.empty())
+      {
+         TESTLOG("%s ","taking conditional lock");
+         pthread_cond_wait(&g_cCondVarForProcessThread, &g_cProcessMutex);
+         TESTLOG("%s ","unlocking mutex after conditional lock");
+         //lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
+         if (lnReturnVal != 0)
+         {
+            printf("%s, %d", strerror(errno), __LINE__);
+            perror("unable to unlock");      
+            exit(EXIT_FAILURE);
+         }
+#ifdef LOGGING
+         TESTLOG("%s %d", "Releasing Process Mutex in cond var" , __LINE__ );
+#endif
+         //continue;
+      }
+      //if(!g_cProcessList.empty())
       {
 
 #ifdef LOGGING
@@ -1061,21 +1153,7 @@ void* ProcessThread(void* pArg)
          TESTLOG( "Process fired","" );
          g_cProcessList.pop_front();         
       }
-      else
-      {
-         pthread_cond_wait(&g_cCondVarForProcessThread, &g_cProcessMutex);
-         lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
-         if (lnReturnVal != 0)
-         {
-            printf("%s, %d", strerror(errno), __LINE__);
-            perror("unable to unlock");      
-            exit(EXIT_FAILURE);
-         }
-#ifdef LOGGING
-         TESTLOG("%s %d", "Releasing Process Mutex" , __LINE__ );
-#endif
-         continue;
-      }
+
       TESTLOG("%s %d %s ","the thread no is",pthread_self(), lstData->cBuffer );
 
       lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
@@ -1112,7 +1190,7 @@ void* ProcessThread(void* pArg)
       lnReturnVal = GetResponseForFunction(*lstData);
       if (0 > lnReturnVal)
       {
-         TESTLOG("%s %n", "wrong response code" , lstData->nMessageCode );
+         TESTLOG("%s %d", "wrong response code" , lstData->nMessageCode );
          printf("%s", strerror(errno));
          exit(EXIT_FAILURE);
       }
@@ -1141,7 +1219,7 @@ void* ProcessThread(void* pArg)
 #endif
    }
    
-return NULL;
+   return NULL;
 }
 
 /*
@@ -1149,11 +1227,12 @@ return NULL;
  */
 void* SenderThread(void* pArg)
 {
+   TESTLOG("%s","Thread : Sender Thread");
    tagData* lpstData = nullptr;
    int lnReturnVal = 0;
    // Initislization
    int lnDataStructSize = sizeof(tagBufferData);
-   char lcBuffer[lnDataStructSize] = { 0 };
+   char lcBuffer[sizeof(tagBufferData)] = { 0 };
    tagBufferData lstBufferData;
    bool lbUniqueMesg = false;
    //Initializatoin end
@@ -1221,16 +1300,12 @@ int InitializeAllMutex()
 { 
    if (pthread_mutex_init(&g_cProcessMutex, NULL) != 0)
    {
-      // printf("%s %d", strerror(errno), __LINE__);
-      ///printf("\n mutex init has failed\n");
       LOG_LOGGER("%s : process mutex init has failed", strerror(errno));
       return -1;
    }
 
    if (pthread_mutex_init(&g_cResponseMutex, NULL) != 0)
    {
-      //printf("%s %d", strerror(errno), __LINE__);
-      //printf("\n mutex init has failed\n");
       LOG_LOGGER("%s : respponse mutex init has failed", strerror(errno));
       return -1;
    }
@@ -1238,16 +1313,12 @@ int InitializeAllMutex()
 
    if (pthread_mutex_init(&g_cIdentifierMutex, NULL) != 0)
    {
-      //printf("%s %d", strerror(errno), __LINE__);
-      //printf("\n mutex init has failed\n");
       LOG_LOGGER("%s : identifier mutex init has failed", strerror(errno));
       return -1;
    }
 
    if (pthread_mutex_init(&g_cGlobalIdentifierMutex, NULL) != 0)
    {
-      //printf("%s %d", strerror(errno), __LINE__);
-      //printf("\n mutex init has failed\n");
       LOG_LOGGER("%s : GlobalIdentifier mutex init has failed", strerror(errno));
       return -1;
    }
@@ -1258,6 +1329,7 @@ int InitializeAllMutex()
       return -1;
    }
 
+   return 0;
 }
 
 
@@ -1418,6 +1490,7 @@ int main()
 
    //Start of reciever program
 
+   TESTLOG("%s","Thread : main Thread");
    while (true == g_bProgramShouldWork)
    {
 

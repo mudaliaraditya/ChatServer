@@ -24,8 +24,11 @@ typedef  std::deque<tagData*>::iterator                    CIteratorDataStore;
 typedef std::set<std::string>                              CIdentifierStringStore;
 typedef CIdentifierStringStore::iterator                   CIterIdentifierStringStore;
 typedef std::pair<CIterIdentifierStringStore, bool>        CRetValInsIterIdentifierStringStore;
-typedef std::list<CSession*>                               CSessionMangerStore;
-typedef std::list<CSession*>::iterator                     CSessionManagerStoreIterator;
-typedef std::vector<tagSessionIdentifierData>              CSessionStore;
-typedef std::vector<tagSessionIdentifierData>::iterator    CSessionStoreIterator;
+typedef std::list<CSession*>                     CSessionMangerStore;
+typedef std::list<CSession*>::iterator           CSessionManagerStoreIterator;
+typedef std::vector<tagSessionIdentifierData>                      CSessionStore;
+typedef std::vector<tagSessionIdentifierData>::iterator            CSessionStoreIterator;
+typedef std::multimap<time_t,tagTimeData>           CEventResenderStore;
+typedef std::multimap<time_t,tagTimeData>::iterator CEventResenderStoreIterator;
+
 

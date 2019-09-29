@@ -1,0 +1,5 @@
+21092019
+
+Globals.h
+------------
+added comments

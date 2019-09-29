@@ -40,7 +40,7 @@ pthread_t lnRecieverThread;
 
 pthread_mutex_t         g_ReSenderMutex;
 
-std::list<tagTimeData>       g_cEventResender;
+CEventResenderStore       g_cEventResender;
 
 std::fstream g_cfstream;
 

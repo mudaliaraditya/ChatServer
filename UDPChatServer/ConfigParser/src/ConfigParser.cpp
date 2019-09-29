@@ -21,6 +21,7 @@ void DeleteNewMap(void* pMap)
 {
     map< string,map < string,string > >* lpcMap = (map< string,map < string,string > >*)pMap;
     delete lpcMap;
+    pMap = NULL;
 }
 
 
@@ -63,7 +64,8 @@ int DeleteKeyVal(char* pVal)
 
 int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < string,string > >* pcBigMap)
 {
-   char lcBuffer[cString.length() + 1] = {0};
+   char lcBuffer[cString.length() + 1];
+   memset(lcBuffer, 0 , cString.length() + 1);
    strncpy(lcBuffer, cString.c_str(), cString.length() );
    int lnCounter = 0;
    string lcKey = "";
@@ -72,8 +74,6 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
    char* lpcDelimiter = strchr(lcBuffer, lcEqualSign);
    char* lcToken = lcBuffer;
    char* lcBuffStart = lcBuffer;
-   int lnPosition1 = 0; 
-   int lnPosition2 = 0; 
    while(lcToken != NULL)
    {
          lcToken = strtok(lcBuffStart,"= ");

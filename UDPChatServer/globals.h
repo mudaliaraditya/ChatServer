@@ -50,7 +50,7 @@ extern pthread_t lnRecieverThread;
 
 extern pthread_mutex_t         g_ReSenderMutex;
 
-extern std::list<tagTimeData>       g_cEventResender;
+extern CEventResenderStore       g_cEventResender;
 
 extern std::fstream g_cfstream;
 

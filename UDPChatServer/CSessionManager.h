@@ -75,6 +75,7 @@ class CSession
                return 0;
             }
          }
+         return -1;
       }
 
 

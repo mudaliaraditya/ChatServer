@@ -167,7 +167,22 @@ int AddResendingMessageToEventStore(tagData stData)
 
 
 
+void GetDateTimeFormat(char* cBuffer,long nLength)
+{
+   time_t lnTime;
+   struct tm*  lpsttm = NULL;
+   char lcErrorLogFileName[200] = {0};
+   lnTime = time(NULL);
+   lpsttm  = gmtime(&lnTime);
+   snprintf(cBuffer,nLength,"%02d-%02d-%04d_%02d%02d%02d.%s",lpsttm->tm_mday,lpsttm->tm_mon +1  ,lpsttm->tm_year + 1900,lpsttm->tm_hour,lpsttm->tm_min,lpsttm->tm_sec,"log");
+}
 
+
+void AddErrorLogSuffix(char* cBuffer,long nLength)
+{
+      char lcBuffer[nLength + 1] = {0};
+      snprintf(cBuffer,nLength,"%s",cBuffer);
+}
 
 int InitiateLogging()
 {
@@ -411,7 +426,7 @@ int ExecuteResponse(tagData& stData)
                
                lstSentDeliveryMessageData.nMessageCode=(long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY;
                
-               strncpy(lstSentDeliveryMessageData.cTarget, stData.cTarget, 20);//here target means u
+               strncpy(lstSentDeliveryMessageData.cTarget, stData.cTarget, 20);//here target means the client/reciever
                strncpy(lstSentDeliveryMessageData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier, 30);
                lstSentDeliveryMessageData.stNetWork.fd=g_nSockFd;
                //lstData.fd =g_nSockFd;
@@ -525,6 +540,8 @@ int MakeReSender(tagData lstRecvData )
             if(strcmp(lstData.stData.cUniqueMessageIdentifier,lstRecvData.cUniqueMessageIdentifier) == 0)
             {
                TESTLOG( "response recieved now erasing from resender store\n");
+               TESTLOG( "Details of the recieved message the details are nCommand %d nGlobalIdentifier         %ld cIdentifier               %s nFrOrToServerFlg          %d nMessageCode              %ld cBuffer                   %s cTarget                   %s cUniqueMessageIdentifier  %s nSeqNo                    %d  bFinalResponse           %d nLatestClntSeqNo          %d",lstRecvData.nCommand,lstRecvData.nGlobalIdentifier,lstRecvData.cIdentifier,lstRecvData.nFrOrToServerFlg,lstRecvData.nMessageCode,lstRecvData.cBuffer,lstRecvData.cTarget,lstRecvData.cUniqueMessageIdentifier,lstRecvData.nSeqNo,lstRecvData.bFinalResponse,lstRecvData.nLatestClntSeqNo);
+               TESTLOG( "Details of the resender store message the details are nCommand %d nGlobalIdentifier         %ld cIdentifier               %s nFrOrToServerFlg          %d nMessageCode              %ld cBuffer                   %s cTarget                   %s cUniqueMessageIdentifier  %s nSeqNo                    %d  bFinalResponse           %d nLatestClntSeqNo          %d",lstData.stData.nCommand,lstData.stData.nGlobalIdentifier,lstData.stData.cIdentifier,lstData.stData.nFrOrToServerFlg,lstData.stData.nMessageCode,lstData.stData.cBuffer,lstData.stData.cTarget,lstData.stData.cUniqueMessageIdentifier,lstData.stData.nSeqNo,lstData.stData.bFinalResponse,lstData.stData.nLatestClntSeqNo);
                lcIter = g_cEventResender.erase( lcIter);
             }
             else

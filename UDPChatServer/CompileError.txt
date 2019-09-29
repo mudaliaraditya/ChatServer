@@ -1,19 +1,9 @@
 Source.cpp: In function ‘int main()’:
-Source.cpp:1333:53: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
-    lnRetVal =  GetConfig(CNF_FILE_NAME,pConfigObject);
+Source.cpp:1407:53: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+    lnRetVal =  GetConfig(CNF_FILE_NAME,pConfigObject); 
                                                      ^
-In file included from includes.h:31,
-                 from Source.cpp:1:
-CSessionManager.h: In member function ‘int CSession::FreeUserExistsinSession(std::__cxx11::string)’:
-CSessionManager.h:93:7: warning: control reaches end of non-void function [-Wreturn-type]
-       }
-       ^
-Source.cpp: In function ‘int InitializeAllMutex()’:
-Source.cpp:1259:1: warning: control reaches end of non-void function [-Wreturn-type]
- }
- ^
 NetworkSources.cpp: In function ‘int NetWorkInitialize(int&)’:
-NetworkSources.cpp:28:82: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+NetworkSources.cpp:28:82: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
     char* lcPorti  =  ((GetValueForKey(CNF_PORT_TAG, CNF_FILE_NAME , pConfigObject)));
                                                                                   ^
-NetworkSources.cpp:28:82: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+NetworkSources.cpp:28:82: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]

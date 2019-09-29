@@ -1,0 +1,31 @@
+CSessionManager class had a function which didnt return anything for error case UserExistsinSession
+-----------------------------------------------------
+CSessionManager.h
+
+
+Initialize All Mutex was not returning any value
+--------------------------------------------------
+Source.cpp
+
+
+Source.cpp
+------------------
+return changes
+changes for cout
+
+makefile
+-----------------
+changes in variable
+
+ Event Resender implementing a multimap instead of a list 25/09/2019 
+------------------------------
+ globals.cpp
+ types.h
+ globals.h
+ Source.cpp
+
+
+
+
+
+
