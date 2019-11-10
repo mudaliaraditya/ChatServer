@@ -1,5 +1,4 @@
-21092019
+10112019
+-----------
 
-Globals.h
-------------
-added comments
+replaced sleep with sleep_for c++11

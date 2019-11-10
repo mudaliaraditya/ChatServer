@@ -321,7 +321,8 @@ void* CheckResponse(void*)
           pthread_mutex_unlock(&g_ReSenderMutex);
           //checks for resender events only once a second
           //sleep(1);
-          sleep(lnSleeptIme - time(NULL));
+          //sleep(lnSleeptIme - time(NULL));
+          this_thread::sleep_for(std::chrono::seconds(lnSleeptIme - time(NULL)));
    }
 }
 
