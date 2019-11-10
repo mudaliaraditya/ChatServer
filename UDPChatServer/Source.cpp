@@ -53,9 +53,8 @@ long getMicrotime()
    return currentTime.tv_usec;
 }
 
-
+/*
 int g_nClientIdentifier = 0;
-//CClientIdDataStore g_cClientIDStore;
 int g_nMainSockFd = 0;
 CClientIdDataStore g_cClientIDStore;
 
@@ -64,7 +63,7 @@ CClientIdDataStore g_cClientIDStore;
 
 CSessionManager g_cSessionManager;
 
-
+*/
 
 
 string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand)
@@ -508,6 +507,7 @@ int ExecuteFunction(tagData& stData)
             lpNewData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
             strncpy(lpNewData->cIdentifier, lstData.cIdentifier, 20);
             lpNewData->nMessageCode = lstData.nMessageCode;
+            lpNewData->nSeqNo = lstData.nSeqNo;
             strncpy(lpNewData->cBuffer, lstData.cBuffer, MAXLINE);
             strncpy(lpNewData->cTarget, lstData.cTarget, 20);
             strncpy(lpNewData->cUniqueMessageIdentifier, lstData.cUniqueMessageIdentifier, 30);
@@ -550,7 +550,12 @@ int ExecuteFunction(tagData& stData)
                printf("%s %d", strerror(errno), __LINE__);
                exit (EXIT_FAILURE); 
             }
+            cout << "the seq no is "     << lstData.nSeqNo << endl;
+            cout << "the Identifier is " << lstData.cIdentifier << endl;
+            cout << "the Target is " << lstData.cTarget << endl;
+            cout << lstData.nMessageCode << endl;// lcIter1->second->nMessageCode;
             lpNewData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_CONF;
+            lpNewData->nSeqNo = lstData.nSeqNo;
             lpNewData->bFinalResponse = true;
             strncpy(lpNewData->cIdentifier, lstData.cIdentifier, 20);
             strncpy(lpNewData->cTarget, lstData.cTarget, 20);
@@ -702,7 +707,6 @@ void* RecieverThread(void* pData)
          {
             pthread_mutex_lock(&g_ReSenderMutex);
 #ifdef LOGGING
-            //cout << "Taking Resender Mutex" << __LINE__ <<endl;
 #endif
             if(!g_cEventResender.empty())
             {
@@ -733,7 +737,7 @@ void* RecieverThread(void* pData)
             cout << "Releasing Resender Mutex" << __LINE__ <<endl;
 #endif
          }
-         string lcKey = SuffixAppropirateUniqueIdentifier(lpstData->cUniqueMessageIdentifier, lpstData->nCommand);
+         string lcKey = SuffixAppropirateUniqueIdentifier(lpstData->cUniqueMessageIdentifier, (short)lpstData->nCommand);
          //if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
          {
             // for(auto& lstIdentifiers : g_cIdentifierStore)
@@ -887,7 +891,6 @@ void* EventThread(void*)
           pthread_mutex_lock(&g_ReSenderMutex);
 #ifdef LOGGING
 #endif
-          pthread_mutex_lock(&g_cResponseMutex);
 #ifdef LOGGING
           TESTLOG("taking sender lock \n");
 #endif
@@ -913,6 +916,7 @@ void* EventThread(void*)
                TESTLOG("resending data \n");
                lpstData = new tagData();
                memcpy(lpstData,&(lcIter->second.stData),sizeof(tagData));
+               pthread_mutex_lock(&g_cResponseMutex);
                g_cResponseList.push_front(lpstData);
                if(lcIter->second.m_nCounter > 1)
                {
@@ -923,11 +927,11 @@ void* EventThread(void*)
                }
                lnSleeptIme = lcIter->first;
                g_cEventResender.erase(lcIter);
+               pthread_mutex_unlock(&g_cResponseMutex);
             }
 
           }
 
-          pthread_mutex_unlock(&g_cResponseMutex);
 #ifdef LOGGING
           TESTLOG("releasing sender mutex \n");
 #endif
@@ -994,7 +998,7 @@ int DeleteMsgFromResenderStoreByUniqueIdentifier(const tagData lstRecvData )
    TESTLOG("%s","started deleting messages");
    int lnRetval = 0;
    string lcKey = "";
-   lcKey = SuffixAppropirateUniqueIdentifier(lstRecvData.cUniqueMessageIdentifier, lstRecvData.nCommand);
+   lcKey = SuffixAppropirateUniqueIdentifier(lstRecvData.cUniqueMessageIdentifier, (short)lstRecvData.nCommand);
    lnRetval = pthread_mutex_lock(&g_ReSenderMutex);
    if(lnRetval != 0)
    {
@@ -1010,6 +1014,29 @@ int DeleteMsgFromResenderStoreByUniqueIdentifier(const tagData lstRecvData )
       tagTimeData& lstData = lcIter->second;
       TESTLOG("%s", lstData.stData.cUniqueMessageIdentifier );
       //message instore whose sequenceno is less than the latest clnt seqno that is recieved for the same user with same session id
+      /*if(( (lstData.stData.nSessionId == lstRecvData.nSessionId) && (strcmp(lstData.stData.cIdentifier,lstRecvData.cIdentifier) == 0) &&
+       (
+            (long long)CCOMMAND_TYPE::CCOMMAND_TYPE_RESPONSE      == lstRecvData.nCommand ||
+            (long long)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_RES == lstRecvData.nCommand
+       )
+
+))
+      {
+         TESTLOG( "deleting all lower seqno for user id %d" , lstRecvData.nGlobalIdentifier );
+         lcIter = g_cEventResender.erase( lcIter);
+         //continue;
+      }
+      else if((strcmp(lstData.stData.cUniqueMessageIdentifier,lstRecvData.cUniqueMessageIdentifier) == 0) && (lstData.stData.nSessionId == lstRecvData.nSessionId))
+      {
+         //TESTLOG( "response recieved now erasing","" );
+         //lcIter = g_cEventResender.erase( lcIter);
+         //continue;
+         lcIter++;
+      }
+      else
+      {
+         lcIter++;
+      } */
       if((lstData.stData.nSeqNo < lstRecvData.nLatestClntSeqNo) && (lstData.stData.nSessionId == lstRecvData.nSessionId) && (strcmp(lstData.stData.cIdentifier,lstRecvData.cIdentifier) == 0))
       {
          TESTLOG( "deleting all lower seqno for user id %d" , lstRecvData.nGlobalIdentifier );
@@ -1491,6 +1518,7 @@ int main()
    //Start of reciever program
 
    TESTLOG("%s","Thread : main Thread");
+   cout << "type S to Stop" << endl;
    while (true == g_bProgramShouldWork)
    {
 

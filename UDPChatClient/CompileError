@@ -1,21 +1,21 @@
 client.cpp: In function ‘long int GetResendingTime()’:
-client.cpp:121:62: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+client.cpp:122:62: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
     int lnRetVal = GetConfig(CNF_RESEND_TIME_TAG,pConfigObject);
                                                               ^
-client.cpp:126:98: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+client.cpp:127:98: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
     const char* lcResendTime = ((GetValueForKey(CNF_RESEND_TIME_TAG, CNF_FILE_NAME , pConfigObject)));
                                                                                                   ^
-client.cpp:126:98: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+client.cpp:127:98: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
 client.cpp: In function ‘int GetConfiguration(char*, int, char*, int)’:
-client.cpp:1047:99: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+client.cpp:1168:99: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
     const char* lcPortOfServerOnHeap = ((GetValueForKey(CNF_PORT_TAG, CNF_FILE_NAME , pConfigObject)));
                                                                                                    ^
-client.cpp:1047:99: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
-client.cpp:1062:93: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+client.cpp:1168:99: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+client.cpp:1184:93: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
     const char* lcServerIPi=((GetValueForKey(CNF_SERVER_IP_TAG, CNF_FILE_NAME , pConfigObject)));
                                                                                              ^
-client.cpp:1062:93: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+client.cpp:1184:93: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
 client.cpp: In function ‘int main(int, char**)’:
-client.cpp:1101:51: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+client.cpp:1252:51: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
     lnRetVal =GetConfig(CNF_FILE_NAME,pConfigObject);
                                                    ^

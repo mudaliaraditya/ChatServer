@@ -1,7 +1,7 @@
 #pragma once
 #ifndef WIN32
 #include "defines.h"
-#include "includes.h"
+//#include "includes.h"
 
 #pragma pack(1)
 
@@ -40,6 +40,17 @@ struct tagData
     int              nSessionId;
     tagNetworkThread stNetWork;
 };
+
+class CtagDataSeqNoComp
+{
+   public:
+   bool operator()(const tagData& lstData1,const tagData& lstData2) const
+   {
+         return lstData1.nSeqNo < lstData2.nSeqNo;
+   }
+
+};
+
 
 struct tagBufferData
 {

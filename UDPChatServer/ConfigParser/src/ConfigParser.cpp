@@ -60,13 +60,112 @@ int DeleteKeyVal(char* pVal)
    }
 }
 
+int CheckForGivenSetofChars(char cChar,string sListOfRChars)
+{
+    for(int i = 0;i < sListOfRChars.length();i++)
+    {
+          if (cChar == sListOfRChars[i])
+          {
+             return 0;
+          }
+    }
+    return -1;
+}
+
+
+int CheckForCommentSpceNewLine(char cVal)
+{
+    switch(cVal)
+    {
+       case  ' ':
+       case '\r':
+       case '\n':
+       case '#':
+       {
+          return 0;
+       }
+       default:
+       {
+          return -1;
+       }
+    }
+    return -1;
+}
+//
+int CheckForSpceNewLine(char cVal)
+{
+    switch(cVal)
+    {
+       case  ' ':
+       case '\r':
+       case '\n':
+       {
+          return 0;
+       }
+       default:
+       {
+          return -1;
+       }
+    }
+    return -1;
+}
+int CheckForNewLine(char cVal)
+{
+    switch(cVal)
+    {
+       case '\r':
+       case '\n':
+       {
+          return 0;
+       }
+       default:
+       {
+          return -1;
+       }
+    }
+    return -1;
+}
+int CheckForComment(char cVal)
+{
+    switch(cVal)
+    {
+       case '#':
+       {
+          return 0;
+       }
+       default:
+       {
+          return -1;
+       }
+    }
+    return -1;
+}
+
+int CheckForSpce(char cVal)
+{
+    switch(cVal)
+    {
+       case '#':
+       {
+          return 0;
+       }
+       default:
+       {
+          return -1;
+       }
+    }
+    return -1;
+}
+
 
 
 int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < string,string > >* pcBigMap)
 {
    char lcBuffer[cString.length() + 1];
+   char lcBuffer1[cString.length() + 1];
    memset(lcBuffer, 0 , cString.length() + 1);
    strncpy(lcBuffer, cString.c_str(), cString.length() );
+   strncpy(lcBuffer1, cString.c_str(), cString.length() );
    int lnCounter = 0;
    string lcKey = "";
    string lcVal = "";
@@ -74,6 +173,7 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
    char* lpcDelimiter = strchr(lcBuffer, lcEqualSign);
    char* lcToken = lcBuffer;
    char* lcBuffStart = lcBuffer;
+   int lnSplitToken = 0;
    while(lcToken != NULL)
    {
          lcToken = strtok(lcBuffStart,"= ");
@@ -94,6 +194,7 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                    {
                       return 0;
                    }
+                    // = value Occurance 
                    if((lcToken - lpcDelimiter) >= 0)
                    {
                         return -1;
@@ -115,7 +216,53 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                    {
                         return -1;
                    }
-                   lcVal = lcToken;
+                   else if( lcToken[0] =='\"' )
+                   {
+                        char* lpcR = strrchr(lcBuffer1,'\"');
+                        char* lpcF = strchr(lcBuffer1,'\"');
+                        char* lpcDelim = strchr(lcBuffer1,'=');
+                        char lcTruBuffer[cString.length() + 1] = {0};
+                        long lnLength = lpcR - lpcF + 1;
+                        int lnlastIndex  = lpcR - lcBuffer1;
+                        for( int i = lnlastIndex + 1;i < cString.length();i++)      
+                        {
+                           switch(lcBuffer1[i])
+                           {
+                              case '\0':
+                              case '\n':
+                              case '\r':
+                              case  ' ':
+                              {}
+                              break;
+                               default:
+                              {
+                                  return -1;
+                              }
+                           }
+                        }                
+                        strncpy(lcTruBuffer,lpcF, (lnLength));    
+                        if (lpcF > lpcDelim && (*(lpcR + 1) == '\n' || *(lpcR + 1) == '\r' || *(lpcR + 1) == ' ' ))
+                        {
+                             lnSplitToken = 1;
+                             for(int i = 0;i< (lnLength - 1); i++)
+                             {
+                                   lcTruBuffer[i] = lcTruBuffer[i + 1];
+                             }
+                             lcTruBuffer[lnLength - 2] = '\0';
+                             lcVal = lcTruBuffer;
+                             break;
+                        }
+                        else
+                        {
+                           return -1;
+                        }
+                       //if(lnF > ) 
+                       //for(int i = 0;i< ) 
+                   }
+                   else
+                   {
+                      lcVal = lcToken;
+                   }
                 }
                 else
                 {
@@ -130,7 +277,7 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                 {
                    break;
                 }
-                else if(*lcToken == '\r' || *lcToken == '\n' || *lcToken == ' ')
+                else if(*lcToken == '\r' || *lcToken == '\n' || *lcToken == ' ' || lnSplitToken == 1)
                 {
                     continue;
                 }

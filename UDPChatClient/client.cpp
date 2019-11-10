@@ -1,9 +1,10 @@
 #include "includes.h"
 
-
+using namespace std;
 #pragma pack(1)
 
-
+#define COREGEN
+int g_nConnectedTest = 0;
 long getMicrotime()
 {
    struct timeval currentTime;
@@ -29,7 +30,7 @@ long getMicrotime()
       char lcTimeLogBuffer[700] = {0};\
       GETTIMEBUFFER(lcTimeLogBuffer);\
       snprintf(lcBufferMessage,500,cToBeLogged, ##__VA_ARGS__);         \
-      (cFileStream <<  lcTimeLogBuffer << " | " << lcBufferMessage <<  " | "<< __func__ <<"() | " << "thread id :" << pthread_self() << " | "<<__FILE__<< ":"<<__LINE__ <<endl);           \
+      (cFileStream <<  lcTimeLogBuffer << " | " << g_PID << " | "<< lcBufferMessage <<  " | "<< __func__ <<"() | " << "thread id :" << pthread_self() << " | "<<__FILE__<< ":"<<__LINE__ <<endl);           \
    }               \
 }
 
@@ -43,7 +44,7 @@ long getMicrotime()
       long long lnMicro = getMicrotime();\
       struct tm*  lpsttm =  localtime(&g_nTime);\
       char lcBufferTime[200] = {0};                       \
-      snprintf(lcBufferTime,200,"%d:%d:%d.%d %d-%d-%d",lpsttm->tm_hour, lpsttm->tm_min, lpsttm->tm_sec, lnMicro,lpsttm->tm_mday,lpsttm->tm_mon,lpsttm->tm_year );\
+      snprintf(lcBufferTime,200,"%02d:%02d:%02d.%06d %02d-%02d-%04d",lpsttm->tm_hour, lpsttm->tm_min, lpsttm->tm_sec, lnMicro,lpsttm->tm_mday,lpsttm->tm_mon,(lpsttm->tm_year + 1900) );\
       snprintf(cTimeBuffer,500,"%s",lcBufferTime);\
    }\
 }
@@ -129,7 +130,8 @@ long GetResendingTime()
           return -1;
    }
    int lnSize = strlen(lcResendTime);
-   char lcBufferResendTime[lnSize + 1] = {0};
+   char lcBufferResendTime[lnSize + 1];
+   memset(lcBufferResendTime, 0, lnSize);
    {
           strncpy(lcBufferResendTime, lcResendTime, lnSize);
    }
@@ -147,6 +149,7 @@ int AddResendingMessageToEventStoreWithCount(tagData stData,int nCount)
 {  
    long lnResendTime = GetResendingTime() + time(NULL);
    tagTimeData  lstTimeData = GetTimeTag(stData, lnResendTime, nCount);
+   TESTLOG("adding to resender store : resend time %d count %d message code %ld",lnResendTime,nCount,stData.nMessageCode);
    //lstTimeData.m_nTime = lnResendTime ;
    //tagTimeData lstTimeData(time(NULL) + lnResendTime,stData, INT_MAX);
    g_cEventResender.insert(pair<time_t,tagTimeData>(lstTimeData.m_nTime, lstTimeData)); //to Uncomment
@@ -180,8 +183,8 @@ void GetDateTimeFormat(char* cBuffer,long nLength)
 
 void AddErrorLogSuffix(char* cBuffer,long nLength)
 {
-      char lcBuffer[nLength + 1] = {0};
-      snprintf(cBuffer,nLength,"%s",cBuffer);
+     // char lcBuffer[nLength + 1];
+     // snprintf(cBuffer,nLength,"%s",cBuffer);
 }
 
 int InitiateLogging()
@@ -276,12 +279,7 @@ void* CheckResponse(void*)
    {
 
           pthread_mutex_lock(&g_ReSenderMutex);
-#ifdef LOGGING
-#endif
           pthread_mutex_lock(&g_SenderMutex);
-#ifdef LOGGING
-          TESTLOG("taking sender lock \n");
-#endif
           if(!g_cEventResender.empty())
           {
             CEventResenderStoreIterator lcIter = g_cEventResender.begin();
@@ -300,7 +298,10 @@ void* CheckResponse(void*)
                       }while(VerifyUniqueness(lcUniqueIdentifierBuffer) != 0);
                       strncpy(lcIter->second.stData.cUniqueMessageIdentifier, lcUniqueIdentifierBuffer,strlen(lcIter->second.stData.cUniqueMessageIdentifier)); 
                }
+               pthread_mutex_lock(&g_GlobalSeqnoMutex);
                lcIter->second.stData.nLatestClntSeqNo = g_nLatestRecivedSequenceNo;
+               pthread_mutex_unlock(&g_GlobalSeqnoMutex);
+               
                TESTLOG("resending data \n");
                g_cSenderDataStore.push_front(lcIter->second.stData);
                if(lcIter->second.m_nCounter > 1)
@@ -317,13 +318,7 @@ void* CheckResponse(void*)
           }
 
           pthread_mutex_unlock(&g_SenderMutex);
-#ifdef LOGGING
-          TESTLOG("releasing sender mutex \n");
-#endif
           pthread_mutex_unlock(&g_ReSenderMutex);
-#ifdef LOGGING
-          TESTLOG("releasing resender mutex \n");
-#endif
           //checks for resender events only once a second
           //sleep(1);
           sleep(lnSleeptIme - time(NULL));
@@ -414,16 +409,20 @@ int ExecuteResponse(tagData& stData)
           case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE):
             {
                //printf("%s : %s", stData.cIdentifier, stData.cBuffer );
-               cout << stData.cIdentifier << " : " << stData.cBuffer << endl;
+               //pthread_mutex_lock(&g_ConsoleIOMutex);
+                cout << stData.cIdentifier << " : "<< stData.cBuffer << endl;
+                //TESTLOG("%s : %s" ,stData.cIdentifier , stData.cBuffer);
+                TESTLOG("%d %s",stData.nSeqNo," : the current seq no ");
+               //pthread_mutex_unlock(&g_ConsoleIOMutex);
                tagData lstSentDeliveryMessageData = {0};
-
+               //g_cAllMessageStore.insert( stData);
                lstSentDeliveryMessageData.nGlobalIdentifier         = stData.nGlobalIdentifier;
                lstSentDeliveryMessageData.nCommand                  =(short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY;
                
                strncpy(lstSentDeliveryMessageData.cIdentifier, stData.cIdentifier, 20);
                
                lstSentDeliveryMessageData.nFrOrToServerFlg=(long)CEToFromServer::CEToFromServer_CLNT_TO_SERV;
-               
+               //informing the server that the message has been delivered 
                lstSentDeliveryMessageData.nMessageCode=(long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY;
                
                strncpy(lstSentDeliveryMessageData.cTarget, stData.cTarget, 20);//here target means the client/reciever
@@ -446,9 +445,10 @@ int ExecuteResponse(tagData& stData)
 
             }
             break;
-
+          //final transcode indicating that the message has reached the client
           case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_SERV_TO_CLI:
             {
+               g_nConnectedTest = 1;
                TESTLOG( "msg delivered \n");
                TESTLOG("\n %s : %s \n", stData.cIdentifier, stData.cBuffer);
                //cout << endl <<stData.cIdentifier << " : " <<stData.cBuffer << endl;
@@ -458,6 +458,8 @@ int ExecuteResponse(tagData& stData)
           case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY_RES:
             {
                TESTLOG("delivery mesage reachd server \n");
+               //cout << "Delivery Confirmation" << endl;
+               TESTLOG(" %d %s",stData.nSeqNo, " : the current seq no Delivery Confirmation");
             }
             break;
 
@@ -478,46 +480,6 @@ int ExecuteResponse(tagData& stData)
    return 0;
 }
 
-///CreateUDPSocketIP
-///Creates a Simple UDP Socket
-int CreateUDPSocketIP()
-{
-   int lnSockFD = socket(AF_INET, SOCK_DGRAM, 0);
-   return lnSockFD;
-}
-
-
-
-void FillSockAddrin(long sin_family, unsigned short int sin_port, long long sin_addr, sockaddr_in* sockaddrin)
-{
-   sockaddrin->sin_family = sin_family;
-   sockaddrin->sin_port = sin_port;
-   sockaddrin->sin_addr.s_addr = sin_addr;
-}
-
-
-
-int SendUDPData(int nSockFD, const void* cData, size_t nSize, const struct sockaddr_in* pstSockAddr, long nSockAddrLen)
-{
-#ifndef WIN32
-   return sendto(nSockFD, (const char *)&cData, nSize, MSG_CONFIRM, (const struct sockaddr *) pstSockAddr, nSockAddrLen);
-#endif
-
-#ifdef WIN32
-   return sendto(nSockFD, (const char *)&cData, nSize, 0, (const struct sockaddr *) pstSockAddr, nSockAddrLen);
-#endif
-}
-
-int RecvUDPData(int nSockFD, void* cData, size_t nSize, sockaddr_in* pstSockAddr, long pnSockAddrLen)
-{
-#ifndef WIN32
-   return recvfrom(nSockFD, (void*)cData, nSize, MSG_WAITALL, (struct sockaddr *) pstSockAddr, (socklen_t*)&pnSockAddrLen);
-#endif
-#ifdef WIN32
-   return recvfrom(nSockFD, (char*)cData, nSize, 0, (struct sockaddr *) pstSockAddr, (int*)&pnSockAddrLen);
-#endif
-}
-
 
 #ifndef WIN32
 
@@ -528,9 +490,6 @@ int MakeReSender(tagData lstRecvData )
    if(lstRecvData.bFinalResponse == true)
    {
           pthread_mutex_lock(&g_ReSenderMutex);
-#ifdef LOGGING
-          TESTLOG("taking resender lock %d\n", __LINE__);
-#endif
           //for(list<tagTimeData>::iterator lcIter =g_cEventResender.begin();lcIter != g_cEventResender.end();)
           for(CEventResenderStoreIterator lcIter =g_cEventResender.begin();lcIter != g_cEventResender.end();)
           {
@@ -550,9 +509,6 @@ int MakeReSender(tagData lstRecvData )
             }
           }
           pthread_mutex_unlock(&g_ReSenderMutex);
-#ifdef LOGGING
-          TESTLOG("releasing resender lock %d",__LINE__ );
-#endif
    }
    return 0;
 }
@@ -563,9 +519,6 @@ bool IsMessageUnique(tagData stData)
    int lnRetVal = 0;
 
    pthread_mutex_lock(&g_ReSenderMutex);
-#ifdef LOGGING
-   TESTLOG( "Taking Resender lock %d \n", __LINE__ );
-#endif
    bool lbUniqueMessageSend = true;
 
    //for(auto& lcTemp : g_cEventResender)
@@ -590,9 +543,6 @@ bool IsMessageUnique(tagData stData)
          // tagTimeData lstTimeData((time(NULL) + 10), stData);
          // g_cEventResender.insert(pair<time_t,tagTimeData>(lstTimeData.m_nTime,lstTimeData));
    }
-#ifdef LOGGING
-   TESTLOG( "releasing resender lock %d \n", __LINE__);
-#endif
    pthread_mutex_unlock(&g_ReSenderMutex);
    return lbUniqueMessageSend;
 }
@@ -618,9 +568,6 @@ void* SenderThread(void* pVData)
           memset(&lstToSendData, 0 ,sizeof(tagData)); 
 
           pthread_mutex_lock(&g_SenderMutex);
-#ifdef LOGGING
-          TESTLOG("taking sender lock %d\n",__LINE__ ); 
-#endif
           if(!g_cSenderDataStore.empty())
           {
             lstToSendData = g_cSenderDataStore.front();
@@ -637,7 +584,8 @@ void* SenderThread(void* pVData)
                TESTLOG( "sending data delivery; %d \n",lstThread.fd);
             }
             int lnDataStructSize = sizeof(tagBufferData);
-            char lcBuffer[lnDataStructSize] = { 0 };
+            char lcBuffer[lnDataStructSize];
+            memset(lcBuffer, 0, lnDataStructSize);
             tagBufferData lstBufferData = ConvertToNetworkBuffer(lstToSendData) ;
             memcpy(&lcBuffer, (char*)&lstBufferData, lnDataStructSize);
             lnLen = sendto(lstThread.fd, (const char *)&lcBuffer, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(lstThread.addr), sizeof((lstThread.addr))); 
@@ -646,15 +594,12 @@ void* SenderThread(void* pVData)
                TESTLOG("error");
                exit(1);
             }
-
+            
           }
 
           else
           {
             pthread_mutex_unlock(&g_SenderMutex);
-#ifdef LOGGING
-            TESTLOG("Releasing sender lock %d \n", __LINE__ );
-#endif
           }
    }
    return NULL;
@@ -697,25 +642,106 @@ void* RecieverThread(void* pVData)
           TESTLOG("%s \n", lstRecvData.cTarget );
 #endif
 
+          pthread_mutex_lock(&g_GlobalSeqnoMutex);
           if(lstRecvData.bFinalResponse == true)
           {
-            if(lstRecvData.nSeqNo == g_nLatestRecivedSequenceNo)
+            TESTLOG( "Getting into loop of order packet %d", lstRecvData.nSeqNo);
+            TESTLOG( "Current latest seqno is %d", g_nLatestRecivedSequenceNo);
+            TESTLOG( "the message code is %d", lstRecvData.nMessageCode);
+            TESTLOG( "the Identifer is %s", lstRecvData.cIdentifier);
+            TESTLOG( "the Identifer is %s", lstRecvData.cTarget);
+
+            if(lstRecvData.nSeqNo == g_nExpectedSeqNo)
             {
                //g_nLastResRecSeq++;
-               g_nLatestRecivedSequenceNo++;
+               g_nExpectedSeqNo++;
+               g_nLatestRecivedSequenceNo = lstRecvData.nSeqNo;
             }
-            if(lstRecvData.nSeqNo == g_nLatestRecivedSequenceNo + 1)
+            else if(lstRecvData.nSeqNo > g_nLatestRecivedSequenceNo)
             {
-               // g_nLatestRecivedSequenceNo++;
+                     TESTLOG( "out of order packet %d", lstRecvData.nSeqNo);
+                     TESTLOG( "Current latest seqno is %d", g_nLatestRecivedSequenceNo);
+                     TESTLOG( "the message code is %d", lstRecvData.nMessageCode);
+                     pthread_mutex_unlock(&g_GlobalSeqnoMutex);
+                     continue;
+                  /*
+               //g_nLatestRecivedSequenceNo++;
+	       if (g_bOutOfOrder == false)
+	       {
+                  g_bOutOfOrder = true;
+	          std::set lcSet;
+	          lcSet.insert(lstRecvData.nSeqNo);
+		  long long lnDiff = lstRecvData.nSeqNo - g_nLatestRecivedSequenceNo;
+		  while(lnDiff--)
+		  {
+		     lcSet.insert( lstRecvData.nSeqNo + lnDiff);
+		  }
+                  g_cSeqStoreForUnOrderedSeqNo.insert(pair<lstRecvData.nSeqNo,lcSet>);
+		  g_cSeqNoUnOrderedPacketStore.insert( pair< int,tagData > ( lstRecvData.nSeqNo, lstRecvData) );
+	       }
+	       else
+	       {
+                  int lnNewAdditionFlag = 0;
+                  CSequenceStorebyUnOrderedSeqNoIter lcIter = g_cSeqStoreForUnOrderedSeqNo.rbegin();
+                  int lnNo = lcIter->first;
+                  if (lnNo > lstRecvData.nSeqNo)
+                  {
+                         lnNewAdditionFlag  = 1;
+                  }
+                  //else
+                  {
+                     
+                     
+                  }
+                  
+//		  for(CSequenceStorebyUnOrderedSeqNoIter lcIter = g_cSeqStoreForUnOrderedSeqNo.begin();lcIter != g_cSeqStoreForUnOrderedSeqNo.end();lcIter++)
+//		  {
+//		     int lnNo = lcIter->first;
+//                     if (lnNo > lstRecvData.nSeqNo)
+//                     {
+//                         lnNewAdditionFlag  = 1;
+//                         break;
+//                     }
+//                     else if(lnNo == lstRecvData.nSeqNo)
+//                     {
+//                        lnNewAdditionFlag   = -1;
+//                        break;
+//                     }
+//		  }
+                  if(lnNewAdditionFlag > 0)
+                  {
+                     std::set lcSet;
+	             lcSet.insert(lstRecvData.nSeqNo);
+		     long long lnDiff = lstRecvData.nSeqNo - lnNo;
+		     while(lnDiff--)
+		     {
+		        lcSet.insert( lstRecvData.nSeqNo + lnDiff);
+		     }
+                     g_cSeqStoreForUnOrderedSeqNo.insert(pair<lstRecvData.nSeqNo,lcSet>);
+		     g_cSeqNoUnOrderedPacketStore.insert( pair< int,tagData > ( lstRecvData.nSeqNo, lstRecvData) );
+                  }
+                  else
+                  {
+                     
+                  }
+		 
+	       }*/
+            }
+            else if(lstRecvData.nSeqNo < g_nLatestRecivedSequenceNo)
+            {
+                     TESTLOG( "out of order packet %d", lstRecvData.nSeqNo);
+                     TESTLOG( "Current latest seqno is %d", g_nLatestRecivedSequenceNo);
+                     TESTLOG( "the message code is %d", lstRecvData.nMessageCode);
+                     pthread_mutex_unlock(&g_GlobalSeqnoMutex);
+                     continue;
+               //continue;
             }
           }
+          pthread_mutex_unlock(&g_GlobalSeqnoMutex);
 
           if(g_nFlagNoResendDupli == 0)
           {
             pthread_mutex_lock( &g_cIdentifierMutex);
-#ifdef LOGGING
-            TESTLOG( "Taking identifier lock %d \n" , __LINE__ );
-#endif
             //if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
             {
                for(auto& lstIdentifiers : g_cIdentifierStore)
@@ -735,24 +761,13 @@ void* RecieverThread(void* pVData)
                       //lpstData = nullptr;
                       lbDiscardPacket = false;
                       pthread_mutex_unlock(&g_cIdentifierMutex);
-#ifdef LOGGING
-                      TESTLOG("reeleasing identifier lock %d\n", __LINE__);
-#endif
                       continue;
                }
             }
-#ifdef LOGGING
-            TESTLOG("%d %s \n", g_nLatestRecivedSequenceNo, "latest recieved sequene no");
-            //cout << endl;
-            //if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
-#endif
             if(lstRecvData.bFinalResponse == true)
             {
                //pthread_mutex_lock();
                pthread_mutex_lock(&g_ReSenderMutex);
-#ifdef LOGGING
-               TESTLOG("Taking resender lock %d\n", __LINE__ );
-#endif
                //for(list<tagTimeData>::iterator lcIter = g_cEventResender.begin(); lcIter != g_cEventResender.end();)
                for(CEventResenderStoreIterator lcIter = g_cEventResender.begin(); lcIter != g_cEventResender.end();)
                {
@@ -770,9 +785,6 @@ void* RecieverThread(void* pVData)
                       }
                }
                pthread_mutex_unlock(&g_ReSenderMutex);
-#ifdef LOGGING
-               TESTLOG( " releasing resender lock %d \n");
-#endif
             }
             // else
             {
@@ -784,9 +796,6 @@ void* RecieverThread(void* pVData)
                //cout << "delivery Operation recive" << endl;
             }
             pthread_mutex_unlock( &g_cIdentifierMutex);
-#ifdef LOGGING
-            TESTLOG("Realeasing identifier lock %d\n", __LINE__ );
-#endif
           }
 
           lnRetVal = ExecuteResponse(lstRecvData);
@@ -818,12 +827,14 @@ int PreSender(tagData& stData)
   stData.nSessionId = g_nSessionId;
   stData.nGlobalIdentifier = g_nGlobalIdentifier;
   TESTLOG ("lstData.nGlobalIdentifier is set as %d \n", stData.nGlobalIdentifier); 
-
+   // g_ConditionalVarReciever
    switch(stData.nMessageCode)
    {
           case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER:
             {
+               //pthread_mutex_lock(&g_ConsoleIOMutex);
                cout << "Enter your Identifier ID" << endl;
+               //pthread_mutex_unlock(&g_ConsoleIOMutex);
                if(g_nTesting == 1)
                {
                       //strncpy( lstData.cTarget, "QWE", 3);
@@ -831,8 +842,10 @@ int PreSender(tagData& stData)
                }
                else
                {
+                      //pthread_mutex_lock(&g_ConsoleIOMutex);
                       //while ((getchar()) != '\n');
                       cin >> stData.cIdentifier;
+                      //pthread_mutex_unlock(&g_ConsoleIOMutex);
                       //strncpy( lstData.cIdentifier, "ABC", 3);
                }
 
@@ -850,8 +863,10 @@ int PreSender(tagData& stData)
                memcpy(stData.cIdentifier, g_cIdentifier, 20);
 
                stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET;
+               //pthread_mutex_lock(&g_ConsoleIOMutex);
 
                cout << "Enter Target Identifier" << endl;
+               //pthread_mutex_unlock(&g_ConsoleIOMutex);
                //cin >> stData.cTarget; 
                if(g_nTesting == 1)
                {
@@ -861,40 +876,146 @@ int PreSender(tagData& stData)
                else
                {
                       //while ((getchar()) != '\n');
+                      //pthread_mutex_lock(&g_ConsoleIOMutex);
                       cin >> stData.cTarget;
+                      //pthread_mutex_unlock(&g_ConsoleIOMutex);
                }
                stData.nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST;
                stData.nFrOrToServerFlg = (long)CEToFromServer::CEToFromServer_CLNT_TO_SERV;
                //sleep(2);
             }
             break;
+          //To send chats
           case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT:
             {
                stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT;
                strncpy(stData.cIdentifier, g_cIdentifier, 20);
-
-               if(g_nTesting == 1)
+               if(g_nConnectedTest == 0)
                {
-                      strncpy(stData.cBuffer, g_cIdentifier, 20);
+                    g_nConnectedTest = -1;           
+               }
+               else 
+               if(g_nConnectedTest == -1 && g_nTesting == 1)
+               {
+                        while(g_nConnectedTest == -1){}
+               }
+
+               if(g_nTesting == 1 && g_nConnectedTest == 1)
+               {
+                      usleep(100000);
+                      static int x = 0;
+                      //strncpy(stData.cBuffer, g_cIdentifier, 20);
+                      snprintf(stData.cBuffer,50,"%s%d",g_cIdentifier,x++);
+               }
+               else if(g_nTesting == 1)
+               {
+                      //cout << "";
                }
                else
                {
+                                                      //pthread_mutex_lock(&g_ConsoleIOMutex);
+                               //pthread_mutex_unlock(&g_ConsoleIOMutex);
+                               //cin>> stData.cBuffer; 
+                               //while ((getchar()) != '\n');
+#if 0
+                               //pthread_mutex_unlock(&g_ConsoleIOMutex);
+                               //string lcInput;
+                               //                      char          name[MAXLINE + 1] = {0}; // in case of single character input
+                               //                      fd_set       input_set;
+                               //                      struct timeval  timeout;
+                               //                      int          ready_for_reading = 0;
+                               //                      int          read_bytes = 0;
 
-                      cout << "Enter Chat Data" << endl;
-                      //cin>> stData.cBuffer; 
-                      string lcInput;
-                      while ((getchar()) != '\n');
-                      getline(cin, lcInput);
-                    /*  while(!lcInput.empty() || lcInput.c_str()[0] == '\n')
-                      {
-                           getline(cin, lcInput);
-                      }
-                   */
-                      strncpy(stData.cBuffer, lcInput.c_str(), MAXLINE); 
-                      if(*(stData.cBuffer) == '\n')
-                      {
-                        return -2;
-                      }
+                               //while(true)
+                               {
+                                       //pthread_mutex_lock(&g_ConsoleIOMutex);
+                                       //while(true)
+                                       {
+                                               /* Empty the FD Set */
+                                               //FD_ZERO(&input_set );
+                                               /* Listen to the input descriptor */
+                                               //FD_SET(STDIN_FILENO, &input_set);
+
+                                               /* Waiting for some seconds */
+                                               //timeout.tv_sec = 1; // WAIT seconds//no of seconds to wait
+                                               //timeout.tv_usec = 0; // 0 milliseconds
+
+                                               /* Invitation for the user to write something */
+                                               //printf("Enter Username: (in %d seconds)\n", 10);
+                                               //printf("Time start now!!!\n");
+
+                                               /* Listening for input stream for any activity */
+                                               //ready_for_reading = select(1, &input_set, NULL, NULL, &timeout);
+                                               /* Here, first parameter is number of FDs in the set, 
+                                                * second is our FD set for reading,
+                                                * third is the FD set in which any write activity needs to updated,
+                                                * which is not required in this case. 
+
+                                                * Fourth is timeout
+                                                */
+
+                                               //if (ready_for_reading == -1) 
+                                               {
+                                                       /* Some error has occured in input */
+                                                       //        printf("Unable to read your input\n");
+                                                       //        return -1;
+                                               }
+
+                                               //if (ready_for_reading) 
+                                               //{
+                                               //while ((getchar()) != '\n');
+                                               //        //g          getline(cin, lcInput);
+                                               //        read_bytes = read(STDIN_FILENO, name, MAXLINE);
+                                               //        if(name[read_bytes-1]=='\n'){
+                                               //                --read_bytes;
+                                               //                name[read_bytes]='\0';
+                                               //        }
+                                               //        if(read_bytes==0)
+                                               //        {
+                                               //printf("You just hit enter\n");
+                                               //        } else
+                                               //        {
+                                               //printf("Read, %d bytes from input : %s \n", read_bytes, name);
+                                               //               pthread_mutex_unlock(&g_ConsoleIOMutex);
+                                               //                break;
+                                               //        }
+                                               //}
+                                               // else 
+                                               //{
+                                               // printf(" %d Seconds are over - no data input \n", 10);
+                                               //}
+                                       }
+                                       //pthread_mutex_unlock(&g_ConsoleIOMutex);
+                               }
+                               /*  while(!lcInput.empty() || lcInput.c_str()[0] == '\n')
+                                   {
+                                   getline(cin, lcInput);
+                                   }
+                                */
+                               //strncpy(stData.cBuffer, name, MAXLINE); 
+#endif
+                       //cin.clear();
+                       //cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                       cout << "Enter Chat Data" << endl;
+                       do{
+                               string lcInput = "";
+                               getline(cin, lcInput);
+                               if(lcInput.empty())
+                               {
+                                  //cout <<"empty" << endl;
+                                  continue;
+                               }
+                               strncpy(stData.cBuffer, lcInput.c_str(), lcInput.length()); 
+                               //if(*(stData.cBuffer) != '\n')
+                               if(!lcInput.empty())
+                               {
+                                       //cout << "sent" << endl;
+                                       //cin.clear();
+                                       //cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                                       break;
+                               }
+                       //}while(*(stData.cBuffer) == '\n' || *(stData.cBuffer) == '\0');
+                       }while(true);
                }
                stData.nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST;
                stData.nFrOrToServerFlg = (long)CEToFromServer::CEToFromServer_CLNT_TO_SERV;
@@ -1050,7 +1171,8 @@ int GetConfiguration(char* cServerIP,int nServerIPLen ,char* cPort,int nPortLen)
           return -1;
    }
    int lnSize = strlen(lcPortOfServerOnHeap);
-   char lcBufferPort[lnSize + 1] = {0};
+   char lcBufferPort[lnSize + 1];
+   memset(lcBufferPort,0,lnSize + 1);
    {
           strncpy(cPort, lcPortOfServerOnHeap, nPortLen);
    }
@@ -1065,7 +1187,8 @@ int GetConfiguration(char* cServerIP,int nServerIPLen ,char* cPort,int nPortLen)
           return -1;
    }
    lnSize = strlen(lcServerIPi);
-   char lcBufferServerIP[lnSize + 1] = {0};
+   char lcBufferServerIP[lnSize + 1];
+   memset(lcBufferServerIP,0,lnSize + 1);
    {
           strncpy(cServerIP, lcServerIPi, nServerIPLen);
    }
@@ -1078,13 +1201,41 @@ int GetConfiguration(char* cServerIP,int nServerIPLen ,char* cPort,int nPortLen)
 
 }
 
+void* PrintMessagesFromSet(void* cArg)
+{
+  sleep(30);
+  while(g_bProgramShouldWork == true)
+  {
+    if(g_cAllMessageStore.empty() != true)
+    {
+       system("clear");
+       for (CMessageStoreBySeqNoIter lcIter = g_cAllMessageStore.begin(); g_cAllMessageStore.end() != lcIter; lcIter++)
+       {
+             tagData lstData = *lcIter;
+             if( lstData.nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE)
+             {
+                cout << lstData.cIdentifier << " : "<< lstData.cBuffer << endl;
+             }
+       }
+    }
+    sleep(2);
+  }
+}
 
+#ifdef COREGEN
+static void SetCoreUnlimited()
+{
+   struct rlimit sRLimit ;
+   sRLimit.rlim_cur = RLIM_INFINITY;
+   sRLimit.rlim_max = RLIM_INFINITY;
+   setrlimit( RLIMIT_CORE, &sRLimit );
+}
 
-
-
+#endif
 //UDpChatServer 21/12/2018 Aditya M.:END
 int main(int argc,char* argv[])
 {
+   g_PID = getpid();
    lnPThreadMain = pthread_self();
    //SIgnal Handling
    signal(SIGINT, HandleSignal);
@@ -1215,9 +1366,10 @@ int main(int argc,char* argv[])
             SetRand(lstData.cUniqueMessageIdentifier,30);
           }
           while(VerifyUniqueness(lstData.cUniqueMessageIdentifier) != 0);
-
+          pthread_mutex_lock(&g_GlobalSeqnoMutex);
           lstData.nSeqNo = g_nSeqNo++;
          lstData.nLatestClntSeqNo = g_nLatestRecivedSequenceNo;
+          pthread_mutex_unlock(&g_GlobalSeqnoMutex);
 
 
           lnRetVal = PreSender(lstData);
@@ -1262,6 +1414,7 @@ int main(int argc,char* argv[])
             TESTLOG("error occured at PostSender \n");
             exit(1);
           }
+          //cout << "sent message" << endl;
 
    }
    DeleteNewMap(pConfigObject);

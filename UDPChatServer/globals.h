@@ -10,6 +10,7 @@
 #include <set>
 #include "types.h"
 #include "structs.h"
+#include "CSessionManager.h"
 
 extern long g_OS;
 extern bool g_bProgramShouldWork;
@@ -60,6 +61,13 @@ extern int g_nFlagDupliResend;
 extern std::map<std::string,std::string> g_cMap;
 
 extern void* pConfigObject;
+
+
+extern int g_nClientIdentifier;
+extern int g_nMainSockFd;
+extern CClientIdDataStore g_cClientIDStore;
+extern CSessionManager g_cSessionManager;
+
 #endif
 
 

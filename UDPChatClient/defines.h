@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef DEFINES_H
+#define DEFINES_H 
+
 #define NO_OF_PROC_THREADS                   4
 #define PORT                                 9001
 //#define SERVER_IP "192.168.56.101"
@@ -20,3 +23,4 @@
 #define DEC_SUF_IDN                          "DC"
 #define DEFAULT_RESEND_COUNT                 3
 
+#endif

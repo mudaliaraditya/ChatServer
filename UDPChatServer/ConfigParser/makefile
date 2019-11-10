@@ -22,7 +22,8 @@ obj/ConfigParser.o : src/ConfigParser.cpp hdr/ConfigParser.h
 
 
 clean :
-	rm obj/*
-	rm bin/*.so
-	rm .Complete
-	rm example/*.so
+	rm obj/* || true
+	rm bin/*.so || true
+	rm .Complete || true
+	rm example/*.so || true
+	rm .TEST || true

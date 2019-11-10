@@ -15,4 +15,3 @@
 #define DEQ_SUF_IDN "DQ"
 #define DES_SUF_IDN "DS"
 #define DEC_SUF_IDN "DC"
-#pragma pack(1)

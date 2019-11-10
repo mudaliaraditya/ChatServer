@@ -9,6 +9,7 @@
 #include <set>
 #include <fstream>
 #include <map>
+#include <limits>
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <unistd.h> 
@@ -20,9 +21,11 @@
 #include <arpa/inet.h> 
 #include <sys/ipc.h> 
 #include <sys/shm.h> 
+#include <sys/resource.h>
 #include <netinet/in.h> 
 #include <limits.h>
 #include <pthread.h>
+#include <poll.h>
 #include "structs.h"
 #include "defines.h"
 #include "enums.h"
@@ -31,7 +34,7 @@
 #include "Globals.h"
 #include "ConfigParser.h"
 #include "client.h"
-using namespace std;
+#include "NetworkSources.h"
 #endif
 #ifdef WIN32
 

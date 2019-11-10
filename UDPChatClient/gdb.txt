@@ -1,0 +1,7 @@
+  Id   Target Id         Frame 
+  4    Thread 0x7fb0918f6700 (LWP 18227) "client.out" 0x00007fb0926e0e03 in recvfrom () at ../sysdeps/unix/syscall-template.S:81
+  3    Thread 0x7fb0910f5700 (LWP 18228) "client.out" 0x00007fb0926dd514 in __pthread_mutex_unlock_usercnt (mutex=0x6166e0 <g_SenderMutex>, decr=1) at pthread_mutex_unlock.c:54
+  2    Thread 0x7fb0908f4700 (LWP 18229) "client.out" 0x00007fb0919b0f2d in nanosleep () at ../sysdeps/unix/syscall-template.S:81
+* 1    Thread 0x7fb092ade740 (LWP 18226) "client.out" 0x000000000040b438 in PreSender (stData=...) at client.cpp:900
+#0  0x000000000040b438 in PreSender (stData=...) at client.cpp:900
+#1  0x000000000040c5fe in main (argc=1, argv=0x7ffcfedca9e8) at client.cpp:1375

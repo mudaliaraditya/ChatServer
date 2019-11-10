@@ -1,5 +1,7 @@
 
 
+CXX=g++
+
 all : .TEST bin/libconfigparse.so
 	touch .Complete
 	cp bin/libconfigparse.so example/.
@@ -11,11 +13,11 @@ all : .TEST bin/libconfigparse.so
 
 
 bin/libconfigparse.so : obj/ConfigParser.o
-	g++ -o bin/libconfigparse.so obj/ConfigParser.o -shared -fPIC -Ihdr/ -g 2>> CompileError.txt
+	${CXX} -o bin/libconfigparse.so obj/ConfigParser.o -shared -fPIC -Ihdr/ -Wall -g 2>> CompileError.txt
 
 
 obj/ConfigParser.o : src/ConfigParser.cpp hdr/ConfigParser.h
-	g++ -c src/ConfigParser.cpp -shared -Ihdr/ -g -fPIC 2>> CompileError.txt
+	${CXX} -c src/ConfigParser.cpp -shared -Ihdr/ -g -fPIC -Wall 2>> CompileError.txt
 	mv ConfigParser.o obj/.
 
 

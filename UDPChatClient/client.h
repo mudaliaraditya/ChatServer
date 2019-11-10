@@ -1,13 +1,15 @@
+#pragma once
+#ifndef CLIENT_H
+#define CLIENT_H
 #include "includes.h"
 
-using namespace std;
 
 
 
 
 int VerifyUniqueness(char* cUniqueMessage);
 void SetRand(char* cBuf,int nSize);
-string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand);
+std::string SuffixAppropirateUniqueIdentifier(std::string lcString,short nCommand);
 
 
 
@@ -36,21 +38,6 @@ void SetUniqueRand(char* cBuf,int nSize);
 ///the endpoint of  a message
 ///this will be the last place where a message would end/cause effect
 int ExecuteResponse(tagData& stData);
-
-///CreateUDPSocketIP
-///Creates a Simple UDP Socket
-int CreateUDPSocketIP();
-
-
-
-void FillSockAddrin(long sin_family, unsigned short int sin_port, long long sin_addr, sockaddr_in* sockaddrin);
-
-
-
-int SendUDPData(int nSockFD, const void* cData, size_t nSize, const struct sockaddr_in* pstSockAddr, long nSockAddrLen);
-
-int RecvUDPData(int nSockFD, void* cData, size_t nSize, sockaddr_in* pstSockAddr, long pnSockAddrLen);
-
 
 #ifndef WIN32
 
@@ -89,7 +76,9 @@ void HandleSignal(int nSignal);
 
 
 
-string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand);
+std::string SuffixAppropirateUniqueIdentifier(std::string lcString,short nCommand);
 
+
+#endif
 
 #endif

@@ -32,7 +32,6 @@
 #include "AllClasses.h"
 #include "NetworkHeader.h"
 #include "functions.h"
-#include "func.h"
 #include "ConfigParser.h"
 #include "Source.h"
 #endif

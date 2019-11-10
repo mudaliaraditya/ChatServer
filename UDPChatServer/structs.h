@@ -9,6 +9,8 @@
 #include <arpa/inet.h> 
 #include <netinet/in.h>
 
+#pragma pack(1)
+
 struct tagData;
 
 

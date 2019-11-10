@@ -51,5 +51,13 @@ int g_nFlagDupliResend = 0;
 std::map<std::string, std::string> g_cMap;
 
 void* pConfigObject = NULL;
+
+
+int g_nClientIdentifier = 0;
+int g_nMainSockFd = 0;
+CClientIdDataStore g_cClientIDStore;
+CSessionManager g_cSessionManager;
+
+
 #endif
 

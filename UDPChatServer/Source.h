@@ -20,16 +20,9 @@ typedef std::vector<tagSessionIdentifierData>::iterator            CSessionStore
 
 
 
-std::string SuffixAppropirateUniqueIdentifier(std::string lcString,short nCommand);
+std::string SuffixAppropirateUniqueIdentifier(std::string lcString, short nCommand);
 
 
-
-
-tagBufferData ConvertToNetworkBuffer(tagData& stData);
-
-
-
-tagData ConvertToDataStruct(tagBufferData& stData);
 
 
 
