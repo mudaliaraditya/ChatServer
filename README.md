@@ -10,12 +10,12 @@ I have developed/tested on debian,trying to keep it working across all linux dis
 
 Features To be Added
 
- 1. Resending from server[implemented]
+ 1. Resending from server{implemented}
  2. Shared memory Latency Tool{Dont think this will ever be implemented}
- 3. removing logs{??}
+ 3. removing logs{Always in Progress}
  4. OOPS{not necessary}
  5. Adding event to functions
  6. variable data length{Done}
  7. GUI to client{Pending}
  8. Cross platform client and server{Dont think server will be made cross platform,client code has to be merged}
- 9. Encryption of messages(Encryption should be supplied through an shared object and configuration)
+ 9. Encryption of messages(Encryption should be supplied through an shared object and configuration)(Implemented)
