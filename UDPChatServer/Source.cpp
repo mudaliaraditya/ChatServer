@@ -673,6 +673,12 @@ void* RecieverThread(void* pData)
          LOG_LOGGER("%s : RecvUDPData failed", strerror(errno));
          exit(EXIT_FAILURE);
       }
+      lnRetVal =  Decrypt(reinterpret_cast<char*>(&lstBufferData),sizeof(lstBufferData));
+      if( lnRetVal != 0)
+      {
+        LOG_LOGGER("%s : Decryption failed", strerror(errno));
+        exit(1);
+      }
       *lpstData = ConvertToDataStruct(lstBufferData);
 #ifdef LOGGING
       TESTLOG("%s","Recieved");
@@ -1295,6 +1301,12 @@ void* SenderThread(void* pArg)
          lbUniqueMesg = IsMessageUniqueSoAddToResenderStore(*lpstData);
       }
       lstBufferData = ConvertToNetworkBuffer(*lpstData) ;
+      lnReturnVal = Encrypt(reinterpret_cast<char*>(&lstBufferData),sizeof(lstBufferData));
+      if(lnReturnVal != 0)
+      {
+        TESTLOG("%s","Thread : Sender Thread");
+        exit(EXIT_FAILURE); 
+      }
       memcpy(&lcBuffer, (char*)&lstBufferData, lnDataStructSize);
       lnReturnVal = sendto(lpstData->stNetWork.fd, (const char *)&lcBuffer, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(lpstData->stNetWork.addr), lpstData->stNetWork.restrict);
       if (0 > lnReturnVal)

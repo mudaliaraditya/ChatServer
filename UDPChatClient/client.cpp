@@ -588,11 +588,17 @@ void* SenderThread(void* pVData)
             char lcBuffer[lnDataStructSize];
             memset(lcBuffer, 0, lnDataStructSize);
             tagBufferData lstBufferData = ConvertToNetworkBuffer(lstToSendData) ;
+            lnRetVal = Encrypt(reinterpret_cast<char*>(&lstBufferData),sizeof(lstBufferData));
+            if(lnRetVal != 0)
+            {
+               TESTLOG("%s","error");
+               exit(1);
+            }
             memcpy(&lcBuffer, (char*)&lstBufferData, lnDataStructSize);
             lnLen = sendto(lstThread.fd, (const char *)&lcBuffer, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(lstThread.addr), sizeof((lstThread.addr))); 
             if(lnLen <= 0)
             {
-               TESTLOG("error");
+               TESTLOG("%s","error");
                exit(1);
             }
             
@@ -635,6 +641,12 @@ void* RecieverThread(void* pVData)
             cout << strerror(errno) << endl;
             LOG_LOGGER("data reception error : [%d] %s ",errno,strerror(errno));
             exit(1);
+          }
+          lnRetVal = Decrypt(reinterpret_cast<char*>(&lstBufferData),sizeof(lstBufferData));
+          if(lnRetVal != 0)
+          {
+              LOG_LOGGER("%s","Error while decryption");
+              exit(1);
           }
           lstRecvData = ConvertToDataStruct(lstBufferData);
 #ifdef LOGGING

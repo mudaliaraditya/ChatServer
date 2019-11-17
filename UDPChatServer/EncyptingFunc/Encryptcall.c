@@ -41,7 +41,7 @@ int Encrypt(char* cBuffer,long long nLen)
     void* (*lpfEncryptDecrypt)(void*);
     char *error;
 
-    handle = dlopen("encrypt.so", RTLD_LAZY);
+    handle = dlopen("libencrypt.so", RTLD_LAZY);
     if (!handle) 
     {
       fprintf(stderr, "%s\n", dlerror());
@@ -81,7 +81,9 @@ int Encrypt(char* cBuffer,long long nLen)
        return -1;
     }
     DeleteNewMap(pConfigObject); 
-    exit(EXIT_SUCCESS);
+
+    //exit(EXIT_SUCCESS);
+    return 0;
 }
 
 
@@ -125,7 +127,7 @@ int Decrypt(char* cBuffer,long long nLen)
     void* (*lpfEncryptDecrypt)(void*);
     char *error;
 
-    handle = dlopen("encrypt.so", RTLD_LAZY);
+    handle = dlopen("libencrypt.so", RTLD_LAZY);
     if (!handle) 
     {
       fprintf(stderr, "%s\n", dlerror());
@@ -165,5 +167,6 @@ int Decrypt(char* cBuffer,long long nLen)
        return -1;
     }
     DeleteNewMap(pConfigObject); 
-    exit(EXIT_SUCCESS);
+    //exit(EXIT_SUCCESS);
+    return 0;
 }

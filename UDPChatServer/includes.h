@@ -34,6 +34,8 @@
 #include "functions.h"
 #include "ConfigParser.h"
 #include "Source.h"
+#include "Encryptcall.h"
+
 #endif
 #ifdef WIN32
 
