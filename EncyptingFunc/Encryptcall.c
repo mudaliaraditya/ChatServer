@@ -170,3 +170,4 @@ int Decrypt(char* cBuffer,long long nLen)
     //exit(EXIT_SUCCESS);
     return 0;
 }
+
