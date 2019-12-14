@@ -10,3 +10,5 @@ src/ConfigParser.cpp: In function ‘int GetConfig(char*, void*)’:
 src/ConfigParser.cpp:307:9: warning: unused variable ‘lnRetVal’ [-Wunused-variable]
      int lnRetVal = 0;
          ^
+mkdir: cannot create directory ‘obj’: File exists
+mkdir: cannot create directory ‘bin’: File exists

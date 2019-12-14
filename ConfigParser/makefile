@@ -3,6 +3,8 @@
 CXX=g++
 
 all : .TEST bin/libconfigparse.so
+	mkdir obj || true
+	mkdir bin || true
 	touch .Complete
 	cp bin/libconfigparse.so example/.
 
