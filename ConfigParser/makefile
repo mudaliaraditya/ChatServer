@@ -3,8 +3,6 @@
 CXX=g++
 
 all : .TEST bin/libconfigparse.so
-	mkdir obj || true
-	mkdir bin || true
 	touch .Complete
 	cp bin/libconfigparse.so example/.
 
@@ -19,6 +17,8 @@ bin/libconfigparse.so : obj/ConfigParser.o
 
 
 obj/ConfigParser.o : src/ConfigParser.cpp hdr/ConfigParser.h
+	mkdir obj || true
+	mkdir bin || true
 	${CXX} -c src/ConfigParser.cpp -shared -Ihdr/ -g -fPIC -Wall 2>> CompileError.txt
 	mv ConfigParser.o obj/.
 
