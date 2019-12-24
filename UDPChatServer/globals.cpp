@@ -59,5 +59,9 @@ CClientIdDataStore g_cClientIDStore;
 CSessionManager g_cSessionManager;
 
 
+int g_ExceptionRaised = 0;
+
+int ready_for_reading = 0;
+
 #endif
 

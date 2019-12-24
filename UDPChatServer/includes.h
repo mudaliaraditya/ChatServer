@@ -17,6 +17,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <fstream>
+#include <sstream> 
 #include <map>
 #include <set>
 #include <list>
@@ -34,6 +35,8 @@
 #include "functions.h"
 #include "ConfigParser.h"
 #include "Source.h"
+#include "Encryptcall.h"
+#include "Logger.h"
 #endif
 #ifdef WIN32
 

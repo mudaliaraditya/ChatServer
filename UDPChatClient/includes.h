@@ -36,6 +36,7 @@
 #include "ConfigParser.h"
 #include "client.h"
 #include "NetworkSources.h"
+#include "Encryptcall.h"
 #endif
 #ifdef WIN32
 
