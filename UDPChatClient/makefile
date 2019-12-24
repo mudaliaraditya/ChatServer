@@ -14,7 +14,7 @@ CompileError :
 	 touch CompileError
 
 client.out : client.o
-	${CXX} -o client.out client.cpp NetworkSources.cpp -std=c++11 -lpthread -g  -lconfigparse -L. -I../ConfigParser/hdr -I../EncyptingFunc -I../EncyptingFunc/encryptor ../EncyptingFunc/Encryptcall.c -ldl  2> CompileError
+	${CXX} -o client.out client.cpp NetworkSources.cpp -std=c++11 -lpthread -g  -lconfigparse -L. -I../ConfigParser/hdr -I../EncyptingFunc -I../EncyptingFunc/encryptor ../EncyptingFunc/Encryptcall.c -ldl -Wl,-R.  2> CompileError
 	touch .TEST
 
 client.o : client.cpp NetworkSources.cpp

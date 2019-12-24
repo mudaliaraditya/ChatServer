@@ -62,7 +62,7 @@ int DeleteKeyVal(char* pVal)
 
 int CheckForGivenSetofChars(char cChar,string sListOfRChars)
 {
-    for(int i = 0;i < sListOfRChars.length();i++)
+    for(unsigned int i = 0;i < sListOfRChars.length();i++)
     {
           if (cChar == sListOfRChars[i])
           {
@@ -224,7 +224,7 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                         char lcTruBuffer[cString.length() + 1] = {0};
                         long lnLength = lpcR - lpcF + 1;
                         int lnlastIndex  = lpcR - lcBuffer1;
-                        for( int i = lnlastIndex + 1;i < cString.length();i++)      
+                        for(unsigned int i = lnlastIndex + 1;i < cString.length();i++)      
                         {
                            switch(lcBuffer1[i])
                            {

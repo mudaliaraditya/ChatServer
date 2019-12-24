@@ -1,70 +1,5 @@
 #include "includes.h"
 using namespace std;
-#define LOG_LOGGER(cToBeLogged, ...)             \
-{                                                 \
-   {                                                \
-      \
-       LOGGINGI(g_cfstream,cToBeLogged,##__VA_ARGS__)\
-   }                                             \
-}
-
-#define LOGGINGI(cFileStream,cToBeLogged, ...)\
-{\
-    \
-   {                                                \
-      \
-      char lcBufferMessage[700] = {0};                       \
-      char lcTimeLogBuffer[700] = {0};\
-      GETTIMEBUFFER(lcTimeLogBuffer);\
-      snprintf(lcBufferMessage,500,cToBeLogged, ##__VA_ARGS__);         \
-      (cFileStream <<  lcTimeLogBuffer << " | " << lcBufferMessage <<  " | "<< __func__ <<"() | " << "thread id :" << pthread_self() << " | "<<__FILE__<< ":"<<__LINE__ <<endl);           \
-   }               \
-}
-
-#define GETTIMEBUFFER(cTimeBuffer)\
-{\
-    {\
-      time_t g_nTime = 0;\
-      g_nTime = time(NULL);\
-      long long lnMicro = getMicrotime();\
-      struct tm*  lpsttm =  localtime(&g_nTime);\
-      char lcBufferTime[200] = {0};                       \
-      snprintf(lcBufferTime,200,"%d:%d:%d.%d %d-%d-%d",lpsttm->tm_hour, lpsttm->tm_min, lpsttm->tm_sec, lnMicro,lpsttm->tm_mday,lpsttm->tm_mon,lpsttm->tm_year );\
-      snprintf(cTimeBuffer,500,"%s",lcBufferTime);\
-   }\
-}
-
-#define TESTLOG(cToBeLogged, ...)             \
-{                                                 \
-   {                                                \
-     LOGGINGI(g_cDatafstream,cToBeLogged,##__VA_ARGS__)\
-   }                                             \
-}
-
-
-
-
-
-long getMicrotime()
-{
-   struct timeval currentTime;
-   gettimeofday(&currentTime, NULL);
-   //return currentTime.tv_sec * (int)1e6 + currentTime.tv_usec;
-   return currentTime.tv_usec;
-}
-
-/*
-int g_nClientIdentifier = 0;
-int g_nMainSockFd = 0;
-CClientIdDataStore g_cClientIDStore;
-
-#pragma pack(1)
-
-
-CSessionManager g_cSessionManager;
-
-*/
-
 
 string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand)
 {
@@ -162,7 +97,7 @@ int CleanUp()
    int lnSockAddrlen = sizeof(servaddr);
    int lnDataStructSize = sizeof(tagBufferData);
    //int lnNoOfBytes = SendUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &servaddr, lnSockAddrlen);
-   lnRetVal = sendto(g_nMainSockFd, (const char *)&lstBufferData, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(servaddr), lnSockAddrlen);
+   //lnRetVal = sendto(g_nMainSockFd, (const char *)&lstBufferData, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(servaddr), lnSockAddrlen);
    if (0 > lnRetVal)
    {
       printf("%s, %d", strerror(errno), __LINE__);
@@ -172,7 +107,7 @@ int CleanUp()
    if(lnRetVal != 0)
    {
       cout << "issue in closing socket" << endl;
-      LOG_LOGGER("unable to close reciver socket %s","");
+      LOG_LOGGER("unable to close reciver socket");
       exit(1);
    }
    shutdown(g_nMainSockFd , SHUT_RDWR);
@@ -321,7 +256,16 @@ void HandleSignal(int nSignal)
                perror("unable to destroy mnutex");
                exit(EXIT_FAILURE);
             }
-            exit(EXIT_SUCCESS);
+            //exit(EXIT_SUCCESS);
+           //cin.putback('S');
+           g_ExceptionRaised = 1;
+           streambuf *backup;
+           string S = "S";
+           stringstream oss(S);
+           backup = cin.rdbuf();
+           cin.rdbuf(oss.rdbuf());
+           ready_for_reading = 0;
+           return;
          }
          break;
 
@@ -347,10 +291,15 @@ int ExecuteFunction(tagData& stData)
             stData.nGlobalIdentifier = g_nClientIdentifier++;
             pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
             lpstData = new tagData(stData);
+            if(lpstData == NULL)
+            {
+               LOG_LOGGER("new error");
+               exit(1);
+            }
             //g_cClientIDStore.insert()
             if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             {
-               LOG_LOGGER("unable to take Lock on %s","g_cDataGlobalPortStoreMutex");
+               LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
                exit(1);
             }
             bool lbVal1 = (g_cClientIDStore.insert(pair<int , tagData*>(stData.nGlobalIdentifier, lpstData))).second;
@@ -364,7 +313,7 @@ int ExecuteFunction(tagData& stData)
             }
             if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             { 
-               LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+               LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
                exit(1);
             }
             // bool lbVal = (g_cPortIdentifier.insert(pair<string, tagData*>(stData.cIdentifier, lpstData))).second;
@@ -384,7 +333,7 @@ int ExecuteFunction(tagData& stData)
          {
             if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             {
-               LOG_LOGGER("unable to take Lock on %s","g_cDataGlobalPortStoreMutex");
+               LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
                exit(1);
             }
             map<int , tagData*>::iterator lcIteratoor = g_cClientIDStore.find(stData.nGlobalIdentifier);
@@ -441,7 +390,7 @@ int ExecuteFunction(tagData& stData)
             }
             if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             { 
-               LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+               LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
                exit(1);
             }
             g_cSessionManager.ReleaseLock();
@@ -452,8 +401,8 @@ int ExecuteFunction(tagData& stData)
          {
             char lcBuffer[sizeof(tagData)] = { 0 };
 
-            tagData lstData = stData;
-            lstData.nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE;
+            //tagData lstData = stData;
+            //lstData.nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE;
             if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             { 
                LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
@@ -498,6 +447,11 @@ int ExecuteFunction(tagData& stData)
             }
 
             tagData* lpNewData = new tagData();
+            if(NULL == lpNewData)
+            {
+               LOG_LOGGER("memory error");
+               exit(EXIT_FAILURE);
+            }
             memcpy(lpNewData, lcIter1->second, sizeof(tagData));
             if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             {
@@ -505,12 +459,12 @@ int ExecuteFunction(tagData& stData)
                exit(EXIT_FAILURE);
             }
             lpNewData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
-            strncpy(lpNewData->cIdentifier, lstData.cIdentifier, 20);
-            lpNewData->nMessageCode = lstData.nMessageCode;
-            lpNewData->nSeqNo = lstData.nSeqNo;
-            strncpy(lpNewData->cBuffer, lstData.cBuffer, MAXLINE);
-            strncpy(lpNewData->cTarget, lstData.cTarget, 20);
-            strncpy(lpNewData->cUniqueMessageIdentifier, lstData.cUniqueMessageIdentifier, 30);
+            strncpy(lpNewData->cIdentifier, stData.cIdentifier, 20);
+            lpNewData->nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE;
+            lpNewData->nSeqNo = stData.nSeqNo;
+            strncpy(lpNewData->cBuffer, stData.cBuffer, MAXLINE);
+            strncpy(lpNewData->cTarget, stData.cTarget, 20);
+            strncpy(lpNewData->cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier, 30);
 
             pthread_mutex_lock(&g_cResponseMutex);
 
@@ -541,8 +495,13 @@ int ExecuteFunction(tagData& stData)
                printf("%s %d", strerror(errno), __LINE__);
                exit(EXIT_FAILURE);
             }
-            TESTLOG("Delivery Handling ","");
+            TESTLOG("Delivery Handling ");
             tagData* lpNewData = new tagData();
+            if(NULL == lpNewData )
+            {
+               LOG_LOGGER("memory error");
+               exit(EXIT_FAILURE);
+            }
             memcpy(lpNewData, lcIter->second, sizeof(tagData));
             if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             {
@@ -573,7 +532,7 @@ int ExecuteFunction(tagData& stData)
          break;
       default :
          {
-            TESTLOG("invalid or dummy message code","" );
+            TESTLOG("invalid or dummy message code" );
          }
          break;
 
@@ -648,6 +607,9 @@ void* RecieverThread(void* pData)
 {
    TESTLOG("%s","Thread : Reciever Thread");
    tagData* lpstData = NULL;
+   fd_set          input_set;
+   struct timeval  timeout;
+   int lnReady_for_readingr = 0;
    int lnRetVal = 0;
    int lnNoOfBytes = 0;
    int lnSockAddrlen = 0;
@@ -655,11 +617,26 @@ void* RecieverThread(void* pData)
    while (true == g_bProgramShouldWork)
    {
       lpstData = new tagData();
+      if(NULL == lpstData)
+      {
+          LOG_LOGGER("error in new");
+          exit(-1);
+      }
       tagBufferData lstBufferData;
       lnSockAddrlen = sizeof(cliaddr);
 #ifdef LOGGING
       cout << "Recieving.." << endl;
 #endif
+      FD_ZERO(&input_set);
+      FD_SET(g_nMainSockFd, &input_set);
+
+      timeout.tv_sec = 5;
+      timeout.tv_usec = 0;
+
+
+      lnReady_for_readingr = select(g_nMainSockFd + 1, &input_set, NULL, NULL, &timeout);
+      //cout << "value of Slect ret "<< lnReady_for_readingr << endl;
+      if (lnReady_for_readingr) {
       lnNoOfBytes = RecvUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &cliaddr, lnSockAddrlen);
       if (lnNoOfBytes <= 0)
       {
@@ -673,15 +650,26 @@ void* RecieverThread(void* pData)
          LOG_LOGGER("%s : RecvUDPData failed", strerror(errno));
          exit(EXIT_FAILURE);
       }
+     }
+     else
+     {
+         if(lpstData != NULL)
+         {
+            delete lpstData;
+            lpstData = nullptr;
+         }
+         continue;
+     }
+     cout << "data recieved" << endl;
       lnRetVal =  Decrypt(reinterpret_cast<char*>(&lstBufferData),sizeof(lstBufferData));
       if( lnRetVal != 0)
       {
         LOG_LOGGER("%s : Decryption failed", strerror(errno));
         exit(1);
-      }
+      } 
       *lpstData = ConvertToDataStruct(lstBufferData);
 #ifdef LOGGING
-      TESTLOG("%s","Recieved");
+      TESTLOG("Recieved");
 #endif
       TESTLOG("%s %s", " packet with message identifier : ",lpstData->cUniqueMessageIdentifier);
       TESTLOG("%s %s" ," packet with data from " , lpstData->cIdentifier );
@@ -708,7 +696,7 @@ void* RecieverThread(void* pData)
          //!        Rejecting duplicates any extra packets are discarded
 #ifdef LOGGING
 #endif
-         TESTLOG("%s","duplicate packet Rejction started and lesser seq no rejection ");
+         TESTLOG("duplicate packet Rejction started and lesser seq no rejection ");
          if(lpstData->nLatestClntSeqNo > lpstData->nSeqNo)
          {
             pthread_mutex_lock(&g_ReSenderMutex);
@@ -806,7 +794,7 @@ void* RecieverThread(void* pData)
          // if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
          {
             cout << "deleting all old data" << endl;
-            TESTLOG("%s","DeleteMsgFromResenderStoreByUniqueIdentifier started")
+            TESTLOG("DeleteMsgFromResenderStoreByUniqueIdentifier started")
             if(DeleteMsgFromResenderStoreByUniqueIdentifier(*lpstData) != EXIT_SUCCESS)
             {
                if(lpstData != NULL)
@@ -845,7 +833,7 @@ void* RecieverThread(void* pData)
       }
 
 #ifdef LOGGING
-      TESTLOG("%s","mtex acquired process reciever");
+      TESTLOG("mtex acquired process reciever");
 #endif
       g_cProcessList.push_back(lpstData);
       lpstData = nullptr; 
@@ -865,7 +853,7 @@ void* RecieverThread(void* pData)
          exit(EXIT_FAILURE);
       }
 #ifdef LOGGING
-      TESTLOG("%s","mtex Released process reciever" );
+      TESTLOG("mtex Released process reciever" );
 #endif
 
    } 
@@ -876,6 +864,7 @@ void* RecieverThread(void* pData)
       delete lpstData;
       lpstData = nullptr;
    }
+   pthread_exit(NULL);
    return NULL;
    //pthread_exit(NULL);
 }
@@ -921,6 +910,11 @@ void* EventThread(void*)
                //lcIter->second.stData.nLatestClntSeqNo = g_nLatestRecivedSequenceNo;
                TESTLOG("resending data \n");
                lpstData = new tagData();
+               if(NULL == lpstData)
+               {
+                  LOG_LOGGER("new error");
+                  exit(-1);
+               }
                memcpy(lpstData,&(lcIter->second.stData),sizeof(tagData));
                pthread_mutex_lock(&g_cResponseMutex);
                g_cResponseList.push_front(lpstData);
@@ -947,8 +941,13 @@ void* EventThread(void*)
 #endif
           //checks for resender events only once a second
           //sleep(1);
-          sleep(lnSleeptIme - time(NULL));
+          if(lnSleeptIme != 0)
+          {
+             sleep(lnSleeptIme - time(NULL));
+          }
    }
+   pthread_exit(NULL);
+   return NULL;
 }
 
 //===========================================================================
@@ -1001,7 +1000,7 @@ void* aEventThread(void*)
 */
 int DeleteMsgFromResenderStoreByUniqueIdentifier(const tagData lstRecvData )
 {
-   TESTLOG("%s","started deleting messages");
+   TESTLOG("started deleting messages");
    int lnRetval = 0;
    string lcKey = "";
    lcKey = SuffixAppropirateUniqueIdentifier(lstRecvData.cUniqueMessageIdentifier, (short)lstRecvData.nCommand);
@@ -1051,7 +1050,7 @@ int DeleteMsgFromResenderStoreByUniqueIdentifier(const tagData lstRecvData )
       }
       else if((strcmp(lstData.stData.cUniqueMessageIdentifier,lstRecvData.cUniqueMessageIdentifier) == 0) && (lstData.stData.nSessionId == lstRecvData.nSessionId))
       {
-         TESTLOG( "response recieved now erasing","" );
+         TESTLOG( "response recieved now erasing" );
          lcIter = g_cEventResender.erase( lcIter);
          //continue;
       }
@@ -1085,14 +1084,14 @@ bool IsMessageUniqueSoAddToResenderStore(tagData stData)
    {
       if(strcmp(lcTemp.second.stData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier) == 0)
       {
-         TESTLOG("Resending Message as no response received yet","" );
+         TESTLOG("Resending Message as no response received yet" );
          lbUniqueMessageSend = false;
       }
    }
 
    if(lbUniqueMessageSend == true)
    {
-      TESTLOG("this is a new unique message","");
+      TESTLOG("this is a new unique message");
       tagTimeData lstTimeData((time(NULL) + 10), stData);
       g_cEventResender.insert(pair<long long,tagTimeData>(lstTimeData.m_nTime,lstTimeData));
    }
@@ -1174,17 +1173,43 @@ void* ProcessThread(void* pArg)
 #ifdef LOGGING
          TESTLOG("%s %d", "Releasing Process Mutex in cond var" , __LINE__ );
 #endif
+         if((false == g_bProgramShouldWork) && g_cProcessList.empty())
+         {
+            //lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
+            if (lnReturnVal != 0)
+            {
+               printf("%s, %d", strerror(errno), __LINE__);
+               perror("unable to unlock");
+               exit(EXIT_FAILURE);
+            }
+            break;
+            //return NULL;
+         }
          //continue;
       }
-      //if(!g_cProcessList.empty())
+      if(!g_cProcessList.empty())
       {
 
 #ifdef LOGGING
          TESTLOG("%s", "process thread process mutex acquired" );
 #endif
          lstData = g_cProcessList.front();
-         TESTLOG( "Process fired","" );
+         TESTLOG( "Process fired" );
          g_cProcessList.pop_front();         
+      }
+      else
+      {
+          //if(false == g_bProgramShouldWork)
+           {
+             lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
+             if (lnReturnVal != 0)
+             {  
+               printf("%s, %d", strerror(errno), __LINE__);
+               perror("unable to unlock");
+               exit(EXIT_FAILURE);
+             }
+             continue; 
+           }
       }
 
       TESTLOG("%s %d %s ","the thread no is",pthread_self(), lstData->cBuffer );
@@ -1202,7 +1227,12 @@ void* ProcessThread(void* pArg)
 #ifdef LOGGING           
       TESTLOG("%s", "process thread process mutex acquired");
 #endif
-
+      if(NULL == lstData)
+      {
+         LOG_LOGGER("NULL lstData");
+         perror("Failure  NULL check in ProcessThread");
+         exit(EXIT_FAILURE);
+      }
       //sleep(3);
       int lnVal = ExecuteFunction(*lstData);
       if (lnVal != 0)
@@ -1251,7 +1281,7 @@ void* ProcessThread(void* pArg)
       TESTLOG("%s","processthread mutex lock released");
 #endif
    }
-   
+   pthread_exit(NULL);   
    return NULL;
 }
 
@@ -1323,6 +1353,7 @@ void* SenderThread(void* pArg)
       printf("Hello message sent.\n");
 #endif
    }
+   pthread_exit(NULL);
    return NULL;
 }
 
@@ -1438,6 +1469,14 @@ int main()
    lstSigAction.sa_flags = 0;
    lstSigAction.sa_handler  = HandleSignal;
    sigaction(SIGINT, &lstSigAction, NULL);
+   fd_set          input_set = {0};
+   struct timeval  timeout = {0};
+   timeout.tv_sec = 1;
+   timeout.tv_usec = 0;
+
+  
+
+
    pConfigObject = CreateNewMap();
    if(pConfigObject == NULL)
    {
@@ -1451,8 +1490,8 @@ int main()
    //LOG File Handling START
    if (0 !=InitiateLogging())
    {
-      cout << "Error in intializing Log files exiting" ;
-      exit (EXIT_FAILURE);
+      TESTOUT("Error in intializing Log files exiting");
+      return -1;
    }
    //LOG File Handling END
    //LOG_LOGGER("%d",1);
@@ -1535,16 +1574,27 @@ int main()
    {
 
       string lcVal = "";
-      cin >> lcVal;
-      if(strncmp(lcVal.c_str(),"S",lcVal.length())== 0)
+      FD_ZERO(&input_set);
+      FD_SET(0, &input_set);
+
+      ready_for_reading = select( 1, &input_set, NULL, NULL, &timeout);
+      if (ready_for_reading) 
       {
-         g_bProgramShouldWork = false;
-      }
-      else
-      {
-         cout << "type S to Stop" << endl;
+
+         cin >> lcVal;
+
+         if(strncmp(lcVal.c_str(),"S",lcVal.length())== 0)
+         {
+            g_bProgramShouldWork = false;
+         }
+         else
+         {
+            cout << "type S to Stop" << endl;
+         }
       }
    }
+   if(g_ExceptionRaised == 0)
+  {
    if(CleanUp() != 0)
    {
       printf("%s, %d", strerror(errno), __LINE__);
@@ -1557,6 +1607,7 @@ int main()
       DeleteNewMap(pConfigObject);
       pConfigObject = NULL;
    }
+
    lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
    if(lnNoOfBytes > 0)
    {
@@ -1564,6 +1615,7 @@ int main()
       perror("unable to join lnPThreadEventTime");
       exit(EXIT_FAILURE);
    }
+
    lnRetVal = pthread_join(lnRecieverThread,NULL);
    if (lnRetVal != 0)
    {
@@ -1617,6 +1669,7 @@ int main()
       exit(EXIT_FAILURE);
    }
 
+
    lnRetVal = pthread_mutex_destroy(&g_cResponseMutex);
    if (lnRetVal != 0)
    {
@@ -1634,6 +1687,7 @@ int main()
       exit(EXIT_FAILURE);
    }
 
+}
    return 0;
 }
 #endif

@@ -68,6 +68,9 @@ extern int g_nMainSockFd;
 extern CClientIdDataStore g_cClientIDStore;
 extern CSessionManager g_cSessionManager;
 
+extern int g_ExceptionRaised;
+
+extern int ready_for_reading;
 #endif
 
 

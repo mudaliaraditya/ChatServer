@@ -3,6 +3,142 @@
 using namespace std;
 #pragma pack(1)
 
+
+
+
+#ifdef WIN32
+int InitMutex(LPCRITICAL_SECTION  pcThreadSync)
+{
+   InitializeCriticalSection(pcThreadSync);
+   return 0;
+}
+#endif
+
+
+#ifndef WIN32
+int InitMutex(pthread_mutex_t* pcThreadSync)
+{
+   pthread_mutex_init(pcThreadSync, NULL);
+   return 0;
+}
+#endif
+
+
+
+#ifdef WIN32
+#define CREATE_THREAD(cThreado)\
+{\
+    cThread* lpstThreadObj = (cThread*)cThreado;\
+    HANDLE  lnData = CreateThread(lpstThreadObj->pstThreadAttri, 0, lpstThreadObj->pFunctionPtr, lpstThreadObj->pvThreadParam,0, &(lpstThreadObj->nThreadID));\
+    lpstThreadObj->nThreadWaitObject = lnData ;;\
+}
+#endif
+
+#ifndef WIN32
+#define CREATE_THREAD(cThreado)\
+{\
+   cThread* lpstThreadObj = cThreado;\
+   pthread_create(&(lpstThreadObj->nThreadID), lpstThreadObj->pstThreadAttri, lpstThreadObj->pFunctionPtr, lpstThreadObj->pvThreadParam);\
+   lpstThreadObj->nThreadWaitObject = lpstThreadObj->nThreadID;\
+}
+
+#endif
+#ifdef WIN32
+#define JOIN_THREAD(cThreado)\
+{\
+   cThread* lpstThreadObj = cThreado;\
+   WaitForSingleObject(lpstThreadObj->nThreadWaitObject,INFINITE);                          \
+}
+#endif
+
+#ifndef WIN32
+#define JOIN_THREAD(cThreado)\
+{\
+      cThread* lpstThreadObj = cThreado;\
+      pthread_join(lpstThreadObj->nThreadWaitObject,NULL);\
+}
+#endif
+
+#ifdef WIN32
+DWORD WINAPI SendThread(LPVOID lpParameter)
+{
+   SenderThread(lpParameter);
+   return 0;
+}
+#endif
+#ifndef WIN32
+
+void* SendThread(void *pData)
+{
+   SenderThread(pData);
+}
+#endif
+
+
+#ifdef WIN32
+DWORD WINAPI CheckRespond(LPVOID lpParameter)
+{
+   CheckResponse(lpParameter);
+   return 0;
+}
+#endif
+#ifndef WIN32
+
+void* CheckRespond(void *pData)
+{
+   CheckResponse(pData);
+}
+#endif
+
+#ifdef WIN32
+#define CLOSESOCKFD(SOCK_FD)\
+{\
+   closesocket(SOCK_FD);\
+}
+#endif
+
+#ifndef WIN32
+#define CLOSESOCKFD(SOCK_FD)\
+{\
+   close(SOCK_FD);\
+}
+#endif
+
+#ifdef WIN32
+DWORD WINAPI RecvThread(LPVOID lpParameter)
+{
+   RecieverThread(lpParameter);
+   return 0;
+}
+#endif
+#ifndef WIN32
+
+void* RecvThread(void *pData)
+{
+   RecieverThread(pData);
+}
+#endif
+
+
+#ifdef WIN32
+
+INITIALIZE()\
+{\
+   WSADATA w = { 0 };\
+   if (WSAStartup(0x0202, &w) != 0)\
+   {\
+      fprintf(stderr, "Could not open Windows connection.\n");\
+      exit(0);\
+   }\
+}
+#endif
+
+
+
+
+          
+
+
 #define COREGEN
 int g_nConnectedTest = 0;
 long getMicrotime()
