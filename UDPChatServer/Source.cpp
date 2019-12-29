@@ -90,7 +90,7 @@ tagData ConvertToDataStruct(tagBufferData& stData)
 ////////////////////FINIALIZINGyyyy FUNCTIONS/////////////////////////
 int CleanUp()
 {
-   TESTLOG("%s","Doing Cleanup");
+   LOG(DEBUG,"%s","Doing Cleanup");
    g_bProgramShouldWork = false;
    int lnRetVal = 0;
    tagBufferData lstBufferData = {0}; 
@@ -181,7 +181,8 @@ void HandleSignal(int nSignal)
       case SIGINT:
          {
 
-            printf("Caught SIGINT, exiting now\n");
+            //printf("Caught SIGINT, exiting now\n");
+            LOG(OUT,"Caught SIGINT, exiting now");
             g_bProgramShouldWork = false;
             CleanUp();
             if(pConfigObject != NULL)
@@ -1458,7 +1459,7 @@ int InitiateLogging()
 }
 
 
-int main()
+int main(int argc,char* argv)
 {
    int lnRetVal =0;
    g_nFlagDupliResend = 0;
@@ -1493,6 +1494,9 @@ int main()
       TESTOUT("Error in intializing Log files exiting");
       return -1;
    }
+   LOG(DEBUG,"%s","Hi");
+   LOG(WARN | FATAL,"%s","Hi");
+   //LOG(DEBUG,"%s","Hi");
    //LOG File Handling END
    //LOG_LOGGER("%d",1);
 
