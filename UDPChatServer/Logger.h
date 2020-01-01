@@ -19,15 +19,6 @@
 
 
 
-#define LOG_LOGGER(cToBeLogged, ...)             \
-{                                                 \
-   {                                                \
-      \
-       LOGGINGI(g_cfstream,cToBeLogged,##__VA_ARGS__)\
-   }                                             \
-}
-
-
 #define GETTIMEBUFFER(cTimeBuffer)\
 {\
     {\
@@ -40,23 +31,6 @@
       snprintf(cTimeBuffer,500,"%s",lcBufferTime);\
    }\
 }
-
-#define TESTLOG(cToBeLogged, ...)             \
-{                                                 \
-   {                                                \
-     LOGGINGI(g_cDatafstream,cToBeLogged,##__VA_ARGS__)\
-   }                                             \
-}
-
-
-
-#define TESTOUT(cToBeLogged, ...)             \
-{                                                 \
-   {                                                \
-     LOGGINGI(std::cout,cToBeLogged,##__VA_ARGS__)\
-   }                                             \
-}
-
 
 
 #define DO_THING(cToBeLogged, ...)    switch(lnEnum){ case 0: goto loggingout;break; default:  ACTUALLOG(lnEnum & lnBitCheck,cToBeLogged, ##__VA_ARGS__) ;lnBitCheck=lnBitCheck<<1;break; }
@@ -134,6 +108,8 @@ loggingout:    \
 
 
 long getMicrotime();
+int InitiateLoggingFor(std::fstream& cFileStream,char* cPath,char* cName,char* cExt);
+
 
 
 #endif

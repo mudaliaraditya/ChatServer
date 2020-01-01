@@ -1488,11 +1488,20 @@ int main()
       return -1;
    }
    //LOG File Handling START
-   if (0 !=InitiateLogging())
+   if(0 !=  InitiateLoggingFor(g_cDatafstream,"Logs","data","log"))
+   //if (0 !=InitiateLogging())
    {
       TESTOUT("Error in intializing Log files exiting");
       return -1;
    }
+
+   if(0 !=  InitiateLoggingFor(g_cfstream,"Logs","log","log"))
+   //if (0 !=InitiateLogging())
+   {
+      TESTOUT("Error in intializing Log files exiting");
+      return -1;
+   }
+
    //LOG File Handling END
    //LOG_LOGGER("%d",1);
 

@@ -37,6 +37,7 @@
 #include "Source.h"
 #include "Encryptcall.h"
 #include "Logger.h"
+#include "CustomLogger.h"
 #endif
 #ifdef WIN32
 
