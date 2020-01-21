@@ -351,7 +351,12 @@ int ExecuteFunction(tagData& stData)
             {
                printf("%d not found", stData.cIdentifier);
                printf("%s %d", strerror(errno), __LINE__);
-               
+               if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               { 
+                  LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+                  //g_cSessionManager.ReleaseLock();//Take caer of each mutex lock when you get failed
+                  exit(1);
+               } 
                exit(EXIT_FAILURE);
             }
 
@@ -365,6 +370,12 @@ int ExecuteFunction(tagData& stData)
             if(lcIteratoor->second == nullptr)
             {
                LOG_LOGGER("invalid ptr");
+               if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {   
+                  LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+                 // g_cSessionManager.ReleaseLock();//Take caer of each mutex lock when you get failed
+                  exit(1);
+               }
                exit(EXIT_FAILURE);
             }
             tagData& lcData = *(lcIteratoor->second);
@@ -379,6 +390,12 @@ int ExecuteFunction(tagData& stData)
                lnRetVal = g_cSessionManager.CreateASession(lstSessionIdentifier,2,true);
                if(lnRetVal != 0)
                {
+                  if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+                  { 
+                    LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+                    g_cSessionManager.ReleaseLock();//Take caer of each mutex lock when you get failed
+                    exit(1);
+                  }
                   LOG_LOGGER("Unable to create a session for %s",stData.cIdentifier);
                   g_cSessionManager.ReleaseLock();
                   return -1;
@@ -393,6 +410,12 @@ int ExecuteFunction(tagData& stData)
                lnRetVal = g_cSessionManager.AddMoreUserToSession(lnSessionId,lstSessionIdentifier);
                if(lnRetVal != 0)
                {
+                   if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+                   { 
+                     LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+                     g_cSessionManager.ReleaseLock();//Take caer of each mutex lock when you get failed
+                     exit(1);
+                   }
                   LOG_LOGGER("Unable to add user %s to session %d", stData.cIdentifier, lnSessionId);
                   g_cSessionManager.ReleaseLock();
                   return -1;
@@ -872,6 +895,14 @@ void* RecieverThread(void* pData)
             delete lpstData;
             lpstData = nullptr;
          }
+
+         lnRetVal = pthread_mutex_unlock(&g_cProcessMutex);
+         if (lnRetVal != 0)
+         {
+            printf("%s %d", strerror(errno), __LINE__);
+            LOG_LOGGER( "unable to take mutex lock %s",strerror(errno));
+            exit(EXIT_FAILURE);
+         }
          //printf("%s %d", strerror(errno), __LINE__);
          LOG_LOGGER( "unable to take mutex lock %s",strerror(errno));
          exit(EXIT_FAILURE);
@@ -882,9 +913,6 @@ void* RecieverThread(void* pData)
 #endif
       g_cProcessList.push_back(lpstData);
       lpstData = nullptr; 
-
-      
-
       if ( 0  != pthread_cond_signal(&g_cCondVarForProcessThread))
       {
          LOG_LOGGER( "unable to signal process thread %s",strerror(errno));
