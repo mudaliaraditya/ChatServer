@@ -54,11 +54,11 @@ tagBufferData ConvertToNetworkBuffer(tagData& stData)
    tagBufferData lstBufferData = {0};
    lstBufferData.nCommand = stData.nCommand;
    lstBufferData.nGlobalIdentifier = stData.nGlobalIdentifier;
-   strncpy(lstBufferData.cIdentifier ,stData.cIdentifier ,20);
+   strncpy(lstBufferData.cIdentifier ,stData.cIdentifier ,MAX_IDENTIFIER_LEN);
    lstBufferData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
    lstBufferData.nMessageCode    = stData.nMessageCode;
    strncpy(lstBufferData.cBuffer, stData.cBuffer, MAXLINE);
-   strncpy(lstBufferData.cTarget, stData.cTarget, 20 );
+   strncpy(lstBufferData.cTarget, stData.cTarget, MAX_IDENTIFIER_LEN );
    strncpy(lstBufferData.cUniqueMessageIdentifier,stData.cUniqueMessageIdentifier ,30);
    lstBufferData.nSeqNo = stData.nSeqNo;
    lstBufferData.bFinalResponse = stData.bFinalResponse;
@@ -73,11 +73,11 @@ tagData ConvertToDataStruct(tagBufferData& stData)
    tagData lstBufferData = {0};
    lstBufferData.nCommand = stData.nCommand;
    lstBufferData.nGlobalIdentifier = stData.nGlobalIdentifier;
-   strncpy(lstBufferData.cIdentifier ,stData.cIdentifier ,20);
+   strncpy(lstBufferData.cIdentifier ,stData.cIdentifier , MAX_IDENTIFIER_LEN);
    lstBufferData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
    lstBufferData.nMessageCode    = stData.nMessageCode;
    strncpy(lstBufferData.cBuffer, stData.cBuffer, MAXLINE);
-   strncpy(lstBufferData.cTarget, stData.cTarget, 20 );
+   strncpy(lstBufferData.cTarget, stData.cTarget, MAX_IDENTIFIER_LEN );
    strncpy(lstBufferData.cUniqueMessageIdentifier,stData.cUniqueMessageIdentifier ,30);
    lstBufferData.nSeqNo = stData.nSeqNo;
    lstBufferData.bFinalResponse = stData.bFinalResponse;
@@ -288,8 +288,12 @@ int ExecuteFunction(tagData& stData)
       case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER) :
          {
             pthread_mutex_lock(&g_cGlobalIdentifierMutex);
+              
+           
+            //incrementint the sequenceNo
             stData.nGlobalIdentifier = g_nClientIdentifier++;
             pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
+
             lpstData = new tagData(stData);
             if(lpstData == NULL)
             {
@@ -309,6 +313,12 @@ int ExecuteFunction(tagData& stData)
                lpstData = nullptr;
                printf("duplicate identifier insert to identifier(%s) store failed ", stData.cIdentifier);
                printf("%s %d", strerror(errno), __LINE__);
+               if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                  LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+                  exit(1);
+               }
+
                exit(EXIT_FAILURE);
             }
             if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
@@ -341,6 +351,7 @@ int ExecuteFunction(tagData& stData)
             {
                printf("%d not found", stData.cIdentifier);
                printf("%s %d", strerror(errno), __LINE__);
+               
                exit(EXIT_FAILURE);
             }
 
@@ -357,7 +368,7 @@ int ExecuteFunction(tagData& stData)
                exit(EXIT_FAILURE);
             }
             tagData& lcData = *(lcIteratoor->second);
-            strncpy(lcData.cTarget, stData.cTarget, 20);
+            strncpy(lcData.cTarget, stData.cTarget, MAX_IDENTIFIER_LEN);
             tagSessionIdentifierData lstSessionIdentifier;
             lstSessionIdentifier.sName = stData.cIdentifier;
             lstSessionIdentifier.nGlobalIdentifier = stData.nGlobalIdentifier;
@@ -383,6 +394,7 @@ int ExecuteFunction(tagData& stData)
                if(lnRetVal != 0)
                {
                   LOG_LOGGER("Unable to add user %s to session %d", stData.cIdentifier, lnSessionId);
+                  g_cSessionManager.ReleaseLock();
                   return -1;
                }
                stData.nSessionId = lnSessionId;
@@ -391,9 +403,10 @@ int ExecuteFunction(tagData& stData)
             if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             { 
                LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+               g_cSessionManager.ReleaseLock();//Take caer of each mutex lock when you get failed
                exit(1);
             }
-            g_cSessionManager.ReleaseLock();
+            g_cSessionManager.ReleaseLock();//
          }
          break;
 
@@ -413,6 +426,11 @@ int ExecuteFunction(tagData& stData)
             {
                printf("%d not found", stData.cIdentifier);
                printf("%s %d", strerror(errno), __LINE__);
+               if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                  LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+                  exit(EXIT_FAILURE);
+               }
                exit(EXIT_FAILURE);
             }    
             //map<string, tagData*>::iterator lcIter = g_cPortIdentifier.find(stData.cIdentifier);
@@ -426,6 +444,11 @@ int ExecuteFunction(tagData& stData)
             int lnGlobalTargetIdentifier = g_cSessionManager.GetGlobalClientIdentifierBySessionIdAndName(stData.nSessionId, stData.cTarget);
             if(lnGlobalTargetIdentifier < 0)
             {
+                if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                  LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+                  exit(EXIT_FAILURE);
+               }
                LOG_LOGGER("ERROR");
                exit(1);
             }
@@ -441,6 +464,11 @@ int ExecuteFunction(tagData& stData)
             }
             if (lcIter1 == g_cClientIDStore.end())
             {
+               if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                  LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+                  exit(EXIT_FAILURE);
+               }
                LOG_LOGGER("%s %s %s %s","Target not found" ,lcIter->second->cTarget ,  "By Identifier " , stData.cIdentifier );
                printf("%s %d", strerror(errno), __LINE__);
                exit(EXIT_FAILURE);
@@ -449,6 +477,11 @@ int ExecuteFunction(tagData& stData)
             tagData* lpNewData = new tagData();
             if(NULL == lpNewData)
             {
+                if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                 LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+                 exit(EXIT_FAILURE);
+               }
                LOG_LOGGER("memory error");
                exit(EXIT_FAILURE);
             }
@@ -459,11 +492,11 @@ int ExecuteFunction(tagData& stData)
                exit(EXIT_FAILURE);
             }
             lpNewData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
-            strncpy(lpNewData->cIdentifier, stData.cIdentifier, 20);
+            strncpy(lpNewData->cIdentifier, stData.cIdentifier, MAX_IDENTIFIER_LEN);
             lpNewData->nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE;
             lpNewData->nSeqNo = stData.nSeqNo;
             strncpy(lpNewData->cBuffer, stData.cBuffer, MAXLINE);
-            strncpy(lpNewData->cTarget, stData.cTarget, 20);
+            strncpy(lpNewData->cTarget, stData.cTarget, MAX_IDENTIFIER_LEN);
             strncpy(lpNewData->cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier, 30);
 
             pthread_mutex_lock(&g_cResponseMutex);
@@ -491,6 +524,12 @@ int ExecuteFunction(tagData& stData)
             map<int, tagData*>::iterator lcIter = g_cClientIDStore.find(stData.nGlobalIdentifier);
             if (lcIter == g_cClientIDStore.end())
             {
+                if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                 LOG_LOGGER("%s %s", stData.cIdentifier , "not found");
+                 printf("%s %d", strerror(errno), __LINE__);
+                 exit (EXIT_FAILURE); 
+               }
                LOG_LOGGER("%s %s", stData.cIdentifier , " not found");
                printf("%s %d", strerror(errno), __LINE__);
                exit(EXIT_FAILURE);
@@ -499,6 +538,12 @@ int ExecuteFunction(tagData& stData)
             tagData* lpNewData = new tagData();
             if(NULL == lpNewData )
             {
+                if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                  LOG_LOGGER("%s %s", stData.cIdentifier , "not found");
+                  printf("%s %d", strerror(errno), __LINE__);
+                  exit (EXIT_FAILURE); 
+               }
                LOG_LOGGER("memory error");
                exit(EXIT_FAILURE);
             }
@@ -516,11 +561,11 @@ int ExecuteFunction(tagData& stData)
             lpNewData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_CONF;
             lpNewData->nSeqNo = lstData.nSeqNo;
             lpNewData->bFinalResponse = true;
-            strncpy(lpNewData->cIdentifier, lstData.cIdentifier, 20);
-            strncpy(lpNewData->cTarget, lstData.cTarget, 20);
+            strncpy(lpNewData->cIdentifier, lstData.cIdentifier, MAX_IDENTIFIER_LEN);
+            strncpy(lpNewData->cTarget, lstData.cTarget, MAX_IDENTIFIER_LEN);
             lpNewData->nMessageCode = lstData.nMessageCode;// lcIter1->second->nMessageCode;
             strncpy(lpNewData->cBuffer, lstData.cBuffer, MAXLINE);
-            strncpy(lpNewData->cTarget, lstData.cTarget, 20);
+            strncpy(lpNewData->cTarget, lstData.cTarget, MAX_IDENTIFIER_LEN);
             strncpy(lpNewData->cUniqueMessageIdentifier, lstData.cUniqueMessageIdentifier, 30);
 
             pthread_mutex_lock(&g_cResponseMutex);
@@ -1470,9 +1515,9 @@ int main()
    lstSigAction.sa_handler  = HandleSignal;
    sigaction(SIGINT, &lstSigAction, NULL);
    fd_set          input_set = {0};
-   struct timeval  timeout = {0};
-   timeout.tv_sec = 1;
-   timeout.tv_usec = 0;
+   struct timeval  lnTimeout = {0};
+   lnTimeout.tv_sec = 1;
+   lnTimeout.tv_usec = 0;
 
   
 
@@ -1586,7 +1631,7 @@ int main()
       FD_ZERO(&input_set);
       FD_SET(0, &input_set);
 
-      ready_for_reading = select( 1, &input_set, NULL, NULL, &timeout);
+      ready_for_reading = select( 1, &input_set, NULL, NULL, &lnTimeout);
       if (ready_for_reading) 
       {
 
