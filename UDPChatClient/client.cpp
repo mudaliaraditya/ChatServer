@@ -675,7 +675,8 @@ bool IsMessageUnique(tagData stData)
          lnRetVal = AddResendingMessageToEventStore(stData);
          if(lnRetVal != 0)
          {
-            exit (lnRetVal);
+            pthread_mutex_unlock(&g_ReSenderMutex);
+             exit (lnRetVal);
          }
          // tagTimeData lstTimeData((time(NULL) + 10), stData);
          // g_cEventResender.insert(pair<time_t,tagTimeData>(lstTimeData.m_nTime,lstTimeData));
@@ -1517,7 +1518,7 @@ int main(int argc,char* argv[])
           while(VerifyUniqueness(lstData.cUniqueMessageIdentifier) != 0);
           pthread_mutex_lock(&g_GlobalSeqnoMutex);
           lstData.nSeqNo = g_nSeqNo++;
-         lstData.nLatestClntSeqNo = g_nLatestRecivedSequenceNo;
+          lstData.nLatestClntSeqNo = g_nLatestRecivedSequenceNo;
           pthread_mutex_unlock(&g_GlobalSeqnoMutex);
 
 
