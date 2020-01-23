@@ -264,7 +264,7 @@ void HandleSignal(int nSignal)
            stringstream oss(S);
            backup = cin.rdbuf();
            cin.rdbuf(oss.rdbuf());
-           ready_for_reading = 0;
+           g_nReady_for_reading = 0;
            return;
          }
          break;
@@ -876,12 +876,12 @@ void* RecieverThread(void* pData)
       }
       if (lpstData->nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER)
       {
-         lpstData->stNetWork.fd = g_nMainSockFd;
+         lpstData->stNetWork.nSockFD = g_nMainSockFd;
       }
-      memcpy(&(lpstData->stNetWork.addr), &cliaddr, sizeof(sockaddr_in));
-      lpstData->stNetWork.fd = g_nMainSockFd;
-      lpstData->stNetWork.restrict = sizeof(sockaddr_in);
-      lpstData->stNetWork.flags = MSG_CONFIRM;
+      memcpy(&(lpstData->stNetWork.stAddr), &cliaddr, sizeof(sockaddr_in));
+      lpstData->stNetWork.nSockFD = g_nMainSockFd;
+      lpstData->stNetWork.nSizeofStrtSockAddr = sizeof(sockaddr_in);
+      lpstData->stNetWork.nFlags = MSG_CONFIRM;
       #ifdef LOGGING        
       cout << "chat data " << lpstData->cBuffer << endl;
       cout << "identifier " << lpstData->cIdentifier << endl;
@@ -1411,7 +1411,7 @@ void* SenderThread(void* pArg)
         exit(EXIT_FAILURE); 
       }
       memcpy(&lcBuffer, (char*)&lstBufferData, lnDataStructSize);
-      lnReturnVal = sendto(lpstData->stNetWork.fd, (const char *)&lcBuffer, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(lpstData->stNetWork.addr), lpstData->stNetWork.restrict);
+      lnReturnVal = sendto(lpstData->stNetWork.nSockFD, (const char *)&lcBuffer, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(lpstData->stNetWork.stAddr), lpstData->stNetWork.nSizeofStrtSockAddr);
       if (0 > lnReturnVal)
       {
          printf("%s, %d", strerror(errno), __LINE__);
@@ -1677,8 +1677,8 @@ int main()
       FD_ZERO(&lnInput_set);
       FD_SET(0, &lnInput_set);
 
-      ready_for_reading = select( 1, &lnInput_set, NULL, NULL, &lnTimeout);
-      if (ready_for_reading) 
+      g_nReady_for_reading = select( 1, &lnInput_set, NULL, NULL, &lnTimeout);
+      if (g_nReady_for_reading) 
       {
 
          cin >> lcVal;

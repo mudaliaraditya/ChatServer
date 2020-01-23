@@ -70,7 +70,7 @@ extern CSessionManager g_cSessionManager;
 
 extern int g_ExceptionRaised;
 
-extern int ready_for_reading;
+extern int g_nReady_for_reading;
 #endif
 
 

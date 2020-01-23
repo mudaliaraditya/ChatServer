@@ -18,12 +18,12 @@ struct tagNetworkThread;
 
 struct tagNetworkThread
 {
-      int     fd;
+      int     nSockFD;
       //struct tagData buf;
-      size_t  n; 
-      int     flags;
-      struct sockaddr_in addr;
-      socklen_t restrict;
+      size_t  nSizeBufferSendRecv; 
+      int     nFlags;
+      struct sockaddr_in stAddr;
+      socklen_t nSizeofStrtSockAddr;
 };
 
 struct tagCSequenceNo
