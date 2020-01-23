@@ -675,8 +675,8 @@ void* RecieverThread(void* pData)
 {
    TESTLOG("%s","Thread : Reciever Thread");
    tagData* lpstData = NULL;
-   fd_set          input_set;
-   struct timeval  timeout;
+   fd_set          lnInput_set;
+   struct timeval  lnTimeout;
    int lnReady_for_readingr = 0;
    int lnRetVal = 0;
    int lnNoOfBytes = 0;
@@ -695,14 +695,14 @@ void* RecieverThread(void* pData)
 #ifdef LOGGING
       cout << "Recieving.." << endl;
 #endif
-      FD_ZERO(&input_set);
-      FD_SET(g_nMainSockFd, &input_set);
+      FD_ZERO(&lnInput_set);
+      FD_SET(g_nMainSockFd, &lnInput_set);
 
-      timeout.tv_sec = 5;
-      timeout.tv_usec = 0;
+      lnTimeout.tv_sec = 5;
+      lnTimeout.tv_usec = 0;
 
 
-      lnReady_for_readingr = select(g_nMainSockFd + 1, &input_set, NULL, NULL, &timeout);
+      lnReady_for_readingr = select(g_nMainSockFd + 1, &lnInput_set, NULL, NULL, &lnTimeout);
       //cout << "value of Slect ret "<< lnReady_for_readingr << endl;
       if (lnReady_for_readingr) {
       lnNoOfBytes = RecvUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &cliaddr, lnSockAddrlen);
@@ -1531,24 +1531,71 @@ int InitiateLogging()
 }
 
 
-int main()
+int CreateAllThreads()
 {
-   int lnRetVal =0;
-   g_nFlagDupliResend = 0;
+   int lnRetVal = 0;
+   lnRetVal = pthread_create( &lnRecieverThread, NULL, RecieverThread, NULL);
+   if(0 > lnRetVal)
+   {
+      //printf("%s, %d", strerror(errno), __LINE__);
+      //perror("pthread create thread");
+      LOG_LOGGER("%s : thread creation failed", strerror(errno));
+      exit(EXIT_FAILURE);
+   }
+   lnRetVal = pthread_create(&lnSenderPThread, NULL, SenderThread, NULL);
+   if(0 > lnRetVal)
+   {
+      //printf("%s, %d", strerror(errno), __LINE__);
+      //perror("pthread create thread");
+      LOG_LOGGER("%s : thread creation failed", strerror(errno));
+      exit(EXIT_FAILURE);
+   }
 
+   if(  g_nFlagDupliResend == 0) 
+   {
+      lnRetVal = pthread_create(&lnPThreadEventTime, NULL, EventThread,NULL);
+      if(0 > lnRetVal)
+      {
+         LOG_LOGGER("%s : thread creation failed", strerror(errno));
+         exit(EXIT_FAILURE);
+      }
+   }
+
+   for (int lnCounter = 0; lnCounter< NO_OF_PROC_THREADS; lnCounter++)
+   {
+      lnRetVal = pthread_create(((pthread_t*)&(lnProcessPThread[lnCounter])), NULL, ProcessThread, NULL);
+      if(0 > lnRetVal)
+      {
+         LOG_LOGGER("%s : thread creation failed for thread no %d", strerror(errno), lnCounter);
+         exit(EXIT_FAILURE);
+      }
+   }
+
+   return 0;
+}
+
+
+
+void Initialize()
+{
+   g_nFlagDupliResend = 0;
    //SIgnal Handling
    signal(SIGINT, HandleSignal);
    struct sigaction lstSigAction = {0};
    lstSigAction.sa_flags = 0;
    lstSigAction.sa_handler  = HandleSignal;
    sigaction(SIGINT, &lstSigAction, NULL);
-   fd_set          input_set = {0};
+}
+
+int main()
+{
+   int lnRetVal =0;
+   Initialize();
+   
+   fd_set          lnInput_set = {0};
    struct timeval  lnTimeout = {0};
    lnTimeout.tv_sec = 1;
    lnTimeout.tv_usec = 0;
-
-  
-
 
    pConfigObject = CreateNewMap();
    if(pConfigObject == NULL)
@@ -1606,44 +1653,15 @@ int main()
       LOG_LOGGER("%s : Mutex initialization failed", strerror(errno));
       exit(EXIT_FAILURE);
    }
-   lnRetVal = pthread_create( &lnRecieverThread, NULL, RecieverThread, NULL);
+   
+
+   lnRetVal  = CreateAllThreads();
    if(0 > lnRetVal)
    {
-      //printf("%s, %d", strerror(errno), __LINE__);
-      //perror("pthread create thread");
-      LOG_LOGGER("%s : thread creation failed", strerror(errno));
+      LOG_LOGGER("%s : Mutex initialization failed", strerror(errno));
       exit(EXIT_FAILURE);
    }
-   lnRetVal = pthread_create(&lnSenderPThread, NULL, SenderThread, NULL);
-   if(0 > lnRetVal)
-   {
-      //printf("%s, %d", strerror(errno), __LINE__);
-      //perror("pthread create thread");
-      LOG_LOGGER("%s : thread creation failed", strerror(errno));
-      exit(EXIT_FAILURE);
-   }
-
-   if(  g_nFlagDupliResend == 0) 
-   {
-      lnRetVal = pthread_create(&lnPThreadEventTime, NULL, EventThread,NULL);
-      if(0 > lnRetVal)
-      {
-         LOG_LOGGER("%s : thread creation failed", strerror(errno));
-         exit(EXIT_FAILURE);
-      }
-   }
-
-   for (int lnCounter = 0; lnCounter< NO_OF_PROC_THREADS; lnCounter++)
-   {
-      lnRetVal = pthread_create(((pthread_t*)&(lnProcessPThread[lnCounter])), NULL, ProcessThread, NULL);
-      if(0 > lnRetVal)
-      {
-         LOG_LOGGER("%s : thread creation failed for thread no %d", strerror(errno), lnCounter);
-         exit(EXIT_FAILURE);
-      }
-   }
-
-
+   
    long long lnSockAddrlen = 0, lnNoOfBytes = 0;
    tagData* lpstData = nullptr;
    bool lbDiscardPacket = false;
@@ -1656,10 +1674,10 @@ int main()
    {
 
       string lcVal = "";
-      FD_ZERO(&input_set);
-      FD_SET(0, &input_set);
+      FD_ZERO(&lnInput_set);
+      FD_SET(0, &lnInput_set);
 
-      ready_for_reading = select( 1, &input_set, NULL, NULL, &lnTimeout);
+      ready_for_reading = select( 1, &lnInput_set, NULL, NULL, &lnTimeout);
       if (ready_for_reading) 
       {
 
