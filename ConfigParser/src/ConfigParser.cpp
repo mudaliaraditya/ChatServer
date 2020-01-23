@@ -179,6 +179,7 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
          lcToken = strtok(lcBuffStart,"= ");
          switch(lnCounter)
          {
+            /*setting the LHS of the config*/
             case 0:
             {
                 lcBuffStart = NULL;
@@ -207,7 +208,8 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                 }
             }
             break;
-             
+
+            /*setting the RHS of the config*/             
             case 1:
             {
                 if(lcToken != NULL)
@@ -270,7 +272,7 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                 } 
             }
             break;
-            
+            /*checking for any trash tokens*/            
             default:
             {
                 if(lcToken == NULL)
