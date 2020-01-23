@@ -189,73 +189,25 @@ void HandleSignal(int nSignal)
                DeleteNewMap(pConfigObject);
                pConfigObject = NULL;
             }
-            lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
-            if(lnRetVal != 0)
+
+
+            lnRetVal = JoinAllThreads();
+            if(lnRetVal != EXIT_SUCCESS)
             {
                printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to join Process Threads");
+               perror("unable to join threads");
                exit(EXIT_FAILURE);
-            }
 
-            lnRetVal = pthread_join(lnRecieverThread, NULL);
+            }
+            lnRetVal = DestroyMutexCondVar();
             if (lnRetVal != 0)
             {
                printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to join Reciver Thread ");
-               exit(EXIT_FAILURE);
-            }
-            lnRetVal = pthread_join(lnSenderPThread,NULL);
-            if (lnRetVal != 0)
-            {
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to destroy Conditional Variable");
-               exit(EXIT_FAILURE);
-            }
-
-            for (int lnCounter = 0; lnCounter< NO_OF_PROC_THREADS; lnCounter++)
-            {
-               lnRetVal = pthread_join(lnProcessPThread[lnCounter],NULL);
-               if (lnRetVal != 0)
-               {
-                  printf("%s, %d", strerror(errno), __LINE__);
-                  perror("unable to destroy Conditional Variable");
-                  exit(EXIT_FAILURE);
-               }
-            }
-
-            lnRetVal = pthread_cond_destroy(&g_cCondVarForProcessThread);
-            if (lnRetVal != 0)
-            {
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to destroy Conditional Variable");
+               perror("unable to destroy  Variable");
                exit(EXIT_FAILURE);
             }
 
 
-            lnRetVal = pthread_mutex_destroy(&g_cProcessMutex);
-            if (lnRetVal != 0)
-            {
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to destroy mnutex");
-               exit(EXIT_FAILURE);
-            }
-
-            lnRetVal = pthread_mutex_destroy(&g_cResponseMutex);
-            if (lnRetVal != 0)
-            {
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to destroy mnutex");
-               exit(EXIT_FAILURE);
-            }
-
-
-            lnRetVal = pthread_mutex_destroy(&g_cIdentifierMutex);
-            if (lnRetVal != 0)
-            {
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to destroy mnutex");
-               exit(EXIT_FAILURE);
-            }
             //exit(EXIT_SUCCESS);
            //cin.putback('S');
            g_ExceptionRaised = 1;
@@ -301,7 +253,7 @@ int ExecuteFunction(tagData& stData)
                exit(1);
             }
             //g_cClientIDStore.insert()
-            if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
+            if ( EXIT_SUCCESS != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
                exit(1);
@@ -313,7 +265,7 @@ int ExecuteFunction(tagData& stData)
                lpstData = nullptr;
                printf("duplicate identifier insert to identifier(%s) store failed ", stData.cIdentifier);
                printf("%s %d", strerror(errno), __LINE__);
-               if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               if ( EXIT_SUCCESS != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
                {
                   LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
                   exit(1);
@@ -321,7 +273,7 @@ int ExecuteFunction(tagData& stData)
 
                exit(EXIT_FAILURE);
             }
-            if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+            if ( EXIT_SUCCESS != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             { 
                LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
                exit(1);
@@ -341,7 +293,7 @@ int ExecuteFunction(tagData& stData)
 
       case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET) :
          {
-            if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
+            if ( EXIT_SUCCESS != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
                exit(1);
@@ -351,7 +303,7 @@ int ExecuteFunction(tagData& stData)
             {
                printf("%d not found", stData.cIdentifier);
                printf("%s %d", strerror(errno), __LINE__);
-               if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               if ( EXIT_SUCCESS != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
                { 
                   LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
                   //g_cSessionManager.ReleaseLock();//Take caer of each mutex lock when you get failed
@@ -1587,6 +1539,91 @@ void Initialize()
    sigaction(SIGINT, &lstSigAction, NULL);
 }
 
+
+int JoinAllThreads()
+{
+   int lnRetVal = 0;
+   lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
+   if(lnRetVal != 0)
+   {
+      printf("%s, %d", strerror(errno), __LINE__);
+      perror("unable to join lnPThreadEventTime");
+      exit(EXIT_FAILURE);
+   }
+
+   lnRetVal = pthread_join(lnRecieverThread,NULL);
+   if (lnRetVal != 0)
+   {
+      printf("%s, %d", strerror(errno), __LINE__);
+      perror("unable to join lnPThreadEventTime");
+      exit(EXIT_FAILURE);
+   }
+   lnRetVal = pthread_join(lnPThreadEventTime,NULL);
+   if (lnRetVal != 0)
+   {
+      printf("%s, %d", strerror(errno), __LINE__);
+      perror("unable to join lnPThreadEventTime");
+      exit(EXIT_FAILURE);
+   }
+
+   lnRetVal = pthread_join(lnSenderPThread,NULL);
+   if (lnRetVal != 0)
+   {
+      printf("%s, %d", strerror(errno), __LINE__);
+      perror("unable to join lnSenderPThread");
+      exit(EXIT_FAILURE);
+   }
+
+   for (int lnCounter = 0; lnCounter< NO_OF_PROC_THREADS; lnCounter++)
+   {
+      lnRetVal = pthread_join(lnProcessPThread[lnCounter],NULL);
+      if (lnRetVal != 0)
+      {
+         printf("%s, %d", strerror(errno), __LINE__);
+         perror("unable to join processthread");
+         exit(EXIT_FAILURE);
+      }
+   }
+   return lnRetVal;
+}
+
+
+int DestroyMutexCondVar()
+{
+        int lnRetVal = 0;
+        lnRetVal = pthread_cond_destroy(&g_cCondVarForProcessThread);
+        if (lnRetVal != EXIT_SUCCESS)
+        {
+                printf("%s, %d", strerror(errno), __LINE__);
+                perror("unable to destroy Conditional Variable");
+                exit(EXIT_FAILURE);
+        }
+        lnRetVal = pthread_mutex_destroy(&g_cProcessMutex);
+        if (lnRetVal != EXIT_SUCCESS)
+        {
+                printf("%s, %d", strerror(errno), __LINE__);
+                perror("unable to destroy mutex");
+                exit(EXIT_FAILURE);
+        }
+        lnRetVal = pthread_mutex_destroy(&g_cResponseMutex);
+        if (lnRetVal != EXIT_SUCCESS)
+        {
+                printf("%s, %d", strerror(errno), __LINE__);
+                perror("unable to destroy mutex");
+                exit(EXIT_FAILURE);
+        } 
+
+
+        lnRetVal = pthread_mutex_destroy(&g_cIdentifierMutex);
+        if (lnRetVal != EXIT_SUCCESS)
+        {
+                printf("%s, %d", strerror(errno), __LINE__);
+                perror("unable to destroy mutex");
+                exit(EXIT_FAILURE);
+        }
+        return lnRetVal;
+}
+
 int main()
 {
    int lnRetVal =0;
@@ -1694,100 +1731,37 @@ int main()
       }
    }
    if(g_ExceptionRaised == 0)
-  {
-   if(CleanUp() != 0)
    {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("cleanup dailed");
-      exit(EXIT_FAILURE);
+           if(CleanUp() != 0)
+           {
+                   printf("%s, %d", strerror(errno), __LINE__);
+                   perror("cleanup dailed");
+                   exit(EXIT_FAILURE);
+           }
+
+           if(pConfigObject != NULL)
+           {
+                   DeleteNewMap(pConfigObject);
+                   pConfigObject = NULL;
+           }
+           lnRetVal =  JoinAllThreads();
+           if(lnRetVal != EXIT_SUCCESS)
+           {
+                   printf("%s, %d", strerror(errno), __LINE__);
+                   perror("error while joining threads"); 
+                   exit(EXIT_FAILURE);
+           }
+           //close(g_nMainSockFd);
+           lnRetVal = DestroyMutexCondVar();
+           if(lnRetVal != EXIT_SUCCESS)
+           {
+                   printf("%s, %d", strerror(errno), __LINE__);
+                   perror("error while destroying"); 
+                   exit(EXIT_FAILURE);
+           }
+
+
    }
-
-   if(pConfigObject != NULL)
-   {
-      DeleteNewMap(pConfigObject);
-      pConfigObject = NULL;
-   }
-
-   lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
-   if(lnNoOfBytes > 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to join lnPThreadEventTime");
-      exit(EXIT_FAILURE);
-   }
-
-   lnRetVal = pthread_join(lnRecieverThread,NULL);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to join lnPThreadEventTime");
-      exit(EXIT_FAILURE);
-   }
-   lnRetVal = pthread_join(lnPThreadEventTime,NULL);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to join lnPThreadEventTime");
-      exit(EXIT_FAILURE);
-   }
-
-   lnRetVal = pthread_join(lnSenderPThread,NULL);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to join lnSenderPThread");
-      exit(EXIT_FAILURE);
-   }
-
-   for (int lnCounter = 0; lnCounter< NO_OF_PROC_THREADS; lnCounter++)
-   {
-      lnRetVal = pthread_join(lnProcessPThread[lnCounter],NULL);
-      if (lnRetVal != 0)
-      {
-         printf("%s, %d", strerror(errno), __LINE__);
-         perror("unable to join processthread");
-         exit(EXIT_FAILURE);
-      }
-   }
-
-   //close(g_nMainSockFd);
-
-   lnRetVal = pthread_cond_destroy(&g_cCondVarForProcessThread);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to destroy Conditional Variable");
-      exit(EXIT_FAILURE);
-   }
-
-
-   lnRetVal = pthread_mutex_destroy(&g_cProcessMutex);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to destroy mutex");
-      exit(EXIT_FAILURE);
-   }
-
-
-   lnRetVal = pthread_mutex_destroy(&g_cResponseMutex);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to destroy mutex");
-      exit(EXIT_FAILURE);
-   }
-
-
-   lnRetVal = pthread_mutex_destroy(&g_cIdentifierMutex);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to destroy mutex");
-      exit(EXIT_FAILURE);
-   }
-
-}
    return 0;
 }
 #endif

@@ -10,7 +10,8 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/media/sf_shared/test/gittest/UDPChatServer/UDPChatServer/Source.cpp</file>
+            <file>rfs://abc@127.0.0.1:14478/home/abc/share/ChatServer/UDPChatServer/structs.h</file>
+            <file>rfs://abc@127.0.0.1:14478/home/abc/share/ChatServer/UDPChatServer/Source.cpp</file>
         </group>
     </open-files>
 </project-private>
