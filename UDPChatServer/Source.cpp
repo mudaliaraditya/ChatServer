@@ -157,11 +157,6 @@ int CleanUp()
    {
       tagTimeData lstData = (lcIter->second);
       TESTLOG("message code :  %d, Identifier :  %d, data : %s \n",lstData.stData.nMessageCode,lstData.stData.nGlobalIdentifier,lstData.stData.cBuffer);
-      //if(lpstData != nullptr)
-      //{
-      //   delete (lpstData);
-      //   lpstData = nullptr;
-      //}
    }
 
    return 0;
@@ -208,8 +203,6 @@ void HandleSignal(int nSignal)
             }
 
 
-            //exit(EXIT_SUCCESS);
-           //cin.putback('S');
            g_ExceptionRaised = 1;
            streambuf *backup;
            string S = "S";
@@ -252,14 +245,13 @@ int ExecuteFunction(tagData& stData)
                LOG_LOGGER("new error");
                exit(1);
             }
-            //g_cClientIDStore.insert()
             if ( EXIT_SUCCESS != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
                exit(1);
             }
-            bool lbVal1 = (g_cClientIDStore.insert(pair<int , tagData*>(stData.nGlobalIdentifier, lpstData))).second;
-            if (lbVal1 == false)
+            bool lbRetValInsClientIdStore = (g_cClientIDStore.insert(pair<int , tagData*>(stData.nGlobalIdentifier, lpstData))).second;
+            if (lbRetValInsClientIdStore == false)
             {
                delete lpstData;
                lpstData = nullptr;
@@ -278,16 +270,7 @@ int ExecuteFunction(tagData& stData)
                LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
                exit(1);
             }
-            // bool lbVal = (g_cPortIdentifier.insert(pair<string, tagData*>(stData.cIdentifier, lpstData))).second;
-            // if (lbVal == false)
-            // {
-            //    delete lpstData;
-            //    lpstData = nullptr;
-            //    printf("duplicate identifier insert to identifier(%s) store failed ", stData.cIdentifier);
-            //    printf("%s %d", strerror(errno), __LINE__);
-            //    exit(EXIT_FAILURE);
-            // }
-
+            
          }
          break;
 
@@ -298,39 +281,30 @@ int ExecuteFunction(tagData& stData)
                LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
                exit(1);
             }
-            map<int , tagData*>::iterator lcIteratoor = g_cClientIDStore.find(stData.nGlobalIdentifier);
-            if (lcIteratoor == g_cClientIDStore.end())
+            map<int , tagData*>::iterator lcSenderIterator = g_cClientIDStore.find(stData.nGlobalIdentifier);
+            if (lcSenderIterator == g_cClientIDStore.end())
             {
                printf("%d not found", stData.cIdentifier);
                printf("%s %d", strerror(errno), __LINE__);
                if ( EXIT_SUCCESS != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
                { 
                   LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
-                  //g_cSessionManager.ReleaseLock();//Take caer of each mutex lock when you get failed
                   exit(1);
                } 
                exit(EXIT_FAILURE);
             }
 
-            //map<string, tagData*>::iterator lcIterator = g_cPortIdentifier.find(stData.cIdentifier);
-            //if (lcIterator == g_cPortIdentifier.end())
-            //{
-            //   printf("%d not found", stData.cIdentifier);
-            //   printf("%s %d", strerror(errno), __LINE__);
-            //   exit(EXIT_FAILURE);
-            //}
-            if(lcIteratoor->second == nullptr)
+            if(lcSenderIterator->second == nullptr)
             {
                LOG_LOGGER("invalid ptr");
                if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
                {   
                   LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
-                 // g_cSessionManager.ReleaseLock();//Take caer of each mutex lock when you get failed
                   exit(1);
                }
                exit(EXIT_FAILURE);
             }
-            tagData& lcData = *(lcIteratoor->second);
+            tagData& lcData = *(lcSenderIterator->second);
             strncpy(lcData.cTarget, stData.cTarget, MAX_IDENTIFIER_LEN);
             tagSessionIdentifierData lstSessionIdentifier;
             lstSessionIdentifier.sName = stData.cIdentifier;
@@ -389,8 +363,6 @@ int ExecuteFunction(tagData& stData)
          {
             char lcBuffer[sizeof(tagData)] = { 0 };
 
-            //tagData lstData = stData;
-            //lstData.nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE;
             if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             { 
                LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
@@ -408,13 +380,6 @@ int ExecuteFunction(tagData& stData)
                }
                exit(EXIT_FAILURE);
             }    
-            //map<string, tagData*>::iterator lcIter = g_cPortIdentifier.find(stData.cIdentifier);
-            //if (lcIter == g_cPortIdentifier.end())
-            //{
-            //   cout << stData.cIdentifier << "not found";
-            //   printf("%s %d", strerror(errno), __LINE__);
-            // exit(EXIT_FAILURE);
-            //}
 
             int lnGlobalTargetIdentifier = g_cSessionManager.GetGlobalClientIdentifierBySessionIdAndName(stData.nSessionId, stData.cTarget);
             if(lnGlobalTargetIdentifier < 0)
@@ -428,16 +393,16 @@ int ExecuteFunction(tagData& stData)
                exit(1);
             }
 
-            map<int , tagData*>::iterator lcIter1;// = //g_cClientIDStore.find(lcIter->second->cTarget);
+            map<int , tagData*>::iterator lcTargetIter;// = //g_cClientIDStore.find(lcIter->second->cTarget);
             for(map<int,tagData*>::iterator lcIterClientIdentityStore = g_cClientIDStore.begin(); lcIterClientIdentityStore != g_cClientIDStore.end() ; lcIterClientIdentityStore++)
             {
                if(lcIterClientIdentityStore->second->nGlobalIdentifier == lnGlobalTargetIdentifier)
                {
-                  lcIter1 = lcIterClientIdentityStore;
+                  lcTargetIter = lcIterClientIdentityStore;
                   break;
                }
             }
-            if (lcIter1 == g_cClientIDStore.end())
+            if (lcTargetIter == g_cClientIDStore.end())
             {
                if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
                {
@@ -460,7 +425,7 @@ int ExecuteFunction(tagData& stData)
                LOG_LOGGER("memory error");
                exit(EXIT_FAILURE);
             }
-            memcpy(lpNewData, lcIter1->second, sizeof(tagData));
+            memcpy(lpNewData, lcTargetIter->second, sizeof(tagData));
             if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
@@ -483,21 +448,17 @@ int ExecuteFunction(tagData& stData)
       case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY):
          {
 
-            //char lcBuffer[sizeof(tagData)] = { 0 };
 
             tagData lstData = stData;
             lstData.nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_SERV_TO_CLI;
-            //lstData.nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
-            //memcpy(&lcBuffer, (char*)&lstData, sizeof(tagData));
-            //map<string, tagData*>::iterator lcIter = g_cPortIdentifier.find(stData.cIdentifier);
             if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("%s ", "error in mutex");
                printf("%s %d", strerror(errno), __LINE__);
                exit(EXIT_FAILURE);
             }
-            map<int, tagData*>::iterator lcIter = g_cClientIDStore.find(stData.nGlobalIdentifier);
-            if (lcIter == g_cClientIDStore.end())
+            map<int, tagData*>::iterator lcSenderIter = g_cClientIDStore.find(stData.nGlobalIdentifier);
+            if (lcSenderIter == g_cClientIDStore.end())
             {
                 if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
                {
@@ -522,7 +483,7 @@ int ExecuteFunction(tagData& stData)
                LOG_LOGGER("memory error");
                exit(EXIT_FAILURE);
             }
-            memcpy(lpNewData, lcIter->second, sizeof(tagData));
+            memcpy(lpNewData, lcSenderIter->second, sizeof(tagData));
             if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("%s %s", stData.cIdentifier , "not found");
@@ -613,7 +574,6 @@ int GetResponseForFunction(tagData& stData)
          default :
          {
             TESTLOG("%s","Invalid case");
-            //perror("invalid case in GetResponseForFunc");
          }
    }
 
@@ -655,21 +615,21 @@ void* RecieverThread(void* pData)
 
 
       lnReady_for_readingr = select(g_nMainSockFd + 1, &lnInput_set, NULL, NULL, &lnTimeout);
-      //cout << "value of Slect ret "<< lnReady_for_readingr << endl;
-      if (lnReady_for_readingr) {
-      lnNoOfBytes = RecvUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &cliaddr, lnSockAddrlen);
-      if (lnNoOfBytes <= 0)
+      if (lnReady_for_readingr) 
       {
-         cout << "" << endl;
-         if(lpstData != NULL)
-         {
-            delete lpstData;
-            lpstData = nullptr;
-         }
-         //printf("%s, %d", strerror(errno), __LINE__);
-         LOG_LOGGER("%s : RecvUDPData failed", strerror(errno));
-         exit(EXIT_FAILURE);
-      }
+              lnNoOfBytes = RecvUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &cliaddr, lnSockAddrlen);
+              if (lnNoOfBytes <= 0)
+              {
+                      cout << "" << endl;
+                      if(lpstData != NULL)
+                      {
+                              delete lpstData;
+                              lpstData = nullptr;
+                      }
+                      //printf("%s, %d", strerror(errno), __LINE__);
+                      LOG_LOGGER("%s : RecvUDPData failed", strerror(errno));
+                      exit(EXIT_FAILURE);
+              }
      }
      else
      {
@@ -752,19 +712,7 @@ void* RecieverThread(void* pData)
 #endif
          }
          string lcKey = SuffixAppropirateUniqueIdentifier(lpstData->cUniqueMessageIdentifier, (short)lpstData->nCommand);
-         //if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
          {
-            // for(auto& lstIdentifiers : g_cIdentifierStore)
-            //{
-            // cout << lstIdentifiers.c_str() << " ";
-            //     if(0 == strcmp(lstIdentifiers.c_str(),lcKey.c_str()))
-            //     {
-            //        LOG_LOGGER("%s : Duplicate Packet with identifier %s", strerror(errno), lstIdentifiers.c_str());
-            //        cout << "duplicate packet" << endl;
-            //        cout << lstIdentifiers.c_str() << " duplicated" << endl;;
-            //        lbDiscardPacket = true;
-            //        break;
-            //     }
             CIterIdentifierStringStore lcIterIdentifierStringStore  = g_cIdentifierStore.find(lcKey);
             if( lcIterIdentifierStringStore != g_cIdentifierStore.end())
             {
@@ -775,7 +723,6 @@ void* RecieverThread(void* pData)
                #endif
                lbDiscardPacket = true;
             }
-            //}
             if(true == lbDiscardPacket)
             {
                if(lpstData != NULL)
@@ -783,8 +730,6 @@ void* RecieverThread(void* pData)
                   delete lpstData;
                   lpstData = nullptr;
                }
-               //delete lpstData;
-               //lpstData = nullptr;
                lbDiscardPacket = false;
                pthread_mutex_unlock(&g_cIdentifierMutex);
                continue;
@@ -811,7 +756,6 @@ void* RecieverThread(void* pData)
          cout << "Releasing Identifier Mutex" << __LINE__ <<endl;
 #endif
 
-         // if(lpstData->nCommand != (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY)
          {
             cout << "deleting all old data" << endl;
             TESTLOG("DeleteMsgFromResenderStoreByUniqueIdentifier started")
@@ -855,7 +799,6 @@ void* RecieverThread(void* pData)
             LOG_LOGGER( "unable to take mutex lock %s",strerror(errno));
             exit(EXIT_FAILURE);
          }
-         //printf("%s %d", strerror(errno), __LINE__);
          LOG_LOGGER( "unable to take mutex lock %s",strerror(errno));
          exit(EXIT_FAILURE);
       }
