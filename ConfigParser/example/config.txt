@@ -14,5 +14,5 @@
 
              PORT          = 100
 
-             HOSTNAME      = localhost
+             HOSTNAME      = "localhost   mk"
                

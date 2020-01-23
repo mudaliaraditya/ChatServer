@@ -217,12 +217,16 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                         return -1;
                    }
                    else if( lcToken[0] =='\"' )
-                   {
+                   { 
                         char* lpcR = strrchr(lcBuffer1,'\"');
                         char* lpcF = strchr(lcBuffer1,'\"');
                         char* lpcDelim = strchr(lcBuffer1,'=');
+                        if (lpcF < lpcDelim )
+                        {
+                           return -1;
+                        }
                         char lcTruBuffer[cString.length() + 1] = {0};
-                        long lnLength = lpcR - lpcF + 1;
+                        long lnLength = (lpcR )  - (lpcF + 1);
                         int lnlastIndex  = lpcR - lcBuffer1;
                         for(unsigned int i = lnlastIndex + 1;i < cString.length();i++)      
                         {
@@ -234,30 +238,16 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                               case  ' ':
                               {}
                               break;
-                               default:
+                              default:
                               {
                                   return -1;
                               }
                            }
-                        }                
-                        strncpy(lcTruBuffer,lpcF, (lnLength));    
-                        if (lpcF > lpcDelim && (*(lpcR + 1) == '\n' || *(lpcR + 1) == '\r' || *(lpcR + 1) == ' ' ))
-                        {
-                             lnSplitToken = 1;
-                             for(int i = 0;i< (lnLength - 1); i++)
-                             {
-                                   lcTruBuffer[i] = lcTruBuffer[i + 1];
-                             }
-                             lcTruBuffer[lnLength - 2] = '\0';
-                             lcVal = lcTruBuffer;
-                             break;
                         }
-                        else
-                        {
-                           return -1;
-                        }
-                       //if(lnF > ) 
-                       //for(int i = 0;i< ) 
+                        strncpy(lcTruBuffer,lpcF + 1, (lnLength)); 
+                        lnSplitToken = 1;
+                        lcVal = lcTruBuffer;
+                        break; 
                    }
                    else
                    {
