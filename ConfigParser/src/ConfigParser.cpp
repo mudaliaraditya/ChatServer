@@ -1,10 +1,10 @@
 //#include<iostream>
-#include<string>
-#include<cstring>
-#include<map>
+#include <string>
+#include <cstring>
+#include <map>
 #include <errno.h>
-#include<fstream>
-#include<malloc.h>
+#include <fstream>
+#include <malloc.h>
 #include "ConfigParser.h"
 using namespace std;
 
@@ -162,17 +162,18 @@ int CheckForSpce(char cVal)
 int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < string,string > >* pcBigMap)
 {
    char lcBuffer[cString.length() + 1];
-   char lcBuffer1[cString.length() + 1];
+   char lcBufferForDQ[cString.length() + 1];//Temp Buffer for handling '"' strings
    memset(lcBuffer, 0 , cString.length() + 1);
+   memset(lcBufferForDQ, 0 , cString.length() + 1);
    strncpy(lcBuffer, cString.c_str(), cString.length() );
-   strncpy(lcBuffer1, cString.c_str(), cString.length() );
+   strncpy(lcBufferForDQ, cString.c_str(), cString.length() );
    int lnCounter = 0;
    string lcKey = "";
    string lcVal = "";
-   char lcEqualSign = '=';
-   char* lpcDelimiter = strchr(lcBuffer, lcEqualSign);
+   //char lcEqualSign = '=';
+   char* lpcDelimiter = strchr(lcBuffer, '=');
    char* lcToken = lcBuffer;
-   char* lcBuffStart = lcBuffer;
+   char* lcBuffStart = lcBuffer;//for nullable strtok
    int lnSplitToken = 0;
    while(lcToken != NULL)
    {
@@ -219,47 +220,37 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                         return -1;
                    }
                    else if( lcToken[0] =='\"' )
-                   {
-                        char* lpcR = strrchr(lcBuffer1,'\"');
-                        char* lpcF = strchr(lcBuffer1,'\"');
-                        char* lpcDelim = strchr(lcBuffer1,'=');
-                        char lcTruBuffer[cString.length() + 1] = {0};
-                        long lnLength = lpcR - lpcF + 1;
-                        int lnlastIndex  = lpcR - lcBuffer1;
-                        for(unsigned int i = lnlastIndex + 1;i < cString.length();i++)      
+                   { 
+                        char* lpcR = strrchr(lcBufferForDQ,'\"');
+                        char* lpcF = strchr(lcBufferForDQ,'\"');
+                        if (lpcF < lpcDelimiter )
                         {
-                           switch(lcBuffer1[i])
+                           return -1;
+                        }
+                        char lcTruBuffer[cString.length() + 1] = {0};
+                        long lnLength = (lpcR )  - (lpcF + 1);
+                        int lnlastIndex  = lpcR - lcBufferForDQ;//index of the ending "
+                        for(unsigned int i = lnlastIndex + 1;i < cString.length();i++) 
+                        {
+                           switch(lcBufferForDQ[i])
                            {
                               case '\0':
                               case '\n':
                               case '\r':
                               case  ' ':
-                              {}
+                              {
+                              }
                               break;
                                default:
                               {
                                   return -1;
                               }
                            }
-                        }                
-                        strncpy(lcTruBuffer,lpcF, (lnLength));    
-                        if (lpcF > lpcDelim && (*(lpcR + 1) == '\n' || *(lpcR + 1) == '\r' || *(lpcR + 1) == ' ' ))
-                        {
-                             lnSplitToken = 1;
-                             for(int i = 0;i< (lnLength - 1); i++)
-                             {
-                                   lcTruBuffer[i] = lcTruBuffer[i + 1];
-                             }
-                             lcTruBuffer[lnLength - 2] = '\0';
-                             lcVal = lcTruBuffer;
-                             break;
                         }
-                        else
-                        {
-                           return -1;
-                        }
-                       //if(lnF > ) 
-                       //for(int i = 0;i< ) 
+                        strncpy(lcTruBuffer,lpcF + 1, (lnLength)); 
+                        lnSplitToken = 1;
+                        lcVal = lcTruBuffer;
+                        break; 
                    }
                    else
                    {
@@ -304,6 +295,10 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
 
 int  GetConfig(char* cFileName,void* pMap)
 {
+    if(cFileName == NULL || pMap == NULL)
+    {
+        return -1;
+    }
     map< string,map < string,string > >* lpcBigMap = (map< string,map < string,string > >*)pMap;
     map<string,string> lcMap;
     int lnRetVal = 0;
