@@ -162,10 +162,11 @@ int CheckForSpce(char cVal)
 int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < string,string > >* pcBigMap)
 {
    char lcBuffer[cString.length() + 1];
-   char lcBuffer1[cString.length() + 1];
+   char lcBufferForDQ[cString.length() + 1];//Temp Buffer for handling '"' strings
    memset(lcBuffer, 0 , cString.length() + 1);
+   memset(lcBufferForDQ, 0 , cString.length() + 1);
    strncpy(lcBuffer, cString.c_str(), cString.length() );
-   strncpy(lcBuffer1, cString.c_str(), cString.length() );
+   strncpy(lcBufferForDQ, cString.c_str(), cString.length() );
    int lnCounter = 0;
    string lcKey = "";
    string lcVal = "";
@@ -218,19 +219,19 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                    }
                    else if( lcToken[0] =='\"' )
                    { 
-                        char* lpcR = strrchr(lcBuffer1,'\"');
-                        char* lpcF = strchr(lcBuffer1,'\"');
-                        char* lpcDelim = strchr(lcBuffer1,'=');
+                        char* lpcR = strrchr(lcBufferForDQ,'\"');
+                        char* lpcF = strchr(lcBufferForDQ,'\"');
+                        char* lpcDelim = strchr(lcBufferForDQ,'=');
                         if (lpcF < lpcDelim )
                         {
                            return -1;
                         }
                         char lcTruBuffer[cString.length() + 1] = {0};
                         long lnLength = (lpcR )  - (lpcF + 1);
-                        int lnlastIndex  = lpcR - lcBuffer1;
+                        int lnlastIndex  = lpcR - lcBufferForDQ;
                         for(unsigned int i = lnlastIndex + 1;i < cString.length();i++)      
                         {
-                           switch(lcBuffer1[i])
+                           switch(lcBufferForDQ[i])
                            {
                               case '\0':
                               case '\n':
