@@ -1,15 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configurationDescriptor version="100">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
-    <df root="/media/sf_shared/test/gittest/UDPChatServer/UDPChatClient" name="0">
+    <df root="../../../ChatServer/UDPChatClient" name="1">
+      <df name="Logs">
+      </df>
+      <in>EventResenderFunctions.cpp</in>
       <in>Functions.h</in>
-      <in>clien.cpp</in>
+      <in>Globals.h</in>
+      <in>NetworkSources.cpp</in>
+      <in>NetworkSources.h</in>
       <in>client.cpp</in>
+      <in>client.h</in>
       <in>clientstruct.h</in>
       <in>defines.h</in>
       <in>enums.h</in>
       <in>includes.h</in>
       <in>structs.h</in>
+      <in>typedefs.h</in>
     </df>
   </logicalFolder>
   <projectmakefile>/media/sf_shared/test/gittest/UDPChatServer/UDPChatClient/makefile</projectmakefile>
@@ -37,8 +44,6 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
-        <gdb_signals>
-        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>

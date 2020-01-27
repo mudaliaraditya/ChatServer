@@ -1,9 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configurationDescriptor version="100">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
-    <df root="/media/sf_shared/test/gittest/UDPChatServer/UDPChatClient" name="0">
-      <in>Functions.h</in>
-      <in>clien.cpp</in>
+    <logicalFolder name="ChatServer"
+                   displayName="ChatServer"
+                   projectFiles="true"
+                   root="../../../ChatServer">
+      <logicalFolder name="ConfigParser"
+                     displayName="ConfigParser"
+                     projectFiles="true">
+        <logicalFolder name="src" displayName="src" projectFiles="true">
+          <itemPath>../../../ChatServer/ConfigParser/src/ConfigParser.cpp</itemPath>
+        </logicalFolder>
+      </logicalFolder>
+      <logicalFolder name="EncyptingFunc"
+                     displayName="EncyptingFunc"
+                     projectFiles="true">
+        <logicalFolder name="encryptor" displayName="encryptor" projectFiles="true">
+          <itemPath>../../../ChatServer/EncyptingFunc/encryptor/encrypt.c</itemPath>
+          <itemPath>../../../ChatServer/EncyptingFunc/encryptor/encrypt.h</itemPath>
+        </logicalFolder>
+        <itemPath>../../../ChatServer/EncyptingFunc/Encryptcall.c</itemPath>
+        <itemPath>../../../ChatServer/EncyptingFunc/Encryptcall.h</itemPath>
+      </logicalFolder>
+    </logicalFolder>
+    <df root="../../../ChatServer/UDPChatClient" name="1">
+      <in>EventResenderFunctions.cpp</in>
+      <in>NetworkSources.cpp</in>
       <in>client.cpp</in>
     </df>
     <logicalFolder name="ExternalFiles"
@@ -16,7 +38,7 @@
   </logicalFolder>
   <sourceFolderFilter>^(nbproject)$</sourceFolderFilter>
   <sourceRootList>
-    <Elem>/media/sf_shared/test/gittest/UDPChatServer/UDPChatClient</Elem>
+    <Elem>../../../ChatServer/UDPChatClient</Elem>
   </sourceRootList>
   <projectmakefile>/media/sf_shared/test/gittest/UDPChatServer/UDPChatClient/makefile</projectmakefile>
   <confs>
@@ -27,33 +49,105 @@
         <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
       <flagsDictionary>
-        <element flagsID="0" commonFlags="-std=c++11"/>
+        <element flagsID="0" commonFlags="-fPIC"/>
+        <element flagsID="1" commonFlags="-fPIC -g"/>
+        <element flagsID="2" commonFlags="-std=c++11"/>
+        <element flagsID="3" commonFlags="-std=c++14"/>
       </flagsDictionary>
       <codeAssistance>
       </codeAssistance>
       <makefileType>
         <makeTool>
-          <buildCommandWorkingDir>/media/sf_shared/test/gittest/UDPChatServer/UDPChatClient</buildCommandWorkingDir>
+          <buildCommandWorkingDir>.</buildCommandWorkingDir>
           <buildCommand>${MAKE} -f makefile</buildCommand>
           <cleanCommand>${MAKE} -f makefile clean</cleanCommand>
-          <executablePath>/media/sf_shared/test/gittest/UDPChatServer/UDPChatClient/a.out</executablePath>
+          <executablePath>.</executablePath>
+          <cTool>
+            <incDir>
+              <pElem>../../../ChatServer/EncyptingFunc</pElem>
+            </incDir>
+          </cTool>
         </makeTool>
         <preBuild>
           <preBuildCommandWorkingDir>.</preBuildCommandWorkingDir>
           <preBuildCommand></preBuildCommand>
         </preBuild>
       </makefileType>
-      <item path="/media/sf_shared/test/gittest/UDPChatServer/UDPChatClient/clien.cpp"
+      <item path="../../../ChatServer/ConfigParser/src/ConfigParser.cpp"
             ex="false"
             tool="1"
-            flavor2="8">
+            flavor2="0">
         <ccTool flags="0">
         </ccTool>
       </item>
-      <item path="Functions.h" ex="false" tool="3" flavor2="0">
+      <item path="../../../ChatServer/EncyptingFunc/Encryptcall.c"
+            ex="false"
+            tool="1"
+            flavor2="8">
+        <ccTool flags="2">
+        </ccTool>
       </item>
-      <item path="client.cpp" ex="false" tool="1" flavor2="0">
+      <item path="../../../ChatServer/EncyptingFunc/encryptor/encrypt.c"
+            ex="false"
+            tool="0"
+            flavor2="0">
+        <cTool flags="1">
+        </cTool>
       </item>
+      <item path="../../../ChatServer/UDPChatClient/EventResenderFunctions.cpp"
+            ex="false"
+            tool="1"
+            flavor2="11">
+        <ccTool flags="3">
+        </ccTool>
+      </item>
+      <item path="../../../ChatServer/UDPChatClient/NetworkSources.cpp"
+            ex="false"
+            tool="1"
+            flavor2="8">
+        <ccTool flags="2">
+          <incDir>
+            <pElem>../../../ChatServer/ConfigParser/hdr</pElem>
+            <pElem>../../../ChatServer/EncyptingFunc</pElem>
+            <pElem>../../../ChatServer/EncyptingFunc/encryptor</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="../../../ChatServer/UDPChatClient/client.cpp"
+            ex="false"
+            tool="1"
+            flavor2="8">
+        <ccTool flags="2">
+          <incDir>
+            <pElem>../../../ChatServer/ConfigParser/hdr</pElem>
+            <pElem>../../../ChatServer/EncyptingFunc</pElem>
+            <pElem>../../../ChatServer/EncyptingFunc/encryptor</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <folder path="ChatServer">
+        <ccTool>
+          <incDir>
+            <pElem>../../../ChatServer/ConfigParser/hdr</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="ChatServer/ConfigParser">
+        <ccTool>
+          <incDir>
+            <pElem>../../../ChatServer/ConfigParser</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="ChatServer/EncyptingFunc">
+        <ccTool>
+          <incDir>
+            <pElem>../../../ChatServer/EncyptingFunc</pElem>
+            <pElem>../../../ChatServer/EncyptingFunc/encryptor</pElem>
+            <pElem>../../../ChatServer/UDPChatClient</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
     </conf>
   </confs>
 </configurationDescriptor>
