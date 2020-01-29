@@ -1,3 +1,0 @@
-rm *.out || true
-rm: cannot remove ‘*.out’: No such file or directory
-g++ -o a.out client.cpp -std=c++11 -lpthread -g

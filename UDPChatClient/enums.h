@@ -12,12 +12,14 @@ enum class CMESSAGE_CODE_ACTIONS : long
     MESSAGE_CODE_ACTIONS_CHAT                      = 1005,//this goes from client to server
     MESSAGE_CODE_ACTIONS_CHAT_RESPONSE             = 1006,//this is from server to client that message has been receved at the server
     MESSAGE_CODE_ACTIONS_CHAT_MESSAGE              = 1007,//this goes from server to the other client,this transcode holds the actual message
+    MESSAGE_CODE_ACTIONS_LOGIN                     = 1012,//Logging in to the chat server 
+    MESSAGE_CODE_ACTIONS_RESPONSE                  = 1013,//respones of logging in
             
     MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY          = 1009,//the reciever client sends this transcode to server to indicate the message has been recieved
     MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY_RES      = 1010,//the server informs the reciever client that the delivery message has reached the server
     MESSAGE_CODE_ACTIONS_CHAT_MSG_SERV_TO_CLI      = 1011,//final server response to the sender messager client
-    MESSAGE_CODE_ACTIONS_CHAT_CANCEL_ALL           = 2000,
-	MESSAGE_CODE_ACTIONS_DUMMY                     = 3000,
+    MESSAGE_CODE_ACTIONS_CHAT_CANCEL_ALL           = 2000,//revert
+    MESSAGE_CODE_ACTIONS_DUMMY                     = 3000,//to ensure sequence nos are being tracked
 };
 
 

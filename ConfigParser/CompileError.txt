@@ -1,6 +1,7 @@
+rm: cannot remove ‘CompileError.txt’: Text file busy
 mkdir: cannot create directory ‘obj’: File exists
 mkdir: cannot create directory ‘bin’: File exists
 src/ConfigParser.cpp: In function ‘int GetConfig(char*, void*)’:
-src/ConfigParser.cpp:304:9: warning: unused variable ‘lnRetVal’ [-Wunused-variable]
+src/ConfigParser.cpp:305:9: warning: unused variable ‘lnRetVal’ [-Wunused-variable]
      int lnRetVal = 0;
-         ^~~~~~~~
+         ^

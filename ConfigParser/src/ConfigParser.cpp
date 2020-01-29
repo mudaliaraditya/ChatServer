@@ -227,7 +227,8 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                         {
                            return -1;
                         }
-                        char lcTruBuffer[cString.length() + 1] = {0};
+                        char lcTruBuffer[cString.length() + 1];
+                        memset(lcTruBuffer,0,cString.length() + 1);
                         long lnLength = (lpcR )  - (lpcF + 1);
                         int lnlastIndex  = lpcR - lcBufferForDQ;//index of the ending "
                         for(unsigned int i = lnlastIndex + 1;i < cString.length();i++) 

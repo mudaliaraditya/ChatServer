@@ -564,7 +564,7 @@ int ExecuteResponse(tagData& stData)
                
                strncpy(lstSentDeliveryMessageData.cTarget, stData.cTarget, 20);//here target means the client/reciever
                strncpy(lstSentDeliveryMessageData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier, 30);
-               lstSentDeliveryMessageData.stNetWork.fd=g_nSockFd;
+               lstSentDeliveryMessageData.stNetWork.fd = g_nSockFd;
                //lstData.fd =g_nSockFd;
                lstSentDeliveryMessageData.stNetWork.n =sizeof(tagData);
                lstSentDeliveryMessageData.stNetWork.flags=MSG_WAITALL;
@@ -605,7 +605,12 @@ int ExecuteResponse(tagData& stData)
                TESTLOG("chat sent \n"); 
             }
             break;
-
+          case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_CANCEL_ALL):
+            {
+                TESTLOG("unable to find target reverting");
+                g_nSessionId = 0;
+                g_bWaitForResponse = 0;                
+            }
           default :
             {
                return -1;
@@ -771,7 +776,7 @@ void* RecieverThread(void* pVData)
           lbToResend = true;
           memset(&lstRecvData, 0 ,sizeof(tagData)); 
           tagBufferData lstBufferData;
-          lnDataRecievedLen= recvfrom(lstThread.fd, (char *)&lstBufferData, sizeof(tagBufferData), MSG_WAITALL, (struct sockaddr *) &(lstThread.addr),(socklen_t*)&(lstThread.restrict));
+          lnDataRecievedLen= recvfrom(g_nSockFd, (char *)&lstBufferData, sizeof(tagBufferData), MSG_WAITALL, (struct sockaddr *) &(lstThread.addr),(socklen_t*)&(lstThread.restrict));
           if(0 >= lnDataRecievedLen)
           {
             cout << "data reception error" << endl;

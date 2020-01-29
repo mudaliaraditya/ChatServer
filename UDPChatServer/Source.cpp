@@ -93,9 +93,9 @@ int CleanUp()
    TESTLOG("%s","Doing Cleanup");
    g_bProgramShouldWork = false;
    int lnRetVal = 0;
-   tagBufferData lstBufferData = {0}; 
-   int lnSockAddrlen = sizeof(servaddr);
-   int lnDataStructSize = sizeof(tagBufferData);
+   //tagBufferData lstBufferData = {0}; 
+   //int lnSockAddrlen = sizeof(servaddr);
+   //int lnDataStructSize = sizeof(tagBufferData);
    //int lnNoOfBytes = SendUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &servaddr, lnSockAddrlen);
    //lnRetVal = sendto(g_nMainSockFd, (const char *)&lstBufferData, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(servaddr), lnSockAddrlen);
    if (0 > lnRetVal)
@@ -157,6 +157,11 @@ int CleanUp()
    {
       tagTimeData lstData = (lcIter->second);
       TESTLOG("message code :  %d, Identifier :  %d, data : %s \n",lstData.stData.nMessageCode,lstData.stData.nGlobalIdentifier,lstData.stData.cBuffer);
+   }
+   if(pConfigObject != NULL)
+   {
+      DeleteNewMap(pConfigObject);
+      pConfigObject = NULL;
    }
 
    return 0;
@@ -243,12 +248,12 @@ int ExecuteFunction(tagData& stData)
             if(lpstData == NULL)
             {
                LOG_LOGGER("new error");
-               exit(1);
+               exit(EXIT_FAILURE);
             }
             if ( EXIT_SUCCESS != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
-               exit(1);
+               exit(EXIT_FAILURE);
             }
             bool lbRetValInsClientIdStore = (g_cClientIDStore.insert(pair<int , tagData*>(stData.nGlobalIdentifier, lpstData))).second;
             if (lbRetValInsClientIdStore == false)
@@ -268,7 +273,7 @@ int ExecuteFunction(tagData& stData)
             if ( EXIT_SUCCESS != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             { 
                LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
-               exit(1);
+               exit(EXIT_FAILURE);
             }
             
          }
@@ -279,7 +284,7 @@ int ExecuteFunction(tagData& stData)
             if ( EXIT_SUCCESS != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
-               exit(1);
+               exit(EXIT_FAILURE);
             }
             map<int , tagData*>::iterator lcSenderIterator = g_cClientIDStore.find(stData.nGlobalIdentifier);
             if (lcSenderIterator == g_cClientIDStore.end())
@@ -289,7 +294,7 @@ int ExecuteFunction(tagData& stData)
                if ( EXIT_SUCCESS != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
                { 
                   LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
-                  exit(1);
+                  exit(EXIT_FAILURE);
                } 
                exit(EXIT_FAILURE);
             }
@@ -369,7 +374,7 @@ int ExecuteFunction(tagData& stData)
                exit(1);
             }
             map<int , tagData*>::iterator lcIter = g_cClientIDStore.find(stData.nGlobalIdentifier);
-            if (lcIter== g_cClientIDStore.end())
+            if (lcIter == g_cClientIDStore.end())
             {
                printf("%d not found", stData.cIdentifier);
                printf("%s %d", strerror(errno), __LINE__);
@@ -390,7 +395,7 @@ int ExecuteFunction(tagData& stData)
                   exit(EXIT_FAILURE);
                }
                LOG_LOGGER("ERROR");
-               exit(1);
+               exit(EXIT_FAILURE);
             }
 
             map<int , tagData*>::iterator lcTargetIter;// = //g_cClientIDStore.find(lcIter->second->cTarget);
@@ -1212,12 +1217,12 @@ void* ProcessThread(void* pArg)
       lnVal =  RejectDummyMsgCode(lstData->nMessageCode);
       if(lnVal != 0)
       {
-         TESTLOG( "dummy message","" );
+         TESTLOG( "dummy message");
          delete lstData;
          lstData = NULL;
          continue;
       }
-      TESTLOG( "not a dummy message","");
+      TESTLOG( "not a dummy message");
       lnReturnVal = GetResponseForFunction(*lstData);
       if (0 > lnReturnVal)
       {
@@ -1682,11 +1687,6 @@ int main()
                    exit(EXIT_FAILURE);
            }
 
-           if(pConfigObject != NULL)
-           {
-                   DeleteNewMap(pConfigObject);
-                   pConfigObject = NULL;
-           }
            lnRetVal =  JoinAllThreads();
            if(lnRetVal != EXIT_SUCCESS)
            {

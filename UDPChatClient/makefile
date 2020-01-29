@@ -7,7 +7,7 @@ Logs :
 	mkdir Logs
 
 .TEST : 
-	rm CompileError.txt || true
+	rm -f CompileError.txt || true
 	touch CompileError.txt
 
 CompileError :
