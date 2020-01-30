@@ -223,12 +223,11 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                    { 
                         char* lpcR = strrchr(lcBufferForDQ,'\"');
                         char* lpcF = strchr(lcBufferForDQ,'\"');
-                        if (lpcF < lpcDelimiter )
+                        char* lpcDelim = strchr(lcBufferForDQ,'=');//special validations for " " type files 
+                        if (lpcF < lpcDelim )
                         {
                            return -1;
                         }
-                        char lcTruBuffer[cString.length() + 1];
-                        memset(lcTruBuffer,0,cString.length() + 1);
                         long lnLength = (lpcR )  - (lpcF + 1);
                         int lnlastIndex  = lpcR - lcBufferForDQ;//index of the ending "
                         for(unsigned int i = lnlastIndex + 1;i < cString.length();i++) 
@@ -242,15 +241,15 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                               {
                               }
                               break;
-                               default:
+                              default:
                               {
                                   return -1;
                               }
                            }
                         }
-                        strncpy(lcTruBuffer,lpcF + 1, (lnLength)); 
+                        *lpcR = '\0';//making the second double quote as null terminated
                         lnSplitToken = 1;
-                        lcVal = lcTruBuffer;
+                        lcVal = lpcF + 1;
                         break; 
                    }
                    else
