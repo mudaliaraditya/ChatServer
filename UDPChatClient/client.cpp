@@ -564,12 +564,12 @@ int ExecuteResponse(tagData& stData)
                
                strncpy(lstSentDeliveryMessageData.cTarget, stData.cTarget, 20);//here target means the client/reciever
                strncpy(lstSentDeliveryMessageData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier, 30);
-               lstSentDeliveryMessageData.stNetWork.fd = g_nSockFd;
+               lstSentDeliveryMessageData.stNetWork.nFD = g_nSockFd;
                //lstData.fd =g_nSockFd;
-               lstSentDeliveryMessageData.stNetWork.n =sizeof(tagData);
-               lstSentDeliveryMessageData.stNetWork.flags=MSG_WAITALL;
-               lstSentDeliveryMessageData.stNetWork.addr =servaddr;
-               lstSentDeliveryMessageData.stNetWork.restrict=sizeof(servaddr);
+               lstSentDeliveryMessageData.stNetWork.nMessageLen =sizeof(tagData);
+               lstSentDeliveryMessageData.stNetWork.nFlags=MSG_WAITALL;
+               lstSentDeliveryMessageData.stNetWork.stSockAddr =g_ServAddr;
+               lstSentDeliveryMessageData.stNetWork.nSockLen=sizeof(g_ServAddr);
                //UDPChatServer 20-01-2019
                //UDPChatServer 20-01-2019
                lstSentDeliveryMessageData.nSeqNo=stData.nSeqNo;
@@ -724,7 +724,7 @@ void* SenderThread(void* pVData)
             }
             if(lstToSendData.nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY)
             {
-               TESTLOG( "sending data delivery; %d \n",lstThread.fd);
+               TESTLOG( "sending data delivery; %d \n",lstThread.nFD);
             }
             int lnDataStructSize = sizeof(tagBufferData);
             char lcBuffer[lnDataStructSize];
@@ -737,7 +737,7 @@ void* SenderThread(void* pVData)
                exit(1);
             }
             memcpy(&lcBuffer, (char*)&lstBufferData, lnDataStructSize);
-            lnLen = sendto(lstThread.fd, (const char *)&lcBuffer, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(lstThread.addr), sizeof((lstThread.addr))); 
+            lnLen = sendto(lstThread.nFD, (const char *)&lcBuffer, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(lstThread.stSockAddr), sizeof((lstThread.stSockAddr))); 
             if(lnLen <= 0)
             {
                TESTLOG("%s","error");
@@ -776,7 +776,7 @@ void* RecieverThread(void* pVData)
           lbToResend = true;
           memset(&lstRecvData, 0 ,sizeof(tagData)); 
           tagBufferData lstBufferData;
-          lnDataRecievedLen= recvfrom(g_nSockFd, (char *)&lstBufferData, sizeof(tagBufferData), MSG_WAITALL, (struct sockaddr *) &(lstThread.addr),(socklen_t*)&(lstThread.restrict));
+          lnDataRecievedLen= recvfrom(g_nSockFd, (char *)&lstBufferData, sizeof(tagBufferData), MSG_WAITALL, (struct sockaddr *) &(lstThread.stSockAddr),(socklen_t*)&(lstThread.nSockLen));
           if(0 >= lnDataRecievedLen)
           {
             cout << "data reception error" << endl;
@@ -1237,7 +1237,7 @@ void HandleSignal(int nSignal)
                {
                    printf("failure");
                }
-               lnRetVal = pthread_kill(lnPThreadReciever, SIGKILL);
+               lnRetVal = pthread_kill(g_nPThreadReciever, SIGKILL);
                if (lnRetVal != 0)
                {
                       printf("%s, %d", strerror(errno), __LINE__);
@@ -1245,14 +1245,14 @@ void HandleSignal(int nSignal)
                       exit(EXIT_FAILURE);
                }
                //lnPThreadMain
-               lnRetVal = pthread_join(lnPThreadReciever, NULL);
+               lnRetVal = pthread_join(g_nPThreadReciever, NULL);
                if (lnRetVal != 0)
                {
                       printf("%s, %d", strerror(errno), __LINE__);
                       perror("unable to join reciverthread Variable");
                       exit(EXIT_FAILURE);
                }
-               lnRetVal = pthread_join(lnPThreadSender,NULL);
+               lnRetVal = pthread_join(g_nPThreadSender,NULL);
                if (lnRetVal != 0)
                {
                       printf("%s, %d", strerror(errno), __LINE__);
@@ -1260,7 +1260,7 @@ void HandleSignal(int nSignal)
                       exit(EXIT_FAILURE);
                }
 
-               lnRetVal = pthread_join(lnPThreadCheckResponse,NULL);
+               lnRetVal = pthread_join(g_nPThreadCheckResponse,NULL);
                if (lnRetVal != 0)
                {
                       printf("%s, %d", strerror(errno), __LINE__);
@@ -1268,16 +1268,16 @@ void HandleSignal(int nSignal)
                       exit(EXIT_FAILURE);
                }
 
-               if(lpstThrdDataRcvr != NULL)
+               if(g_pstThrdDataRcvr != NULL)
                {
-                      delete lpstThrdDataRcvr;
-                      lpstThrdDataRcvr = NULL;
+                      delete g_pstThrdDataRcvr;
+                      g_pstThrdDataRcvr = NULL;
                }
 
-               if( lpstThrdSndr != NULL)
+               if( g_pstThrdSndr != NULL)
                {
-                      delete lpstThrdSndr;
-                      lpstThrdSndr = NULL;
+                      delete g_pstThrdSndr;
+                      g_pstThrdSndr = NULL;
                }
                //lnRetVal = pthread_kill(lnPThreadMain, SIGKILL);
                if (lnRetVal != 0)
@@ -1286,7 +1286,7 @@ void HandleSignal(int nSignal)
                       perror("unable to kill reciverthread Variable");
                       exit(EXIT_FAILURE);
                }
-               lnRetVal = pthread_join(lnPThreadMain,NULL);
+               lnRetVal = pthread_join(g_nPThreadMain,NULL);
                if (lnRetVal != 0)
                {
                       printf("%s, %d", strerror(errno), __LINE__);
@@ -1380,10 +1380,10 @@ void* PrintMessagesFromSet(void* cArg)
 #ifdef COREGEN
 static void SetCoreUnlimited()
 {
-   struct rlimit sRLimit ;
-   sRLimit.rlim_cur = RLIM_INFINITY;
-   sRLimit.rlim_max = RLIM_INFINITY;
-   setrlimit( RLIMIT_CORE, &sRLimit );
+   struct rlimit lstRLimit ;
+   lstRLimit.rlim_cur = RLIM_INFINITY;
+   lstRLimit.rlim_max = RLIM_INFINITY;
+   setrlimit( RLIMIT_CORE, &lstRLimit );
 }
 
 #endif
@@ -1405,7 +1405,7 @@ int MakeHandlerHandleSignal(int nSignal ,void (*pHandleSignal)(int))
 int main(int argc,char* argv[])
 {
    g_PID = getpid();
-   lnPThreadMain = pthread_self();
+   g_nPThreadMain = pthread_self();
    if(0 !=   MakeHandlerHandleSignal(SIGINT,HandleSignal))
    {
        cout << "WARNING : failure in intiating signalhandler." << endl;
@@ -1486,32 +1486,32 @@ int main(int argc,char* argv[])
           exit(EXIT_FAILURE);
    }
 
-   FillSockAddrin(AF_INET, htons(atol(lcBufferPort)), (in_addr_t)(inet_addr(lcBufferServerIP)), &servaddr);
+   FillSockAddrin(AF_INET, htons(atol(lcBufferPort)), (in_addr_t)(inet_addr(lcBufferServerIP)), &g_ServAddr);
 
    tagData lstData = {0};
 
-   lstData.stNetWork.fd       = g_nSockFd;
-   lstData.stNetWork.n        = sizeof(tagData);
-   lstData.stNetWork.flags    = MSG_WAITALL;
-   lstData.stNetWork.addr     =  servaddr;
-   lstData.stNetWork.restrict = sizeof(servaddr);
+   lstData.stNetWork.nFD       = g_nSockFd;
+   lstData.stNetWork.nMessageLen        = sizeof(tagData);
+   lstData.stNetWork.nFlags    = MSG_WAITALL;
+   lstData.stNetWork.stSockAddr     =  g_ServAddr;
+   lstData.stNetWork.nSockLen = sizeof(g_ServAddr);
 
-   lpstThrdDataRcvr = new tagData();
-   lpstThrdSndr     = new tagData();
+   g_pstThrdDataRcvr = new tagData();
+   g_pstThrdSndr     = new tagData();
 #ifdef LOGGING
-   TESTLOG( "sockfd is %d\n", lpstThrdDataRcvr->stNetWork.fd );
+   TESTLOG( "sockfd is %d\n", g_pstThrdDataRcvr->stNetWork.nFD );
 #endif
    //sleep(1);
    //Creation Of threads
-   memcpy(lpstThrdDataRcvr, &lstData, sizeof(tagData));
-   memcpy(lpstThrdSndr, &lstData, sizeof(tagData));
+   memcpy(g_pstThrdDataRcvr, &lstData, sizeof(tagData));
+   memcpy(g_pstThrdSndr, &lstData, sizeof(tagData));
 
-   pthread_create(&lnPThreadReciever, NULL, RecieverThread, lpstThrdDataRcvr);
-   pthread_create(&lnPThreadSender, NULL, SenderThread, lpstThrdSndr);
+   pthread_create(&g_nPThreadReciever, NULL, RecieverThread, g_pstThrdDataRcvr);
+   pthread_create(&g_nPThreadSender, NULL, SenderThread, g_pstThrdSndr);
 
    if(g_nFlagNoResendDupli == 0)
    {
-          pthread_create(&lnPThreadCheckResponse, NULL,CheckResponse,NULL);
+          pthread_create(&g_nPThreadCheckResponse, NULL,CheckResponse,NULL);
    }
    //End of Creation of Threads
 
@@ -1537,7 +1537,14 @@ int main(int argc,char* argv[])
           }
           while(VerifyUniqueness(lstData.cUniqueMessageIdentifier) != 0);
           pthread_mutex_lock(&g_GlobalSeqnoMutex);
-          lstData.nSeqNo = g_nSeqNo++;
+          if((g_nSeqNo + 1) != INT_MAX)
+          {
+              lstData.nSeqNo = g_nSeqNo++;
+          }
+          else
+          {
+               lstData.nSeqNo = 0;
+          }
           lstData.nLatestClntSeqNo = g_nLatestRecivedSequenceNo;
           pthread_mutex_unlock(&g_GlobalSeqnoMutex);
 
@@ -1592,10 +1599,10 @@ int main(int argc,char* argv[])
    {
           printf("failure");
    }
-   pthread_join(lnPThreadSender,NULL);
-   pthread_join(lnPThreadReciever,NULL);
-   delete lpstThrdDataRcvr;
-   delete lpstThrdSndr;
+   pthread_join(g_nPThreadSender,NULL);
+   pthread_join(g_nPThreadReciever,NULL);
+   delete g_pstThrdDataRcvr;
+   delete g_pstThrdSndr;
 
    close(g_nSockFd);
    return 0;

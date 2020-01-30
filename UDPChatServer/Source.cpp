@@ -237,10 +237,14 @@ int ExecuteFunction(tagData& stData)
    {
       case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER) :
          {
-            pthread_mutex_lock(&g_cGlobalIdentifierMutex);
-              
-           
+            pthread_mutex_lock(&g_cGlobalIdentifierMutex); 
             //incrementint the sequenceNo
+            if(((g_nClientIdentifier + 1) == INT_MAX))
+            {
+                //g_nClientIdentifier = 0;
+                LOG_LOGGER("Max clients reached");
+                exit(EXIT_FAILURE)
+            }
             stData.nGlobalIdentifier = g_nClientIdentifier++;
             pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
 
@@ -292,11 +296,12 @@ int ExecuteFunction(tagData& stData)
                printf("%d not found", stData.cIdentifier);
                printf("%s %d", strerror(errno), __LINE__);
                if ( EXIT_SUCCESS != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
-               { 
+               {
                   LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
                   exit(EXIT_FAILURE);
                } 
                exit(EXIT_FAILURE);
+               
             }
 
             if(lcSenderIterator->second == nullptr)
