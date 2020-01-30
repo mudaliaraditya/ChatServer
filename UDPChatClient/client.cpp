@@ -1387,26 +1387,41 @@ static void SetCoreUnlimited()
 }
 
 #endif
+
+
+int MakeHandlerHandleSignal(int nSignal ,void (*pHandleSignal)(int))
+{
+     signal(nSignal, pHandleSignal);
+     struct sigaction lstSigAction = {0};
+     lstSigAction.sa_flags = 0;
+     lstSigAction.sa_handler= pHandleSignal;
+     sigaction(nSignal, &lstSigAction, NULL);
+     return 0;      
+}
+
+
+
 //UDpChatServer 21/12/2018 Aditya M.:END
 int main(int argc,char* argv[])
 {
    g_PID = getpid();
    lnPThreadMain = pthread_self();
-   //SIgnal Handling
-   signal(SIGINT, HandleSignal);
-   struct sigaction lstSigAction = {0};
-   lstSigAction.sa_flags = 0;
-   lstSigAction.sa_handler= HandleSignal;
-   sigaction(SIGINT, &lstSigAction, NULL);
+   if(0 !=   MakeHandlerHandleSignal(SIGINT,HandleSignal))
+   {
+       cout << "WARNING : failure in intiating signalhandler." << endl;
+       //return -1;
+   }
    pConfigObject = CreateNewMap();
    if(pConfigObject == NULL)
    {
-          return -1;
+        cout << "ERROR : failure in CreateNewMap." << endl; 
+        return -1;
    }
    int lnRetVal = 0; 
    lnRetVal =GetConfig(CNF_FILE_NAME,pConfigObject);
    if(0 != lnRetVal)
    {
+          cout << "ERROR : failure in getting " << CNF_FILE_NAME << " from config object.";
           return -1;
    }
 
@@ -1530,8 +1545,8 @@ int main(int argc,char* argv[])
           lnRetVal = PreSender(lstData);
           if(0 != lnRetVal)
           {
-            TESTLOG( "error occured at Presender \n");
-            exit(1);
+             TESTLOG( "error occured at Presender \n");
+             exit(1);
           }
 
           //Taking Lock so that the other thread doesnt corrupt g_cSenderDataStore
