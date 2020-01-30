@@ -9,3 +9,14 @@ src/ConfigParser.cpp: In function ‘int GetConfig(char*, void*)’:
 src/ConfigParser.cpp:304:9: warning: unused variable ‘lnRetVal’ [-Wunused-variable]
      int lnRetVal = 0;
          ^
+rm: cannot remove ‘CompileError.txt’: Text file busy
+mkdir: cannot create directory ‘obj’: File exists
+mkdir: cannot create directory ‘bin’: File exists
+src/ConfigParser.cpp: In function ‘int AddTokenToStore(std::string, std::map<std::basic_string<char>, std::basic_string<char> >&, std::map<std::basic_string<char>, std::map<std::basic_string<char>, std::basic_string<char> > >*)’:
+src/ConfigParser.cpp:231:30: warning: unused variable ‘lnLength’ [-Wunused-variable]
+                         long lnLength = (lpcR )  - (lpcF + 1);
+                              ^
+src/ConfigParser.cpp: In function ‘int GetConfig(char*, void*)’:
+src/ConfigParser.cpp:304:9: warning: unused variable ‘lnRetVal’ [-Wunused-variable]
+     int lnRetVal = 0;
+         ^

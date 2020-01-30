@@ -12,11 +12,11 @@ Logs :
 	touch .TEST
 	
 server.out :  Source.o Logger.o ../ConfigParser/.Complete NetworkSources.o  globals.o ../EncyptingFunc/Encryptcall.o
-	${CXX} -o server.out -no-pie  Source.o Logger.o NetworkSources.o globals.o  -std=c++11  -lpthread -g -ggdb3 -L../ConfigParser/bin -lconfigparse -I../ConfigParser/hdr ../EncyptingFunc/Encryptcall.o -ldl -I../EncyptingFunc  -I../EncyptingFunc/encryptor/ -Wl,-R. 2>> CompileError.txt || make serverA.out
+	${CXX} -o server.out -no-pie  Source.o Logger.o NetworkSources.o globals.o  -std=c++11  -lpthread -g -ggdb3 -DLOGGING -L../ConfigParser/bin -lconfigparse -I../ConfigParser/hdr ../EncyptingFunc/Encryptcall.o -ldl -I../EncyptingFunc  -I../EncyptingFunc/encryptor/ -Wl,-R. 2>> CompileError.txt || make serverA.out
 
 
 serverA.out :  Source.o Logger.o ../ConfigParser/.Complete NetworkSources.o  globals.o ../EncyptingFunc/Encryptcall.o
-	${CXX} -o serverA.out   Source.o Logger.o NetworkSources.o globals.o  -std=c++11  -lpthread -g -ggdb3 -L../ConfigParser/bin -lconfigparse -I../ConfigParser/hdr ../EncyptingFunc/Encryptcall.o -ldl -I../EncyptingFunc  -I../EncyptingFunc/encryptor/ -Wl,-R. 2>> CompileError.txt
+	${CXX} -o serverA.out   Source.o Logger.o NetworkSources.o globals.o  -std=c++11  -lpthread -g -ggdb3 -DLOGGING -L../ConfigParser/bin -lconfigparse -I../ConfigParser/hdr ../EncyptingFunc/Encryptcall.o -ldl -I../EncyptingFunc  -I../EncyptingFunc/encryptor/ -Wl,-R. 2>> CompileError.txt
 	mv serverA.out server.out
 
 

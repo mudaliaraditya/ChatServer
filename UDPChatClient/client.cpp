@@ -415,7 +415,7 @@ void* CheckResponse(void*)
    {
 
           pthread_mutex_lock(&g_ReSenderMutex);
-          pthread_mutex_lock(&g_SenderMutex);
+          
           if(!g_cEventResender.empty())
           {
             CEventResenderStoreIterator lcIter = g_cEventResender.begin();
@@ -439,7 +439,9 @@ void* CheckResponse(void*)
                pthread_mutex_unlock(&g_GlobalSeqnoMutex);
                
                TESTLOG("resending data \n");
+               pthread_mutex_lock(&g_SenderMutex);
                g_cSenderDataStore.push_front(lcIter->second.stData);
+               pthread_mutex_unlock(&g_SenderMutex);
                if(lcIter->second.m_nCounter > 1)
                {
                       TESTLOG("Resending Data :%s %d %s %d %s %d %s %s %s %d","Message Code:", lcIter->second.stData.nMessageCode,"the seq no is ", lcIter->second.stData.nSeqNo , " the LatestRecieved Seq no is " , lcIter->second.stData.nLatestClntSeqNo , " from user id and name ", lcIter->second.stData.cIdentifier ," " , lcIter->second.stData.nGlobalIdentifier);
@@ -453,7 +455,7 @@ void* CheckResponse(void*)
 
           }
 
-          pthread_mutex_unlock(&g_SenderMutex);
+          
           pthread_mutex_unlock(&g_ReSenderMutex);
           //checks for resender events only once a second
           //sleep(1);
@@ -990,10 +992,10 @@ int PreSender(tagData& stData)
                //pthread_mutex_lock(&g_ConsoleIOMutex);
                cout << "Enter your Identifier ID" << endl;
                //pthread_mutex_unlock(&g_ConsoleIOMutex);
-               if(g_nTesting == 1)
+               if(g_nTesting == 1 || g_nTesting == 2)
                {
                       //strncpy( lstData.cTarget, "QWE", 3);
-                      strncpy( stData.cIdentifier, g_pcParam[2], 4);
+                      strncpy( stData.cIdentifier, g_pcParam[2], strlen(g_pcParam[2]));
                }
                else
                {
@@ -1461,7 +1463,7 @@ int main(int argc,char* argv[])
    }
    time_t     lnTime =         0;
               lnTime =         time(NULL);
-   struct tm* psttm =          gmtime(&lnTime);
+   struct tm* lpsttm =          gmtime(&lnTime);
    char       lcBuffera[200] = {0};
    int        lnRandNo =       rand()%100;
 
@@ -1478,6 +1480,13 @@ int main(int argc,char* argv[])
             g_nTesting = 1;
           }
    }
+   else if(argc == 2)
+   {
+         if( strncmp("TEST", g_pcParam[1], 4) == 0)
+          {
+            g_nTesting = 2;
+          }
+   }
 
    size_t lnLen = 0;
    if ( (g_nSockFd = CreateUDPSocketIP()) < 0 )
@@ -1490,11 +1499,11 @@ int main(int argc,char* argv[])
 
    tagData lstData = {0};
 
-   lstData.stNetWork.nFD       = g_nSockFd;
+   lstData.stNetWork.nFD                = g_nSockFd;
    lstData.stNetWork.nMessageLen        = sizeof(tagData);
-   lstData.stNetWork.nFlags    = MSG_WAITALL;
-   lstData.stNetWork.stSockAddr     =  g_ServAddr;
-   lstData.stNetWork.nSockLen = sizeof(g_ServAddr);
+   lstData.stNetWork.nFlags             = MSG_WAITALL;
+   lstData.stNetWork.stSockAddr         = g_ServAddr;
+   lstData.stNetWork.nSockLen           = sizeof(g_ServAddr);
 
    g_pstThrdDataRcvr = new tagData();
    g_pstThrdSndr     = new tagData();

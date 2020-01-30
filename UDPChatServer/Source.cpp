@@ -243,7 +243,7 @@ int ExecuteFunction(tagData& stData)
             {
                 //g_nClientIdentifier = 0;
                 LOG_LOGGER("Max clients reached");
-                exit(EXIT_FAILURE)
+                exit(EXIT_FAILURE);
             }
             stData.nGlobalIdentifier = g_nClientIdentifier++;
             pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
