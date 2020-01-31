@@ -1219,34 +1219,10 @@ int PostSender(tagData& stData)
    }
    return 0;
 }
-void HandleSignal(int nSignal)
-{
-   const char *signal_name;
-   signal(SIGINT,HandleSignal);
-   sigset_t pending;
-   int lnRetVal = 0;
 
-   // Handling SIGINT
-   switch (nSignal)
-   {
-          case SIGINT:
-            {
-               cout << "signalling thread" << pthread_self() << endl;
-               printf("Caught SIGINT, exiting now\n");
-               g_bProgramShouldWork = false;
-               //CleanUp();
-               //lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
-               // if(lnRetVal != 0)
-               //{
-               //printf("%s, %d", strerror(errno), __LINE__);
-               //perror("unable to join lnPThreadEventTime");
-               //exit(EXIT_FAILURE);
-               //}
-               DeleteNewMap(pConfigObject);
-               if(lnRetVal != 0 )
-               {
-                   printf("failure");
-               }
+int JoinKillThreads()
+{
+       int lnRetVal = 0;
                lnRetVal = pthread_kill(g_nPThreadReciever, SIGKILL);
                if (lnRetVal != 0)
                {
@@ -1277,6 +1253,38 @@ void HandleSignal(int nSignal)
                       perror("unable to destroy Conditional Variable");
                       exit(EXIT_FAILURE);
                }
+    return 0;
+}
+
+void HandleSignal(int nSignal)
+{
+   const char *signal_name;
+   signal(SIGINT,HandleSignal);
+   sigset_t pending;
+   int lnRetVal = 0;
+
+   // Handling SIGINT
+   switch (nSignal)
+   {
+          case SIGINT:
+            {
+               cout << "signalling thread" << pthread_self() << endl;
+               printf("Caught SIGINT, exiting now\n");
+               g_bProgramShouldWork = false;
+               //CleanUp();
+               //lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
+               // if(lnRetVal != 0)
+               //{
+               //printf("%s, %d", strerror(errno), __LINE__);
+               //perror("unable to join lnPThreadEventTime");
+               //exit(EXIT_FAILURE);
+               //}
+               DeleteNewMap(pConfigObject);
+               if(lnRetVal != 0 )
+               {
+                   printf("failure");
+               }
+
 
                if(g_pstThrdDataRcvr != NULL)
                {
@@ -1289,11 +1297,12 @@ void HandleSignal(int nSignal)
                       delete g_pstThrdSndr;
                       g_pstThrdSndr = NULL;
                }
+               lnRetVal = JoinKillThreads();
                //lnRetVal = pthread_kill(lnPThreadMain, SIGKILL);
                if (lnRetVal != 0)
                {
                       printf("%s, %d", strerror(errno), __LINE__);
-                      perror("unable to kill reciverthread Variable");
+                      perror("unable to JoinKillThreads Variable");
                       exit(EXIT_FAILURE);
                }
                lnRetVal = pthread_join(g_nPThreadMain,NULL);

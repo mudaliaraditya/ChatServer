@@ -5,6 +5,6 @@ src/ConfigParser.cpp:231:30: warning: unused variable ‘lnLength’ [-Wunused-v
                          long lnLength = (lpcR )  - (lpcF + 1);
                               ^~~~~~~~
 src/ConfigParser.cpp: In function ‘int GetConfig(char*, void*)’:
-src/ConfigParser.cpp:304:9: warning: unused variable ‘lnRetVal’ [-Wunused-variable]
+src/ConfigParser.cpp:308:9: warning: unused variable ‘lnRetVal’ [-Wunused-variable]
      int lnRetVal = 0;
          ^~~~~~~~
