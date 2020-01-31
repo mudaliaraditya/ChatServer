@@ -103,7 +103,7 @@ int CleanUp()
       printf("%s, %d", strerror(errno), __LINE__);
       exit(EXIT_FAILURE);
    }
-   lnRetVal = close(g_nMainSockFd);
+   //lnRetVal = close(g_nMainSockFd);
    if(lnRetVal != 0)
    {
       cout << "issue in closing socket" << endl;

@@ -415,7 +415,7 @@ void* CheckResponse(void*)
    {
 
           pthread_mutex_lock(&g_ReSenderMutex);
-          
+          pthread_mutex_lock(&g_SenderMutex);
           if(!g_cEventResender.empty())
           {
             CEventResenderStoreIterator lcIter = g_cEventResender.begin();
@@ -439,9 +439,7 @@ void* CheckResponse(void*)
                pthread_mutex_unlock(&g_GlobalSeqnoMutex);
                
                TESTLOG("resending data \n");
-               pthread_mutex_lock(&g_SenderMutex);
                g_cSenderDataStore.push_front(lcIter->second.stData);
-               pthread_mutex_unlock(&g_SenderMutex);
                if(lcIter->second.m_nCounter > 1)
                {
                       TESTLOG("Resending Data :%s %d %s %d %s %d %s %s %s %d","Message Code:", lcIter->second.stData.nMessageCode,"the seq no is ", lcIter->second.stData.nSeqNo , " the LatestRecieved Seq no is " , lcIter->second.stData.nLatestClntSeqNo , " from user id and name ", lcIter->second.stData.cIdentifier ," " , lcIter->second.stData.nGlobalIdentifier);
@@ -455,7 +453,7 @@ void* CheckResponse(void*)
 
           }
 
-          
+          pthread_mutex_unlock(&g_SenderMutex);
           pthread_mutex_unlock(&g_ReSenderMutex);
           //checks for resender events only once a second
           //sleep(1);
