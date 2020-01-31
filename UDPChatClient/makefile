@@ -22,7 +22,8 @@ client.o : client.cpp NetworkSources.cpp
 
 
 warn : client.cpp NetworkSources.cpp libconfigparse.so
-	${CXX} -o client.out client.cpp -std=c++11 -lpthread -g -DLOGGING -Wall -DTESTLOGGING  -lconfigparse -L.  -I../ConfigParser/hdr  -I../EncyptingFunc 2> CompileError
+	${CXX} -o client.out client.cpp -std=c++11 -lpthread -g -DLOGGING -Wall -DTESTLOGGING  -lconfigparse -L.  -I../ConfigParser/hdr  -I../EncyptingFunc    -I../EncyptingFunc/encryptor ../EncyptingFunc/Encryptcall.c -ldl -Wl,-R. 2> CompileError
+	touch warn
 
 libconfigparse.so :  ../ConfigParser/.Complete
 	cp ../ConfigParser/bin/*.so .

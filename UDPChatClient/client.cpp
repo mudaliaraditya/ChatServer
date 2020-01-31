@@ -566,10 +566,10 @@ int ExecuteResponse(tagData& stData)
                strncpy(lstSentDeliveryMessageData.cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier, 30);
                lstSentDeliveryMessageData.stNetWork.nFD = g_nSockFd;
                //lstData.fd =g_nSockFd;
-               lstSentDeliveryMessageData.stNetWork.nMessageLen =sizeof(tagData);
-               lstSentDeliveryMessageData.stNetWork.nFlags=MSG_WAITALL;
-               lstSentDeliveryMessageData.stNetWork.stSockAddr =g_ServAddr;
-               lstSentDeliveryMessageData.stNetWork.nSockLen=sizeof(g_ServAddr);
+               lstSentDeliveryMessageData.stNetWork.nMessageLen =     sizeof(tagData);
+               lstSentDeliveryMessageData.stNetWork.nFlags=           MSG_WAITALL;
+               lstSentDeliveryMessageData.stNetWork.stSockAddr =      g_ServAddr;
+               lstSentDeliveryMessageData.stNetWork.nSockLen=         sizeof(g_ServAddr);
                //UDPChatServer 20-01-2019
                //UDPChatServer 20-01-2019
                lstSentDeliveryMessageData.nSeqNo=stData.nSeqNo;
@@ -609,7 +609,8 @@ int ExecuteResponse(tagData& stData)
             {
                 TESTLOG("unable to find target reverting");
                 g_nSessionId = 0;
-                g_bWaitForResponse = 0;                
+                g_bWaitForResponse = 0;
+                ClearResenderStore(); 
             }
           default :
             {
@@ -654,6 +655,15 @@ int MakeReSender(tagData lstRecvData )
    }
    return 0;
 }
+
+int ClearResenderStore()
+{
+   pthread_mutex_lock(&g_ReSenderMutex);
+   g_cEventResender.clear(); 
+   pthread_mutex_unlock(&g_ReSenderMutex); 
+}
+
+
 
 //this func is located for SenderThread if this message is unique then it is added to resender store
 bool IsMessageUnique(tagData stData)

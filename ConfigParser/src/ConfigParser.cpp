@@ -183,7 +183,7 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
             /*setting the LHS of the config*/
             case 0:
             {
-                lcBuffStart = NULL;
+                lcBuffStart = NULL;//for strtok to work
                 if(lcToken != NULL)
                 {
                    //Commented line
@@ -270,9 +270,13 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                 {
                    break;
                 }
-                else if(*lcToken == '\r' || *lcToken == '\n' || *lcToken == ' ' || lnSplitToken == 1)
+                else if(*lcToken == '\r' || *lcToken == '\n' || *lcToken == ' ')
                 {
-                    continue;
+                   continue;
+                }
+                else if(lnSplitToken == 1)
+                {
+                    break;
                 }
                 else
                 {
