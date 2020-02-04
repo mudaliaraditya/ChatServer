@@ -1490,7 +1490,14 @@ int main(int argc,char* argv[])
    //if the user starts the program the following way
    // ./a.out TEST ABC QWE
    //where ABC will be the identififier and QWE be target
-   if(argc == 4)
+   if(argc == 5)
+   {
+          if( strncmp("TEST", g_pcParam[1], 4) == 0)
+          {
+             g_nTesting = 1;
+          }
+   }
+   else if(argc == 4)
    {
           if( strncmp("TEST", g_pcParam[1], 4) == 0)
           {

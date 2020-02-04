@@ -11,5 +11,3 @@ UDPChatClient/client.out:
 
 UDPChatServer/server.out:
 	cd UDPChatServer/. && make
-
-
