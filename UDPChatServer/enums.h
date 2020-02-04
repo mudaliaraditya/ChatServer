@@ -1,5 +1,7 @@
 #pragma once
 
+enum NETWORK_TYPE{TCP=1,UDP=0 };
+
 enum class CMESSAGE_CODE_ACTIONS : long 
 {
     MESSAGE_CODE_ACTIONS_INVALID                  = 1000,

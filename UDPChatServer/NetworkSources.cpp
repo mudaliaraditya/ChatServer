@@ -8,6 +8,31 @@ int CreateUDPSocketIP()
    return lnSockFD;
 }
 
+int CreateTCPSocketIP()
+{
+   int lnSockFD = socket(AF_INET, SOCK_STREAM, 0);
+   return lnSockFD;
+}
+
+int CreateSocket(int nType)
+{
+   int lnSockFD;
+   switch(nType)
+   {
+      case UDP ://UDP
+      {
+         lnSockFD = CreateUDPSocketIP();
+      }
+      break;
+
+      case TCP ://TCP
+      {
+         lnSockFD = CreateTCPSocketIP();
+      }
+      break;
+   }
+   return lnSockFD;
+}
 
 void FillSockAddrin(long sin_family, unsigned short int sin_port, long long sin_addr, sockaddr_in* sockaddrin)
 {
@@ -51,6 +76,55 @@ int NetWorkInitialize(int& nSockfd)
    {
       perror("bind failed");
       exit(EXIT_FAILURE);
+   }
+
+   return EXIT_SUCCESS;
+}
+int NetWorkInitialize(int& nSockfd,int nType)
+{
+   if(pConfigObject == NULL)
+   {
+      return -1;
+   }
+
+   char* lcPorti  =  ((GetValueForKey(CNF_PORT_TAG, CNF_FILE_NAME , pConfigObject)));
+   if(lcPorti == NULL)
+   {
+      return -1;
+   }
+   string lcPort = lcPorti;
+   if(0 !=  DeleteKeyVal(lcPorti))
+   {
+      return -1; 
+   }
+   if ((nSockfd = CreateSocket(nType)) < 0)//socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
+   {
+      perror("socket creation failed");
+      exit(EXIT_FAILURE);
+   }
+   long lnPort = atol(lcPort.c_str());
+   cout << "PortVal is "<< lcPort << endl;
+   memset(&servaddr, 0, sizeof(servaddr));
+   memset(&cliaddr, 0, sizeof(cliaddr));
+
+   FillSockAddrin(AF_INET, htons(lnPort), INADDR_ANY, &servaddr);
+
+   if (bind(nSockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
+   {
+      perror("bind failed");
+      exit(EXIT_FAILURE);
+   }
+   if(nType == TCP)
+   {
+           if ((listen( nSockfd, 5)) != 0) 
+           { 
+                   printf("Listen failed...\n"); 
+                   exit(0); 
+           } 
+           else
+           {
+                   printf("Server listening..\n"); 
+           }
    }
 
    return EXIT_SUCCESS;
