@@ -1,1 +1,0 @@
-g++ -o a.out Source.cpp -std=c++11 -lpthread -g 

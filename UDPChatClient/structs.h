@@ -12,11 +12,11 @@ struct tagCSequenceNo;
 struct tagNetworkThread;
 struct tagNetworkThread
 {
-   int     fd;
-   size_t  n; 
-   int     flags;
-   struct sockaddr_in addr;
-   socklen_t restrict;
+   int                nFD;
+   size_t             nMessageLen; 
+   int                nFlags;
+   struct sockaddr_in stSockAddr;
+   socklen_t          nSockLen;
 };
 
 struct tagCSequenceNo
@@ -35,7 +35,7 @@ struct tagData
     char             cTarget[20 + 1];
     char             cUniqueMessageIdentifier[30 + 1];
     int              nSeqNo;
-    bool              bFinalResponse;
+    bool             bFinalResponse;
     int              nLatestClntSeqNo;
     int              nSessionId;
     tagNetworkThread stNetWork;

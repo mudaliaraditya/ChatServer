@@ -77,7 +77,7 @@ void HandleSignal(int nSignal);
 
 
 std::string SuffixAppropirateUniqueIdentifier(std::string lcString,short nCommand);
-
+int ClearResenderStore();
 
 #endif
 

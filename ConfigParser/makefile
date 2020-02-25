@@ -11,8 +11,10 @@ all : .TEST   bin/libconfigparse.so
 
 
 .TEST:
-	"." > ${mkfile_dir}/CompileError.txt
+	rm -f ${mkfile_dir}/CompileError.txt || true
+	touch ${mkfile_dir}/CompileError.txt
 	touch  ${mkfile_dir}/.TEST
+	touch .TEST
 
 
 bin/libconfigparse.so : obj/ConfigParser.o

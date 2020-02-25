@@ -1,5 +1,0 @@
-
- File exists directory ‘/home/shared/ght/pqr/ChatServer/ConfigParser//bin’/home/shared/ght/pqr/ChatServer/ConfigParser//src/ConfigParser.cpp: In function ‘int GetConfig(char*, void*)’:
-/home/shared/ght/pqr/ChatServer/ConfigParser//src/ConfigParser.cpp:298:9: warning: unused variable ‘lnRetVal’ [-Wunused-variable]
-     int lnRetVal = 0;
-         ^~~~~~~~

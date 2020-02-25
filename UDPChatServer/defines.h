@@ -15,3 +15,4 @@
 #define DEQ_SUF_IDN "DQ"
 #define DES_SUF_IDN "DS"
 #define DEC_SUF_IDN "DC"
+#define MAX_IDENTIFIER_LEN 20

@@ -1,6 +1,4 @@
 all: UDPChatClient/client.out UDPChatServer/server.out ConfigParser/.Complete
-	#make UDPChatClient/.
-	#make UDPChatServer/.
 	
 
 clean:

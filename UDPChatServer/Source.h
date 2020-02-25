@@ -55,10 +55,10 @@ int DeleteMsgFromResenderStoreByUniqueIdentifier(const tagData lstRecvData );
 
 bool IsMessageUniqueSoAddToResenderStore(tagData stData);
 
+int JoinAllThreads();
 
 
-
-
+int DestroyMutexCondVar();
 
 void* EventHandling(void* pEventHandlingArg);
 
