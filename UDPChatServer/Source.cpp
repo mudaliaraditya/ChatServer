@@ -156,26 +156,18 @@ int CleanUp()
       LOG_LOGGER("unable to clear g_cResponseList ");
       exit(1);
    }
-   for(CIteratorDataStore lcIter = g_cProcessList.begin(); g_cProcessList.end() != lcIter; lcIter++)
+   if(EXIT_SUCCESS != ClearStore<CDataStore,tagData>(g_cProcessList))
    {
-      tagData* lpstData = *lcIter;
-      if(lpstData != nullptr)
-      {
-         delete (lpstData);
-         lpstData = nullptr;
-      }
+      cout << "issue in Clearing store" << endl;
+      LOG_LOGGER("unable to clear g_cResponseList ");
+      exit(1);
    }
-   
 
-   for(CClientIdDataStore::iterator lcIter = g_cClientIDStore.begin();lcIter != g_cClientIDStore.end();)
+   if(EXIT_SUCCESS != ClearPairStore<CClientIdDataStore,tagData>(g_cClientIDStore))
    {
-      tagData* lpstData = lcIter->second;
-      if(lpstData != NULL)
-      {
-         delete lpstData;
-         lpstData = NULL;
-      }
-      lcIter = g_cClientIDStore.erase(lcIter);
+      cout << "issue in Clearing store" << endl;
+      LOG_LOGGER("unable to clear g_cResponseList ");
+      exit(1);
    }
 
    for( CEventResenderStoreIterator lcIter = g_cEventResender.begin(); g_cEventResender.end() != lcIter; lcIter++)
@@ -284,6 +276,7 @@ int ExecuteFunction(tagData& stData)
                LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
                exit(EXIT_FAILURE);
             }
+            //as its nearly impossible to get this as an update hence i am using this technique that is first i am going to allocate memory then inserts
             bool lbRetValInsClientIdStore = (g_cClientIDStore.insert(pair<int , tagData*>(stData.nGlobalIdentifier, lpstData))).second;
             if (lbRetValInsClientIdStore == false)
             {
@@ -466,18 +459,28 @@ int ExecuteFunction(tagData& stData)
                LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
                exit(EXIT_FAILURE);
             }
-            lpNewData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
+            lpNewData->nCommand =     (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
+
             strncpy(lpNewData->cIdentifier, stData.cIdentifier, MAX_IDENTIFIER_LEN);
-            lpNewData->nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE;
+
+            lpNewData->nMessageCode =  (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE;
+
             lpNewData->nSeqNo = stData.nSeqNo;
+
             strncpy(lpNewData->cBuffer, stData.cBuffer, MAXLINE);
+
             strncpy(lpNewData->cTarget, stData.cTarget, MAX_IDENTIFIER_LEN);
+
             strncpy(lpNewData->cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier, 30);
 
             pthread_mutex_lock(&g_cResponseMutex);
 
             g_cResponseList.push_back((lpNewData));
-            pthread_mutex_unlock(&g_cResponseMutex);
+            if ( 0 !=  pthread_mutex_unlock(&g_cResponseMutex) )
+            {
+               LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+               exit(EXIT_FAILURE);
+            }
          }
          break;
       case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY):
@@ -529,12 +532,17 @@ int ExecuteFunction(tagData& stData)
             cout << "the Identifier is " << lstData.cIdentifier << endl;
             cout << "the Target is " << lstData.cTarget << endl;
             cout << lstData.nMessageCode << endl;// lcIter1->second->nMessageCode;
-            lpNewData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_CONF;
-            lpNewData->nSeqNo = lstData.nSeqNo;
-            lpNewData->bFinalResponse = true;
+
+            lpNewData->nCommand        = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_CONF;
+            lpNewData->nSeqNo          = lstData.nSeqNo;
+            lpNewData->bFinalResponse  = true;
+
             strncpy(lpNewData->cIdentifier, lstData.cIdentifier, MAX_IDENTIFIER_LEN);
+
             strncpy(lpNewData->cTarget, lstData.cTarget, MAX_IDENTIFIER_LEN);
-            lpNewData->nMessageCode = lstData.nMessageCode;// lcIter1->second->nMessageCode;
+
+            lpNewData->nMessageCode    = lstData.nMessageCode;// lcIter1->second->nMessageCode;
+
             strncpy(lpNewData->cBuffer, lstData.cBuffer, MAXLINE);
             strncpy(lpNewData->cTarget, lstData.cTarget, MAX_IDENTIFIER_LEN);
             strncpy(lpNewData->cUniqueMessageIdentifier, lstData.cUniqueMessageIdentifier, 30);
@@ -556,7 +564,7 @@ int ExecuteFunction(tagData& stData)
 
    return 0;
 }
-
+//ConvertingRequestToResponse
 int GetResponseForFunction(tagData& stData)
 {
    long& lnMessageCode = stData.nMessageCode;
@@ -565,8 +573,8 @@ int GetResponseForFunction(tagData& stData)
          case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER) :
          {
 
-            stData.nMessageCode = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_RESPONSE);
-            stData.nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_RESPONSE;
+            stData.nMessageCode   = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_RESPONSE);
+            stData.nCommand       = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_RESPONSE;
             stData.bFinalResponse = true;
             return 0;
          }
@@ -575,8 +583,8 @@ int GetResponseForFunction(tagData& stData)
          case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET) :
          {
 
-            stData.nMessageCode = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET_RESPONSE);
-            stData.nCommand =  (short)CCOMMAND_TYPE::CCOMMAND_TYPE_RESPONSE;
+            stData.nMessageCode   = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET_RESPONSE);
+            stData.nCommand       = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_RESPONSE;
             stData.bFinalResponse = true;
             return 0;
          }
@@ -585,8 +593,8 @@ int GetResponseForFunction(tagData& stData)
          case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT) :
          {
 
-            stData.nMessageCode = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_RESPONSE);
-            stData.nCommand =  (short)CCOMMAND_TYPE::CCOMMAND_TYPE_RESPONSE;
+            stData.nMessageCode    =  (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_RESPONSE);
+            stData.nCommand        =  (short)CCOMMAND_TYPE::CCOMMAND_TYPE_RESPONSE;
             return 0;
          }
          break;
@@ -594,8 +602,8 @@ int GetResponseForFunction(tagData& stData)
          case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY) :
          {
 
-            stData.nMessageCode = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY_RES);
-            stData.nCommand =  (short)CCOMMAND_TYPE::CCOMMAND_TYPE_RESPONSE;
+            stData.nMessageCode     =  (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY_RES);
+            stData.nCommand         =  (short)CCOMMAND_TYPE::CCOMMAND_TYPE_RESPONSE;
             return 0;
          }
          break;
@@ -1135,6 +1143,39 @@ int RejectDummyMsgCode(long long nMessageCode)
    return 0;
 }
 
+/*
+Handles Conversion from Request to Response
+Process Data
+*/
+int HandleRequest(tagData* pstData)
+{
+   int lnRetVal = EXIT_SUCCESS;
+   lnRetVal = ExecuteFunction(*pstData);
+   if (lnRetVal != 0)
+   {
+      LOG_LOGGER("%s, %d", strerror(errno), __LINE__);
+      perror("Failure in Execute Function");
+      exit(EXIT_FAILURE);
+   }
+   lnRetVal =  RejectDummyMsgCode(pstData->nMessageCode);
+   if(lnRetVal != 0)
+   {
+      TESTLOG( "dummy message");
+      pstData = NULL;
+      return lnRetVal;
+   }
+   TESTLOG( "not a dummy message");
+   lnRetVal = GetResponseForFunction(*pstData);
+   if (0 > lnRetVal)
+   {
+      TESTLOG("%s %d", "wrong response code" , pstData->nMessageCode );
+      printf("%s", strerror(errno));
+      exit(EXIT_FAILURE);
+   }
+
+   return lnRetVal;
+}
+
 
 void* ProcessThread(void* pArg)
 {
@@ -1237,35 +1278,29 @@ void* ProcessThread(void* pArg)
          exit(EXIT_FAILURE);
       }
       //sleep(3);
-      int lnVal = ExecuteFunction(*lstData);
-      if (lnVal != 0)
-      {
-         LOG_LOGGER("%s, %d", strerror(errno), __LINE__);
-         perror("Failure in Execute Function");
-         exit(EXIT_FAILURE);
-      }
-      lnVal =  RejectDummyMsgCode(lstData->nMessageCode);
-      if(lnVal != 0)
-      {
-         TESTLOG( "dummy message");
-         delete lstData;
-         lstData = NULL;
-         continue;
-      }
-      TESTLOG( "not a dummy message");
-      lnReturnVal = GetResponseForFunction(*lstData);
-      if (0 > lnReturnVal)
-      {
-         TESTLOG("%s %d", "wrong response code" , lstData->nMessageCode );
-         printf("%s", strerror(errno));
-         exit(EXIT_FAILURE);
-      }
-
       lnReturnVal = pthread_mutex_lock(&g_cResponseMutex);
       if (lnReturnVal != 0)
       {
          LOG_LOGGER("%s, %d", strerror(errno), __LINE__);
          perror("unable to take lock");
+         exit(EXIT_FAILURE);
+      }
+      lnReturnVal  = HandleRequest(lstData);
+      if(lnReturnVal <= -1)
+      {
+         if(lnReturnVal == -1)
+         {
+             lnReturnVal = pthread_mutex_unlock(&g_cResponseMutex);
+             if (lnReturnVal != 0)
+             {
+                 printf("%s, %d", strerror(errno), __LINE__);
+                 perror("unable to take lock");
+                 exit(EXIT_FAILURE);
+             }
+             continue;
+         }
+         LOG_LOGGER("%s, %d", strerror(errno), __LINE__);
+         //perror("un");
          exit(EXIT_FAILURE);
       }
 #ifdef LOGGING
@@ -1350,13 +1385,11 @@ void* SenderThread(void* pArg)
       memset(&lcBuffer, 0, lnDataStructSize);
       delete (lpstData);
       lpstData = nullptr;
-      //#define LOGGING
 #ifdef LOGGING        
       printf("%s", strerror(errno));
       printf("Hello message sent.\n");
 #endif
    }
-   ///pthread_exit(NULL);
    return NULL;
 }
 
@@ -1647,8 +1680,6 @@ int main()
    lnRetVal = NetWorkInitialize(g_nMainSockFd);
    if (lnRetVal != EXIT_SUCCESS)
    {
-      //printf("%s, %d", strerror(errno), __LINE__);
-      //perror("Network Initialize failed");
       LOG_LOGGER("%s : NetWorkInitialize failed", strerror(errno));
       exit(EXIT_FAILURE);
    }
