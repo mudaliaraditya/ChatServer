@@ -1,6 +1,10 @@
 
 CXX=g++
 
+mkfile_path= $(abspath $(lastword $(MAKEFILE_LIST)))
+mkfile_dir= $(dir $(mkfile_path))
+
+
 all : libconfigparse.so  client.out libencrypt.so CompileError Logs .TEST
 
 Logs :

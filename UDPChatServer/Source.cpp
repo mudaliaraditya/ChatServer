@@ -87,6 +87,37 @@ tagData ConvertToDataStruct(tagBufferData& stData)
 }
 
 
+template<typename T,typename G>
+int ClearStore(T& cStore)
+{
+   //using abc = T::iterator;
+   for(auto lcIter = cStore.begin();cStore.end() != lcIter; lcIter++)
+   {
+      G* lpstData = *lcIter;
+      if(lpstData != nullptr)
+      {
+         delete (lpstData);
+         lpstData = nullptr;
+      }
+   }
+   return 0;
+}
+
+template<typename T,typename G>
+int ClearPairStore(T& cStore)
+{
+   for(auto lcIter = cStore.begin();cStore.end() != lcIter; lcIter++)
+   {
+      G* lpstData = lcIter->second;
+      if(lpstData != nullptr)
+      {
+         delete (lpstData);
+         lpstData = nullptr;
+      }
+   }
+   return 0;
+}
+
 ////////////////////FINIALIZINGyyyy FUNCTIONS/////////////////////////
 int CleanUp()
 {
@@ -112,27 +143,19 @@ int CleanUp()
    }
    shutdown(g_nMainSockFd , SHUT_RDWR);
    //Cleaning g_cPortIdentifier store
-   for(CIteratotrIdentiferDataStore lcIter = g_cPortIdentifier.begin(); lcIter != g_cPortIdentifier.end();lcIter++)
+   if(EXIT_SUCCESS != ClearPairStore<CIdentiferDataStore,tagData>(g_cPortIdentifier))
    {
-      tagData* lpstData = lcIter->second;
-      if(lpstData != nullptr)
-      {
-         delete (lpstData);
-         lpstData = nullptr;
-      }
+      cout << "issue in Clearing store" << endl;
+      LOG_LOGGER("unable to clear g_cPortIdentifier ");
+      exit(1);
    }
-
    //Cleaning g_cResponseList store 
-   for(CIteratorDataStore lcIter = g_cResponseList.begin();g_cResponseList.end() != lcIter; lcIter++)
+   if(EXIT_SUCCESS != ClearStore<CDataStore,tagData>(g_cResponseList))
    {
-      tagData* lpstData = *lcIter;
-      if(lpstData != nullptr)
-      {
-         delete (lpstData);
-         lpstData = nullptr;
-      }
+      cout << "issue in Clearing store" << endl;
+      LOG_LOGGER("unable to clear g_cResponseList ");
+      exit(1);
    }
-
    for(CIteratorDataStore lcIter = g_cProcessList.begin(); g_cProcessList.end() != lcIter; lcIter++)
    {
       tagData* lpstData = *lcIter;
@@ -142,6 +165,8 @@ int CleanUp()
          lpstData = nullptr;
       }
    }
+   
+
    for(CClientIdDataStore::iterator lcIter = g_cClientIDStore.begin();lcIter != g_cClientIDStore.end();)
    {
       tagData* lpstData = lcIter->second;
@@ -383,6 +408,7 @@ int ExecuteFunction(tagData& stData)
                if(lnRetVal != 0)
                {
                   LOG_LOGGER("Unable to add user %s to session %d", stData.cIdentifier, lnSessionId);
+                  g_cSessionManager.ReleaseLock();
                   return -1;
                }
                stData.nSessionId = lnSessionId;
@@ -864,7 +890,7 @@ void* RecieverThread(void* pData)
       delete lpstData;
       lpstData = nullptr;
    }
-   pthread_exit(NULL);
+   //pthread_exit(NULL);
    return NULL;
    //pthread_exit(NULL);
 }
@@ -946,7 +972,7 @@ void* EventThread(void*)
              sleep(lnSleeptIme - time(NULL));
           }
    }
-   pthread_exit(NULL);
+   //pthread_exit(NULL);
    return NULL;
 }
 
@@ -1281,7 +1307,7 @@ void* ProcessThread(void* pArg)
       TESTLOG("%s","processthread mutex lock released");
 #endif
    }
-   pthread_exit(NULL);   
+   //pthread_exit(NULL);   
    return NULL;
 }
 
@@ -1353,7 +1379,7 @@ void* SenderThread(void* pArg)
       printf("Hello message sent.\n");
 #endif
    }
-   pthread_exit(NULL);
+   ///pthread_exit(NULL);
    return NULL;
 }
 

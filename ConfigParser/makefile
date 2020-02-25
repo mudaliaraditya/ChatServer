@@ -1,31 +1,34 @@
 
 
+mkfile_path= $(abspath $(lastword $(MAKEFILE_LIST)))
+mkfile_dir= $(dir $(mkfile_path))
+
 CXX=g++
 
-all : .TEST bin/libconfigparse.so
-	touch .Complete
-	cp bin/libconfigparse.so example/.
+all : .TEST   bin/libconfigparse.so
+	touch  ${mkfile_dir}/.Complete
+	cp ${mkfile_dir}/bin/libconfigparse.so example/.
 
 
 .TEST:
-	"." > CompileError.txt
-	touch .TEST
+	"." > ${mkfile_dir}/CompileError.txt
+	touch  ${mkfile_dir}/.TEST
 
 
 bin/libconfigparse.so : obj/ConfigParser.o
-	${CXX} -o bin/libconfigparse.so obj/ConfigParser.o -shared -fPIC -Ihdr/ -Wall -g 2>> CompileError.txt
+	${CXX} -o   ${mkfile_dir}/bin/libconfigparse.so  ${mkfile_dir}/obj/ConfigParser.o -shared -fPIC -Ihdr/ -Wall -g 2>>  ${mkfile_dir}/CompileError.txt
 
 
-obj/ConfigParser.o : src/ConfigParser.cpp hdr/ConfigParser.h
-	mkdir obj || true
-	mkdir bin || true
-	${CXX} -c src/ConfigParser.cpp -shared -Ihdr/ -g -fPIC -Wall 2>> CompileError.txt
-	mv ConfigParser.o obj/.
+obj/ConfigParser.o :  ${mkfile_dir}/src/ConfigParser.cpp  ${mkfile_dir}/hdr/ConfigParser.h
+	mkdir  ${mkfile_dir}/obj || true
+	mkdir  ${mkfile_dir}/bin || true
+	${CXX} -c  ${mkfile_dir}/src/ConfigParser.cpp -shared -Ihdr/ -g -fPIC -Wall 2>>  ${mkfile_dir}/CompileError.txt
+	mv  ${mkfile_dir}/ConfigParser.o  ${mkfile_dir}/obj/.
 
 
 clean :
-	rm obj/* || true
-	rm bin/*.so || true
-	rm .Complete || true
-	rm example/*.so || true
-	rm .TEST || true
+	rm  ${mkfile_dir}/obj/* || true
+	rm  ${mkfile_dir}/bin/*.so || true
+	rm  ${mkfile_dir}/.Complete || true
+	rm  ${mkfile_dir}/example/*.so || true
+	rm  ${mkfile_dir}/.TEST || true
