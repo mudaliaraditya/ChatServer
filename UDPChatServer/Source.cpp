@@ -51,20 +51,20 @@ string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand)
 
 tagBufferData ConvertToNetworkBuffer(tagData& stData)
 {
-   tagBufferData lstBufferData = {0};
-   lstBufferData.nCommand = stData.nCommand;
-   lstBufferData.nGlobalIdentifier = stData.nGlobalIdentifier;
-   strncpy(lstBufferData.cIdentifier ,stData.cIdentifier ,MAX_IDENTIFIER_LEN);
-   lstBufferData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
-   lstBufferData.nMessageCode    = stData.nMessageCode;
-   strncpy(lstBufferData.cBuffer, stData.cBuffer, MAXLINE);
-   strncpy(lstBufferData.cTarget, stData.cTarget, MAX_IDENTIFIER_LEN );
-   strncpy(lstBufferData.cUniqueMessageIdentifier,stData.cUniqueMessageIdentifier ,30);
-   lstBufferData.nSeqNo = stData.nSeqNo;
-   lstBufferData.bFinalResponse = stData.bFinalResponse;
-   lstBufferData.nLatestClntSeqNo = stData.nLatestClntSeqNo;
-   lstBufferData.nSessionId = stData.nSessionId;
-   return lstBufferData;
+   tagBufferData lstNetworkData = {0};
+   lstNetworkData.nCommand = stData.nCommand;
+   lstNetworkData.nGlobalIdentifier = stData.nGlobalIdentifier;
+   strncpy(lstNetworkData.cIdentifier ,stData.cIdentifier ,20);
+r  lstNetworkData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
+   lstNetworkData.nMessageCode    = stData.nMessageCode;
+   strncpy(lstNetworkData.cBuffer, stData.cBuffer, MAXLINE);
+   strncpy(lstNetworkData.cTarget, stData.cTarget, 20 );
+   strncpy(lstNetworkData.cUniqueMessageIdentifier,stData.cUniqueMessageIdentifier ,30);
+   lstNetworkData.nSeqNo = stData.nSeqNo;
+   lstNetworkData.bFinalResponse = stData.bFinalResponse;
+   lstNetworkData.nLatestClntSeqNo = stData.nLatestClntSeqNo;
+   lstNetworkData.nSessionId = stData.nSessionId;
+   return lstNetworkData;
 }
 
 
