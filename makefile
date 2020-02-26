@@ -1,10 +1,10 @@
-all: UDPChatClient/client.out UDPChatServer/server.out
-	make UDPChatClient/.
-	make UDPChatServer/.
+all: UDPChatClient/client.out UDPChatServer/server.out ConfigParser/.Complete
+	
 
 clean:
 	cd UDPChatClient/. && make clean
 	cd UDPChatServer/. && make clean
+	cd ConfigParser/. && make clean
 
 UDPChatClient/client.out:
 	cd UDPChatClient/. && make 
@@ -12,4 +12,6 @@ UDPChatClient/client.out:
 UDPChatServer/server.out:
 	cd UDPChatServer/. && make
 
+ConfigParser/.Complete :
+	cd ConfigParser/ && make 
 

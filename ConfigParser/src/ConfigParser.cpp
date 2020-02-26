@@ -1,10 +1,10 @@
 //#include<iostream>
-#include<string>
-#include<cstring>
-#include<map>
+#include <string>
+#include <cstring>
+#include <map>
 #include <errno.h>
-#include<fstream>
-#include<malloc.h>
+#include <fstream>
+#include <malloc.h>
 #include "ConfigParser.h"
 using namespace std;
 
@@ -170,19 +170,20 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
    int lnCounter = 0;
    string lcKey = "";
    string lcVal = "";
-   char lcEqualSign = '=';
-   char* lpcDelimiter = strchr(lcBuffer, lcEqualSign);
+   //char lcEqualSign = '=';
+   char* lpcDelimiter = strchr(lcBuffer, '=');
    char* lcToken = lcBuffer;
-   char* lcBuffStart = lcBuffer;
+   char* lcBuffStart = lcBuffer;//for nullable strtok
    int lnSplitToken = 0;
    while(lcToken != NULL)
    {
          lcToken = strtok(lcBuffStart,"= ");
          switch(lnCounter)
          {
+            /*setting the LHS of the config*/
             case 0:
             {
-                lcBuffStart = NULL;
+                lcBuffStart = NULL;//for strtok to work
                 if(lcToken != NULL)
                 {
                    //Commented line
@@ -208,7 +209,8 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                 }
             }
             break;
-             
+
+            /*setting the RHS of the config*/             
             case 1:
             {
                 if(lcToken != NULL)
@@ -221,15 +223,14 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                    { 
                         char* lpcR = strrchr(lcBufferForDQ,'\"');
                         char* lpcF = strchr(lcBufferForDQ,'\"');
-                        char* lpcDelim = strchr(lcBufferForDQ,'=');
+                        char* lpcDelim = strchr(lcBufferForDQ,'=');//special validations for " " type files 
                         if (lpcF < lpcDelim )
                         {
                            return -1;
                         }
-                        char lcTruBuffer[cString.length() + 1] = {0};
                         long lnLength = (lpcR )  - (lpcF + 1);
-                        int lnlastIndex  = lpcR - lcBufferForDQ;
-                        for(unsigned int i = lnlastIndex + 1;i < cString.length();i++)      
+                        int lnlastIndex  = lpcR - lcBufferForDQ;//index of the ending "
+                        for(unsigned int i = lnlastIndex + 1;i < cString.length();i++) 
                         {
                            switch(lcBufferForDQ[i])
                            {
@@ -237,7 +238,8 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                               case '\n':
                               case '\r':
                               case  ' ':
-                              {}
+                              {
+                              }
                               break;
                               default:
                               {
@@ -245,9 +247,9 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                               }
                            }
                         }
-                        strncpy(lcTruBuffer,lpcF + 1, (lnLength)); 
+                        *lpcR = '\0';//making the second double quote as null terminated
                         lnSplitToken = 1;
-                        lcVal = lcTruBuffer;
+                        lcVal = lpcF + 1;
                         break; 
                    }
                    else
@@ -261,16 +263,20 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
                 } 
             }
             break;
-            
+            /*checking for any trash tokens*/            
             default:
             {
                 if(lcToken == NULL)
                 {
                    break;
                 }
-                else if(*lcToken == '\r' || *lcToken == '\n' || *lcToken == ' ' || lnSplitToken == 1)
+                else if(*lcToken == '\r' || *lcToken == '\n' || *lcToken == ' ')
                 {
-                    continue;
+                   continue;
+                }
+                else if(lnSplitToken == 1)
+                {
+                    break;
                 }
                 else
                 {
@@ -293,6 +299,10 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
 
 int  GetConfig(char* cFileName,void* pMap)
 {
+    if(cFileName == NULL || pMap == NULL)
+    {
+        return -1;
+    }
     map< string,map < string,string > >* lpcBigMap = (map< string,map < string,string > >*)pMap;
     map<string,string> lcMap;
     int lnRetVal = 0;

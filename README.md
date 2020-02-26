@@ -1,5 +1,5 @@
 <h1>ChatServer</h1>
-Last Updated date [27/12/2019]
+Last Updated date [23/01/2020]
 Contact [mudaliar.aditya@gmail.com](mailto:mudaliar.aditya@gmail.com)
 
 A Basic Chat Application made with CUI client and server,the network is my major concern and priority,only one to one chat is supported, as udp is being used there is a chance for losses but still each packet which is not yet recieved a response is sent again

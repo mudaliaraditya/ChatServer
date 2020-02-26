@@ -70,7 +70,43 @@ extern CSessionManager g_cSessionManager;
 
 extern int g_ExceptionRaised;
 
-extern int ready_for_reading;
+extern int g_nReady_for_reading;
+
+
+class CDataStoreManager
+{
+
+   CDataStore m_cDataStore;
+   pthread_mutex_t m_cProcessMutex;
+   
+   void push_back( tagData* pstData)
+   {
+        pthread_mutex_lock(&m_cProcessMutex);
+        m_cDataStore.push_back(pstData);
+        pthread_mutex_unlock(&m_cProcessMutex);
+   }
+   
+   tagData* pop_back()
+   {
+        pthread_mutex_lock(&m_cProcessMutex);
+        tagData* lpstData = m_cDataStore.back();
+        m_cDataStore.pop_back();
+        pthread_mutex_unlock(&m_cProcessMutex);
+        return lpstData;
+   }
+   tagData* pop_front()
+   {
+        pthread_mutex_lock(&m_cProcessMutex);
+        tagData* lpstData = m_cDataStore.front();
+        m_cDataStore.pop_front();
+        pthread_mutex_unlock(&m_cProcessMutex);
+        return lpstData;
+   }
+
+};
+
+
+
 #endif
 
 
@@ -117,4 +153,4 @@ pthread_cond_t g_cConditionalVar;
 
 
  * 
- */
+*/

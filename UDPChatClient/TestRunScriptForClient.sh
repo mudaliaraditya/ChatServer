@@ -9,9 +9,14 @@ clean_up()
 
 for i in ${ARR[@]};
     do 
+     echo "trying to kill client with pid ($i)"
       kill -s SIGINT $i
+      RETVAL=`echo $?`
+      if [ $RETVAL -ne 0 ]
+      then
+           kill -9 $i
+     fi
 done
-
 
    #pkill client.out
    echo "done"
@@ -23,7 +28,7 @@ done
 ###                 MAIN                          ##
 ####################################################
 
-trap clean_up SIGHUP SIGINT SIGTERM
+trap clean_up SIGHUP SIGINT SIGTERM SIGKILL
 
 for ((k=1 ;k<=1 ;k++ ))
 do
@@ -32,7 +37,7 @@ do
    PID=($!)
    ARR+=$PID
    ARR+=" "
-   sleep 4
+   sleep 1
    ./client.out TEST C$A B$A > Logs/CB$A_$$.txt   &
    PID=($!)
    ARR+=$PID 
