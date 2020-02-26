@@ -50,4 +50,4 @@ clean :
 	rm CompileError || true
 	cd ../ConfigParser/ && make clean || true
 	rm CompileError.txt || true
-	rm .TEST
+	rm .TEST || true

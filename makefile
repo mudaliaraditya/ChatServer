@@ -5,6 +5,7 @@ clean:
 	cd UDPChatClient/. && make clean
 	cd UDPChatServer/. && make clean
 	cd ConfigParser/. && make clean
+	cd EncyptingFunc/. && make clean
 
 UDPChatClient/client.out:
 	cd UDPChatClient/. && make 

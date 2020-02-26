@@ -55,7 +55,7 @@ tagBufferData ConvertToNetworkBuffer(tagData& stData)
    lstNetworkData.nCommand = stData.nCommand;
    lstNetworkData.nGlobalIdentifier = stData.nGlobalIdentifier;
    strncpy(lstNetworkData.cIdentifier ,stData.cIdentifier ,20);
-r  lstNetworkData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
+   lstNetworkData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
    lstNetworkData.nMessageCode    = stData.nMessageCode;
    strncpy(lstNetworkData.cBuffer, stData.cBuffer, MAXLINE);
    strncpy(lstNetworkData.cTarget, stData.cTarget, 20 );
