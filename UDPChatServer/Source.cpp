@@ -51,39 +51,39 @@ string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand)
 
 tagBufferData ConvertToNetworkBuffer(tagData& stData)
 {
-   tagBufferData lstBufferData = {0};
-   lstBufferData.nCommand = stData.nCommand;
-   lstBufferData.nGlobalIdentifier = stData.nGlobalIdentifier;
-   strncpy(lstBufferData.cIdentifier ,stData.cIdentifier ,20);
-   lstBufferData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
-   lstBufferData.nMessageCode    = stData.nMessageCode;
-   strncpy(lstBufferData.cBuffer, stData.cBuffer, MAXLINE);
-   strncpy(lstBufferData.cTarget, stData.cTarget, 20 );
-   strncpy(lstBufferData.cUniqueMessageIdentifier,stData.cUniqueMessageIdentifier ,30);
-   lstBufferData.nSeqNo = stData.nSeqNo;
-   lstBufferData.bFinalResponse = stData.bFinalResponse;
-   lstBufferData.nLatestClntSeqNo = stData.nLatestClntSeqNo;
-   lstBufferData.nSessionId = stData.nSessionId;
-   return lstBufferData;
+   tagBufferData lstNetworkData = {0};
+   lstNetworkData.nCommand = stData.nCommand;
+   lstNetworkData.nGlobalIdentifier = stData.nGlobalIdentifier;
+   strncpy(lstNetworkData.cIdentifier ,stData.cIdentifier ,20);
+   lstNetworkData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
+   lstNetworkData.nMessageCode    = stData.nMessageCode;
+   strncpy(lstNetworkData.cBuffer, stData.cBuffer, MAXLINE);
+   strncpy(lstNetworkData.cTarget, stData.cTarget, 20 );
+   strncpy(lstNetworkData.cUniqueMessageIdentifier,stData.cUniqueMessageIdentifier ,30);
+   lstNetworkData.nSeqNo = stData.nSeqNo;
+   lstNetworkData.bFinalResponse = stData.bFinalResponse;
+   lstNetworkData.nLatestClntSeqNo = stData.nLatestClntSeqNo;
+   lstNetworkData.nSessionId = stData.nSessionId;
+   return lstNetworkData;
 }
 
 
 tagData ConvertToDataStruct(tagBufferData& stData)
 {
-   tagData lstBufferData = {0};
-   lstBufferData.nCommand = stData.nCommand;
-   lstBufferData.nGlobalIdentifier = stData.nGlobalIdentifier;
-   strncpy(lstBufferData.cIdentifier ,stData.cIdentifier ,20);
-   lstBufferData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
-   lstBufferData.nMessageCode    = stData.nMessageCode;
-   strncpy(lstBufferData.cBuffer, stData.cBuffer, MAXLINE);
-   strncpy(lstBufferData.cTarget, stData.cTarget, 20 );
-   strncpy(lstBufferData.cUniqueMessageIdentifier,stData.cUniqueMessageIdentifier ,30);
-   lstBufferData.nSeqNo = stData.nSeqNo;
-   lstBufferData.bFinalResponse = stData.bFinalResponse;
-   lstBufferData.nLatestClntSeqNo = stData.nLatestClntSeqNo;
-   lstBufferData.nSessionId = stData.nSessionId;
-   return lstBufferData;
+   tagData lstlocalData = {0};
+   lstlocalData.nCommand = stData.nCommand;
+   lstlocalData.nGlobalIdentifier = stData.nGlobalIdentifier;
+   strncpy(lstlocalData.cIdentifier ,stData.cIdentifier ,20);
+   lstlocalData.nFrOrToServerFlg = stData.nFrOrToServerFlg;
+   lstlocalData.nMessageCode    = stData.nMessageCode;
+   strncpy(lstlocalData.cBuffer, stData.cBuffer, MAXLINE);
+   strncpy(lstlocalData.cTarget, stData.cTarget, 20 );
+   strncpy(lstlocalData.cUniqueMessageIdentifier,stData.cUniqueMessageIdentifier ,30);
+   lstlocalData.nSeqNo = stData.nSeqNo;
+   lstlocalData.bFinalResponse = stData.bFinalResponse;
+   lstlocalData.nLatestClntSeqNo = stData.nLatestClntSeqNo;
+   lstlocalData.nSessionId = stData.nSessionId;
+   return lstlocalData;
 }
 
 
@@ -288,25 +288,32 @@ int ExecuteFunction(tagData& stData)
       case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER) :
          {
             pthread_mutex_lock(&g_cGlobalIdentifierMutex);
+            //incrementint the sequenceNo                    
+            if(((g_nClientIdentifier + 1) == INT_MAX))       
+            {                                                
+               //g_nClientIdentifier = 0;                   
+               LOG_LOGGER("Max clients reached");           
+               exit(EXIT_FAILURE);                          
+            }                                                
             stData.nGlobalIdentifier = g_nClientIdentifier++;
             pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
-            lpstData = new tagData(stData);
-            if(lpstData == NULL)
+            lpstNewUserData = new tagData(stData);
+            if(lpstNewUserData == NULL)
             {
                LOG_LOGGER("new error");
                exit(1);
             }
-            //g_cClientIDStore.insert()
+
             if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
                exit(1);
             }
-            bool lbVal1 = (g_cClientIDStore.insert(pair<int , tagData*>(stData.nGlobalIdentifier, lpstData))).second;
+            bool lbVal1 = (g_cClientIDStore.insert(pair<int , tagData*>(stData.nGlobalIdentifier, lpstNewUserData))).second;
             if (lbVal1 == false)
             {
-               delete lpstData;
-               lpstData = nullptr;
+               delete lpstNewUserData;
+               lpstNewUserData = nullptr;
                printf("duplicate identifier insert to identifier(%s) store failed ", stData.cIdentifier);
                printf("%s %d", strerror(errno), __LINE__);
                exit(EXIT_FAILURE);
@@ -316,11 +323,11 @@ int ExecuteFunction(tagData& stData)
                LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
                exit(1);
             }
-            // bool lbVal = (g_cPortIdentifier.insert(pair<string, tagData*>(stData.cIdentifier, lpstData))).second;
+            // bool lbVal = (g_cPortIdentifier.insert(pair<string, tagData*>(stData.cIdentifier, lpstNewUserData))).second;
             // if (lbVal == false)
             // {
-            //    delete lpstData;
-            //    lpstData = nullptr;
+            //    delete lpstNewUserData;
+            //    lpstNewUserData = nullptr;
             //    printf("duplicate identifier insert to identifier(%s) store failed ", stData.cIdentifier);
             //    printf("%s %d", strerror(errno), __LINE__);
             //    exit(EXIT_FAILURE);
@@ -336,8 +343,8 @@ int ExecuteFunction(tagData& stData)
                LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
                exit(1);
             }
-            map<int , tagData*>::iterator lcIteratoor = g_cClientIDStore.find(stData.nGlobalIdentifier);
-            if (lcIteratoor == g_cClientIDStore.end())
+            map<int , tagData*>::iterator lcSelfIter = g_cClientIDStore.find(stData.nGlobalIdentifier);
+            if (lcSelfIter == g_cClientIDStore.end())
             {
                printf("%d not found", stData.cIdentifier);
                printf("%s %d", strerror(errno), __LINE__);
@@ -351,13 +358,13 @@ int ExecuteFunction(tagData& stData)
             //   printf("%s %d", strerror(errno), __LINE__);
             //   exit(EXIT_FAILURE);
             //}
-            if(lcIteratoor->second == nullptr)
+            if(lcSelfIter->second == nullptr)
             {
                LOG_LOGGER("invalid ptr");
                exit(EXIT_FAILURE);
             }
-            tagData& lcData = *(lcIteratoor->second);
-            strncpy(lcData.cTarget, stData.cTarget, 20);
+            tagData& lstSelfStoreData = *(lcSelfIter->second);
+            strncpy(lstSelfStoreData.cTarget, stData.cTarget, 20);
             tagSessionIdentifierData lstSessionIdentifier;
             lstSessionIdentifier.sName = stData.cIdentifier;
             lstSessionIdentifier.nGlobalIdentifier = stData.nGlobalIdentifier;
@@ -374,7 +381,7 @@ int ExecuteFunction(tagData& stData)
                }
                int lnSessionId =   g_cSessionManager.GetFreeUserSessionIdForUser(stData.cIdentifier);
                stData.nSessionId = lnSessionId;
-               lcData.nSessionId = lnSessionId;
+               lstSelfStoreData.nSessionId = lnSessionId;
             }
             else
             {
@@ -386,7 +393,7 @@ int ExecuteFunction(tagData& stData)
                   return -1;
                }
                stData.nSessionId = lnSessionId;
-               lcData.nSessionId = lnSessionId;
+               lstSelfStoreData.nSessionId = lnSessionId;
             }
             if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             { 
@@ -445,43 +452,38 @@ int ExecuteFunction(tagData& stData)
                printf("%s %d", strerror(errno), __LINE__);
                exit(EXIT_FAILURE);
             }
-
-            tagData* lpNewData = new tagData();
-            if(NULL == lpNewData)
+//Code for forwarding data to the other client
+            tagData* lpstForwardMessageData = new tagData();
+            if(NULL == lpstForwardMessageData)
             {
                LOG_LOGGER("memory error");
                exit(EXIT_FAILURE);
             }
-            memcpy(lpNewData, lcIter1->second, sizeof(tagData));
+            memcpy(lpstForwardMessageData, lcIter1->second, sizeof(tagData));
             if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
                exit(EXIT_FAILURE);
             }
-            lpNewData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
-            strncpy(lpNewData->cIdentifier, stData.cIdentifier, 20);
-            lpNewData->nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE;
-            lpNewData->nSeqNo = stData.nSeqNo;
-            strncpy(lpNewData->cBuffer, stData.cBuffer, MAXLINE);
-            strncpy(lpNewData->cTarget, stData.cTarget, 20);
-            strncpy(lpNewData->cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier, 30);
+            lpstForwardMessageData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
+            strncpy(lpstForwardMessageData->cIdentifier, stData.cIdentifier, 20);
+            lpstForwardMessageData->nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE;
+            lpstForwardMessageData->nSeqNo = stData.nSeqNo;
+            strncpy(lpstForwardMessageData->cBuffer, stData.cBuffer, MAXLINE);
+            strncpy(lpstForwardMessageData->cTarget, stData.cTarget, 20);
+            strncpy(lpstForwardMessageData->cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier, 30);
 
             pthread_mutex_lock(&g_cResponseMutex);
 
-            g_cResponseList.push_back((lpNewData));
+            g_cResponseList.push_back((lpstForwardMessageData));
             pthread_mutex_unlock(&g_cResponseMutex);
+//End of Forwarding code
          }
          break;
       case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY):
          {
 
-            //char lcBuffer[sizeof(tagData)] = { 0 };
-
             tagData lstData = stData;
-            lstData.nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_SERV_TO_CLI;
-            //lstData.nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
-            //memcpy(&lcBuffer, (char*)&lstData, sizeof(tagData));
-            //map<string, tagData*>::iterator lcIter = g_cPortIdentifier.find(stData.cIdentifier);
             if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("%s ", "error in mutex");
@@ -495,6 +497,8 @@ int ExecuteFunction(tagData& stData)
                printf("%s %d", strerror(errno), __LINE__);
                exit(EXIT_FAILURE);
             }
+//Code for handling forwarding
+            lstData.nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_SERV_TO_CLI;
             TESTLOG("Delivery Handling ");
             tagData* lpNewData = new tagData();
             if(NULL == lpNewData )
@@ -528,6 +532,8 @@ int ExecuteFunction(tagData& stData)
             g_cResponseList.push_back((lpNewData));
 
             pthread_mutex_unlock(&g_cResponseMutex);
+//End of Forward Handling
+
          }
          break;
       default :
