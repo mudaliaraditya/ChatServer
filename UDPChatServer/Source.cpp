@@ -1161,6 +1161,7 @@ int HandleRequest(tagData* pstData)
    if(lnRetVal != 0)
    {
       TESTLOG( "dummy message");
+      delete pstData;
       pstData = NULL;
       return lnRetVal;
    }
@@ -1278,13 +1279,7 @@ void* ProcessThread(void* pArg)
          exit(EXIT_FAILURE);
       }
       //sleep(3);
-      lnReturnVal = pthread_mutex_lock(&g_cResponseMutex);
-      if (lnReturnVal != 0)
-      {
-         LOG_LOGGER("%s, %d", strerror(errno), __LINE__);
-         perror("unable to take lock");
-         exit(EXIT_FAILURE);
-      }
+
       lnReturnVal  = HandleRequest(lstData);
       if(lnReturnVal <= -1)
       {
@@ -1303,6 +1298,15 @@ void* ProcessThread(void* pArg)
          //perror("un");
          exit(EXIT_FAILURE);
       }
+
+      lnReturnVal = pthread_mutex_lock(&g_cResponseMutex);
+      if (lnReturnVal != 0)
+      {
+         LOG_LOGGER("%s, %d", strerror(errno), __LINE__);
+         perror("unable to take lock");
+         exit(EXIT_FAILURE);
+      }
+
 #ifdef LOGGING
       TESTLOG ("%s","processthread mutex lock acquired");
 #endif
