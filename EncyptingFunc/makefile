@@ -8,4 +8,5 @@ libencrypt.so : encryptor/encrypt.c
 	gcc -o libencrypt.so encryptor/encrypt.c -fPIC -shared -g
 
 clean :
-	rm libencrypt.so
+	rm libencrypt.so || true
+	rm *.o || true

@@ -9,10 +9,9 @@
 #            abc = a b c 
 
 
-
              KEY_OF_CONFIG = VAL_OF_KEY
 
              PORT          = 100
 
-             HOSTNAME      = "localhost of abc"
+             HOSTNAME      = "localhost of "abc""
              

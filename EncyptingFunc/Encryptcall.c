@@ -3,7 +3,7 @@
 
 int Encrypt(char* cBuffer,long long nLen)
 {
-   void* pConfigObject = NULL;
+   ConfigParserHandle* pConfigObject = NULL;
    pConfigObject = CreateNewMap();
    if(pConfigObject == NULL)
    {
@@ -89,7 +89,7 @@ int Encrypt(char* cBuffer,long long nLen)
 
 int Decrypt(char* cBuffer,long long nLen)
 {
-   void* pConfigObject = NULL;
+   ConfigParserHandle* pConfigObject = NULL;
    pConfigObject = CreateNewMap();
    if(pConfigObject == NULL)
    {

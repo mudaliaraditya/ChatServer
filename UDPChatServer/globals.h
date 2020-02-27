@@ -11,6 +11,8 @@
 #include "types.h"
 #include "structs.h"
 #include "CSessionManager.h"
+#include "ConfigParserFunctions.h"
+
 
 extern long g_OS;
 extern bool g_bProgramShouldWork;
@@ -60,7 +62,7 @@ extern std::fstream g_cDatafstream;
 extern int g_nFlagDupliResend;
 extern std::map<std::string,std::string> g_cMap;
 
-extern void* pConfigObject;
+extern ConfigParserHandle* pConfigObject;
 
 
 extern int g_nClientIdentifier;

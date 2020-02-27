@@ -18,6 +18,7 @@
 #include <pthread.h>
 #include "defines.h"
 #include "typedefs.h"
+#include "ConfigParserFunctions.h"
 #include <set>
 
 
@@ -65,7 +66,7 @@ short     g_nArgs = 0;
 bool      g_bProgramShouldWork = true;
 tagData*  g_pstThrdDataRcvr = NULL;
 tagData*  g_pstThrdSndr = NULL;
-void*     pConfigObject;
+ConfigParserHandle*     pConfigObject;
 int       g_nSeqNo = 0;
 bool      g_bOutOfOrder = false;
 long      g_PID=0;

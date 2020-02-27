@@ -50,7 +50,7 @@ int g_nFlagDupliResend = 0;
 
 std::map<std::string, std::string> g_cMap;
 
-void* pConfigObject = NULL;
+ConfigParserHandle* pConfigObject = NULL;
 
 
 int g_nClientIdentifier = 0;
