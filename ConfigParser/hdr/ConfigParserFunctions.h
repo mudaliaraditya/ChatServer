@@ -29,9 +29,9 @@ Simple Way to use this would be
 
 
 
-void*   CreateNewMap();//Create a Handler
-int  GetConfig(char* cFileName,void* pMap);//Pass The Handle and File name
-char* GetValueForKey(char* cKey,char* cFileName , void* pcVMap);
+ConfigParserHandle*   CreateNewMap();//Create a Handler
+int  GetConfig(char* cFileName,ConfigParserHandle* pMap);//Pass The Handle and File name
+char* GetValueForKey(char* cKey,char* cFileName , ConfigParserHandle* pcVMap);
 int DeleteKeyVal(char* pVal);
 void DeleteNewMap(void* pMap);
 //int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < string,string > >* pcBigMap);//Dont Call this directly not threadsafe

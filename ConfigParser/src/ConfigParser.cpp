@@ -26,10 +26,10 @@ extern "C"
 */
 
 
-void*   CreateNewMap()
+ConfigParserHandle*   CreateNewMap()
 {
     const std::lock_guard<std::mutex> lock(g_i_ConfigParser_mutex);
-    return new map< string,map < string,string > >;
+    return (ConfigParserHandle*)(new map< string,map < string,string > >);
 }
 
 void DeleteNewMap(void* pMap)
@@ -42,7 +42,7 @@ void DeleteNewMap(void* pMap)
 
 
 
-char* GetValueForKey(char* cKey,char* cFileName , void* pcVMap)
+char* GetValueForKey(char* cKey,char* cFileName , ConfigParserHandle* pcVMap)
 {
    const std::lock_guard<std::mutex> lock(g_i_ConfigParser_mutex);
    map<string, map<string,string> >* pcMap = (map<string, map<string,string> >*)pcVMap;    
@@ -317,7 +317,7 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
    return 0;
 }
 
-int  GetConfig(char* cFileName,void* pMap)
+int  GetConfig(char* cFileName,ConfigParserHandle* pMap)
 {
     const std::lock_guard<std::mutex> lock(g_i_ConfigParser_mutex);
     if(cFileName == NULL || pMap == NULL)
