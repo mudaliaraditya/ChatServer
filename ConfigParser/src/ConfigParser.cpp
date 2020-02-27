@@ -180,7 +180,6 @@ int CheckForSpce(char cVal)
 
 int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < string,string > >* pcBigMap)
 {
-   const std::lock_guard<std::mutex> lock(g_i_ConfigParser_mutex);
    char lcBuffer[cString.length() + 1];
    char lcBufferForDQ[cString.length() + 1];//Temp Buffer for handling '"' strings
    memset(lcBuffer, 0 , cString.length() + 1);

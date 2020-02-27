@@ -26,7 +26,6 @@ char* GetValueForKey(char* cKey,char* cFileName , void* pcVMap);
 
 
 
-int AddTokenToStore(std::string cString,std::map<std::string,std::string>& cMap, std::map< std::string,std::map < std::string,std::string > >* pcBigMap);
 
 int  GetConfig(char* cFileName,void* pMap);
 
