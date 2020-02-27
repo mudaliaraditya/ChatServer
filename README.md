@@ -1,5 +1,5 @@
 <h1>ChatServer</h1>
-Last Updated date [23/01/2020]
+Last Updated date [27/02/2020]
 Contact [mudaliar.aditya@gmail.com](mailto:mudaliar.aditya@gmail.com)
 
 A Basic Chat Application made with CUI client and server,the network is my major concern and priority,only one to one chat is supported, as udp is being used there is a chance for losses but still each packet which is not yet recieved a response is sent again
@@ -19,3 +19,10 @@ Features To be Added
  7. GUI to client{Pending}
  8. Cross platform client and server{Dont think server will be made cross platform,client code has to be merged}
  9. Encryption of messages(Encryption should be supplied through an shared object and configuration)(Implemented)
+ 10. Implement Failure cases(Pending)
+ 11. Implement User Login and Database(Pending)
+ 12. Making Code Modular(Pending)
+
+Recent Updates:
+   =)Updated and Changed ConfigParser
+   =)Made a Few Functions Modular
