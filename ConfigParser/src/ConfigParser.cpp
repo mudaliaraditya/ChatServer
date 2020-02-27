@@ -7,18 +7,33 @@
 #include <malloc.h>
 #include "ConfigParser.h"
 using namespace std;
-
+std::mutex g_i_ConfigParser_mutex;
 #ifdef __cplusplus
-extern "C" {
+extern "C" 
+{
 #endif
+
+/*
+*********************************************************************************
+
+
+
+
+
+*********************************************************************************
+
+*/
+
 
 void*   CreateNewMap()
 {
+    const std::lock_guard<std::mutex> lock(g_i_ConfigParser_mutex);
     return new map< string,map < string,string > >;
 }
 
 void DeleteNewMap(void* pMap)
 {
+    const std::lock_guard<std::mutex> lock(g_i_ConfigParser_mutex);
     map< string,map < string,string > >* lpcMap = (map< string,map < string,string > >*)pMap;
     delete lpcMap;
     pMap = NULL;
@@ -28,6 +43,7 @@ void DeleteNewMap(void* pMap)
 
 char* GetValueForKey(char* cKey,char* cFileName , void* pcVMap)
 {
+   const std::lock_guard<std::mutex> lock(g_i_ConfigParser_mutex);
    map<string, map<string,string> >* pcMap = (map<string, map<string,string> >*)pcVMap;    
    map<string, map<string,string> >::iterator lcIterator =  pcMap->find(cFileName);
    if(lcIterator == pcMap->end())
@@ -47,6 +63,7 @@ char* GetValueForKey(char* cKey,char* cFileName , void* pcVMap)
 
 int DeleteKeyVal(char* pVal)
 {
+   const std::lock_guard<std::mutex> lock(g_i_ConfigParser_mutex);
    errno = 0;
    free(pVal);
    pVal = NULL;
@@ -109,6 +126,7 @@ int CheckForSpceNewLine(char cVal)
     }
     return -1;
 }
+
 int CheckForNewLine(char cVal)
 {
     switch(cVal)
@@ -125,6 +143,7 @@ int CheckForNewLine(char cVal)
     }
     return -1;
 }
+
 int CheckForComment(char cVal)
 {
     switch(cVal)
@@ -161,6 +180,7 @@ int CheckForSpce(char cVal)
 
 int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < string,string > >* pcBigMap)
 {
+   const std::lock_guard<std::mutex> lock(g_i_ConfigParser_mutex);
    char lcBuffer[cString.length() + 1];
    char lcBufferForDQ[cString.length() + 1];//Temp Buffer for handling '"' strings
    memset(lcBuffer, 0 , cString.length() + 1);
@@ -299,6 +319,7 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
 
 int  GetConfig(char* cFileName,void* pMap)
 {
+    const std::lock_guard<std::mutex> lock(g_i_ConfigParser_mutex);
     if(cFileName == NULL || pMap == NULL)
     {
         return -1;

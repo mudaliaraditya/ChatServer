@@ -1188,75 +1188,76 @@ void* ProcessThread(void* pArg)
    {
 
       TESTLOG("%s ","Thread getting inside loop");
-      lnReturnVal = pthread_mutex_lock(&g_cProcessMutex);
-      if (lnReturnVal != 0)
       {
-         printf("%s, %d ", strerror(errno), __LINE__);
-         perror("unable to take lock");
-         exit(EXIT_FAILURE);
-      }
-#ifdef LOGGING
-      TESTLOG("%s %d","Taking Process Mutex in Process Thread" , __LINE__);
-#endif
-#ifdef LOGGING
-      TESTLOG("In function ProcessThread thread id = %d\n", pthread_self());
-#endif
-
-
-      while(g_cProcessList.empty())
-      {
-         TESTLOG("%s ","taking conditional lock");
-         pthread_cond_wait(&g_cCondVarForProcessThread, &g_cProcessMutex);
-         TESTLOG("%s ","unlocking mutex after conditional lock");
-         //lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
+         lnReturnVal = pthread_mutex_lock(&g_cProcessMutex);
          if (lnReturnVal != 0)
          {
-            printf("%s, %d", strerror(errno), __LINE__);
-            perror("unable to unlock");      
+            printf("%s, %d ", strerror(errno), __LINE__);
+            perror("unable to take lock");
             exit(EXIT_FAILURE);
          }
-#ifdef LOGGING
-         TESTLOG("%s %d", "Releasing Process Mutex in cond var" , __LINE__ );
-#endif
-         if((false == g_bProgramShouldWork) && g_cProcessList.empty())
+         #ifdef LOGGING
+           TESTLOG("%s %d","Taking Process Mutex in Process Thread" , __LINE__);
+        #endif
+        #ifdef LOGGING
+           TESTLOG("In function ProcessThread thread id = %d\n", pthread_self());
+        #endif
+
+
+         while(g_cProcessList.empty())
          {
+            TESTLOG("%s ","taking conditional lock");
+            pthread_cond_wait(&g_cCondVarForProcessThread, &g_cProcessMutex);
+            TESTLOG("%s ","unlocking mutex after conditional lock");
             //lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
             if (lnReturnVal != 0)
             {
                printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to unlock");
+               perror("unable to unlock");      
                exit(EXIT_FAILURE);
             }
-            break;
+   #ifdef LOGGING
+            TESTLOG("%s %d", "Releasing Process Mutex in cond var" , __LINE__ );
+   #endif
+               if((false == g_bProgramShouldWork) && g_cProcessList.empty())
+            {
+               //lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
+               if (lnReturnVal != 0)
+               {
+                  printf("%s, %d", strerror(errno), __LINE__);
+                  perror("unable to unlock");
+                  exit(EXIT_FAILURE);
+               }
+               break;
             //return NULL;
-         }
+            }
          //continue;
-      }
-      if(!g_cProcessList.empty())
-      {
+         }
+         if(!g_cProcessList.empty())
+         {
 
-#ifdef LOGGING
-         TESTLOG("%s", "process thread process mutex acquired" );
-#endif
-         lstData = g_cProcessList.front();
-         TESTLOG( "Process fired" );
-         g_cProcessList.pop_front();         
-      }
-      else
-      {
-          //if(false == g_bProgramShouldWork)
-           {
-             lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
-             if (lnReturnVal != 0)
-             {  
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to unlock");
-               exit(EXIT_FAILURE);
+   #ifdef LOGGING
+            TESTLOG("%s", "process thread process mutex acquired" );
+   #endif
+            lstData = g_cProcessList.front();
+            TESTLOG( "Process fired" );
+            g_cProcessList.pop_front();         
+         }
+         else
+         {
+             //if(false == g_bProgramShouldWork)
+             {
+               lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
+               if (lnReturnVal != 0)
+               {  
+                  printf("%s, %d", strerror(errno), __LINE__);
+                 perror("unable to unlock");
+                 exit(EXIT_FAILURE);
+               }
+                continue; 
              }
-             continue; 
-           }
+        }
       }
-
       TESTLOG("%s %d %s ","the thread no is",pthread_self(), lstData->cBuffer );
 
       lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
@@ -1285,13 +1286,13 @@ void* ProcessThread(void* pArg)
       {
          if(lnReturnVal == -1)
          {
-             lnReturnVal = pthread_mutex_unlock(&g_cResponseMutex);
+             /*lnReturnVal = pthread_mutex_unlock(&g_cResponseMutex);
              if (lnReturnVal != 0)
              {
                  printf("%s, %d", strerror(errno), __LINE__);
                  perror("unable to take lock");
                  exit(EXIT_FAILURE);
-             }
+             }*/
              continue;
          }
          LOG_LOGGER("%s, %d", strerror(errno), __LINE__);

@@ -5,9 +5,15 @@
 #include <errno.h>
 #include<fstream>
 #include<malloc.h>
+#include <thread>
+#include <mutex>
+
+extern std::mutex g_i_ConfigParser_mutex;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 void*   CreateNewMap();
 

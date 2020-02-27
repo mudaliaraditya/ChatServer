@@ -542,7 +542,11 @@ int ExecuteResponse(tagData& stData)
                g_bWaitForResponse = false;
             }
             break;
-
+          case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_RESPONSE_FAIL):
+             {
+                memset(g_cIdentifier,0,strlen(g_cIdentifier));
+             }
+             break;
           case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE):
             {
                //printf("%s : %s", stData.cIdentifier, stData.cBuffer );

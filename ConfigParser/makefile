@@ -18,13 +18,13 @@ all : .TEST   bin/libconfigparse.so
 
 
 bin/libconfigparse.so : obj/ConfigParser.o
-	${CXX} -o   ${mkfile_dir}/bin/libconfigparse.so  ${mkfile_dir}/obj/ConfigParser.o -shared -fPIC -Ihdr/ -Wall -g 2>>  ${mkfile_dir}/CompileError.txt
+	${CXX} -o   ${mkfile_dir}/bin/libconfigparse.so  ${mkfile_dir}/obj/ConfigParser.o -shared -fPIC -Ihdr/ -Wall -g -std=c++11 2>>  ${mkfile_dir}/CompileError.txt
 
 
 obj/ConfigParser.o :  ${mkfile_dir}/src/ConfigParser.cpp  ${mkfile_dir}/hdr/ConfigParser.h
 	mkdir  ${mkfile_dir}/obj || true
 	mkdir  ${mkfile_dir}/bin || true
-	${CXX} -c  ${mkfile_dir}/src/ConfigParser.cpp -shared -Ihdr/ -g -fPIC -Wall 2>>  ${mkfile_dir}/CompileError.txt
+	${CXX} -c  ${mkfile_dir}/src/ConfigParser.cpp -shared -Ihdr/ -g -fPIC -Wall -std=c++11 2>>  ${mkfile_dir}/CompileError.txt
 	mv  ${mkfile_dir}/ConfigParser.o  ${mkfile_dir}/obj/.
 
 
