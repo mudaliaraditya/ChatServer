@@ -1,14 +1,5 @@
 #include<stdio.h>
 #include "ConfigParserFunctions.h"
-/*
-  KEY_OF_CONFIG = VAL_OF_KEY
-
-  PORT          = 100
-
-  HOSTNAME      = localhost
-
-*/
-
 
 int main()
 {

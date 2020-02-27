@@ -1,9 +1,17 @@
 #pragma once
 
+
+struct ConfigParserHandle;
+typedef struct ConfigParserHandle ConfigParserHandle;
+
+
+
+
 #ifdef __cplusplus
 
 
 extern "C" {
+
 
 
 
