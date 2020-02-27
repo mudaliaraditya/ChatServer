@@ -3,7 +3,7 @@
 #include <dlfcn.h>
 #include <string.h>
 #include "encrypt.h"
-#include "ConfigParser.h"
+#include "ConfigParserFunctions.h"
 
 
 #define ENCRYPT_CONFIG "encrypt-config.txt"

@@ -33,7 +33,7 @@
 #include "Functions.h"
 #include "typedefs.h"
 #include "Globals.h"
-#include "ConfigParser.h"
+#include "ConfigParserFunctions.h"
 #include "client.h"
 #include "NetworkSources.h"
 #include "Encryptcall.h"

@@ -33,7 +33,7 @@
 #include "AllClasses.h"
 #include "NetworkHeader.h"
 #include "functions.h"
-#include "ConfigParser.h"
+#include "ConfigParserFunctions.h"
 #include "Source.h"
 #include "Encryptcall.h"
 #include "Logger.h"

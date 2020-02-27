@@ -6,6 +6,7 @@
 #include <fstream>
 #include <malloc.h>
 #include "ConfigParser.h"
+#include "ConfigParserFunctions.h"
 using namespace std;
 std::mutex g_i_ConfigParser_mutex;
 #ifdef __cplusplus
