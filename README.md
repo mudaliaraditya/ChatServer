@@ -1,3 +1,4 @@
+
 <h1>ChatServer</h1>
 Last Updated date [27/02/2020]
 Contact [mudaliar.aditya@gmail.com](mailto:mudaliar.aditya@gmail.com)
@@ -24,5 +25,6 @@ Features To be Added
  12. Making Code Modular(Pending)
 
 Recent Updates:
-   =)Updated and Changed ConfigParser
-   =)Made a Few Functions Modular
+
+ -     Updated and Changed ConfigParser
+ -     Made a Few Functions Modular
