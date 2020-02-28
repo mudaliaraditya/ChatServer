@@ -6,6 +6,10 @@ all : .TEST server.out libconfigparse.so  libencrypt.so Logs
 Logs :
 	mkdir Logs
 
+cleanLogs :
+	rm -rf Logs
+	mkdir Logs
+
 .TEST : server.out
 	rm -rf CompileError.txt
 	touch CompileError.txt
@@ -29,7 +33,7 @@ libconfigparse.so : ../ConfigParser/.Complete
 	cd ../ConfigParser/ && make 2>> CompileError.txt
 
 Source.o : Source.cpp
-	${CXX} -c Source.cpp Logger.cpp -std=c++11 -ggdb3 -lpthread -g -I../ConfigParser/hdr -I../EncyptingFunc -DLOGGING -I../EncyptingFunc/encryptor/ 2>> CompileError.txt
+	${CXX} -c Source.cpp Logger.cpp -std=c++11 -ggdb3 -lpthread -g -I../ConfigParser/hdr -I../EncyptingFunc  -I../EncyptingFunc/encryptor/ 2>> CompileError.txt
 
 NetworkSources.o : NetworkSources.cpp
 	${CXX} -c NetworkSources.cpp -ldl -std=c++11 -ggdb3 -lpthread -g -I../ConfigParser/hdr -I../EncyptingFunc -I../EncyptingFunc/encryptor/ 2>> CompileError.txt

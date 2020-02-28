@@ -47,4 +47,13 @@ enum class CEToFromServer : long
  //  CEToFromServer_INVALID = 0;
 };
 
+enum class CEChatState : long
+{
+   CEChatState_INIT = 0,
+   CEChatState_SELF_REGISTERED = 1,
+   CEChatState_TARGET_REGISTERED = 2,
+   CEChatState_CHAT_STATE = 3,
+};
+
+
 #endif

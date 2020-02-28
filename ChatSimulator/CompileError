@@ -1,0 +1,92 @@
+client.cpp:1014:140: warning: backslash and newline separated by space
+     MESSAGE_CODE_ACTIONS_CHAT_RESPONSE                 = 1006,//this is from server to client that message has been receved at the server\n\
+                                                                                                                                             
+client.cpp: In function ‘void* SendThread(void*)’:
+client.cpp:74:1: warning: no return statement in function returning non-void [-Wreturn-type]
+ }
+ ^
+client.cpp: In function ‘void* CheckRespond(void*)’:
+client.cpp:90:1: warning: no return statement in function returning non-void [-Wreturn-type]
+ }
+ ^
+client.cpp: In function ‘void* RecvThread(void*)’:
+client.cpp:119:1: warning: no return statement in function returning non-void [-Wreturn-type]
+ }
+ ^
+client.cpp: In function ‘long int GetResendingTime()’:
+client.cpp:258:62: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    int lnRetVal = GetConfig(CNF_RESEND_TIME_TAG,pConfigObject);
+                                                              ^
+client.cpp:263:98: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    const char* lcResendTime = ((GetValueForKey(CNF_RESEND_TIME_TAG, CNF_FILE_NAME , pConfigObject)));
+                                                                                                  ^
+client.cpp:263:98: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+client.cpp: In function ‘void* CheckResponse(void*)’:
+client.cpp:464:1: warning: no return statement in function returning non-void [-Wreturn-type]
+ }
+ ^
+client.cpp: In function ‘int ClearResenderStore()’:
+client.cpp:669:1: warning: no return statement in function returning non-void [-Wreturn-type]
+ }
+ ^
+client.cpp: In function ‘int GetConfiguration(char*, int, char*, int)’:
+client.cpp:1442:99: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    const char* lcPortOfServerOnHeap = ((GetValueForKey(CNF_PORT_TAG, CNF_FILE_NAME , pConfigObject)));
+                                                                                                   ^
+client.cpp:1442:99: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+client.cpp:1458:93: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    const char* lcServerIPi=((GetValueForKey(CNF_SERVER_IP_TAG, CNF_FILE_NAME , pConfigObject)));
+                                                                                             ^
+client.cpp:1458:93: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+client.cpp: In function ‘void* PrintMessagesFromSet(void*)’:
+client.cpp:1497:1: warning: no return statement in function returning non-void [-Wreturn-type]
+ }
+ ^
+client.cpp: In function ‘int main(int, char**)’:
+client.cpp:1540:51: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    lnRetVal =GetConfig(CNF_FILE_NAME,pConfigObject);
+                                                   ^
+client.cpp: In function ‘int GetConfiguration(char*, int, char*, int)’:
+client.cpp:1476:1: warning: control reaches end of non-void function [-Wreturn-type]
+ }
+ ^
+../EncyptingFunc/Encryptcall.c: In function ‘int Encrypt(char*, long long int)’:
+../EncyptingFunc/Encryptcall.c:12:58: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    int lnRetVal =  GetConfig(ENCRYPT_CONFIG,pConfigObject);
+                                                          ^
+../EncyptingFunc/Encryptcall.c:17:89: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    char* lcEncryptKey1  =  ((GetValueForKey(ENCRYPT_KEY1, ENCRYPT_CONFIG , pConfigObject)));
+                                                                                         ^
+../EncyptingFunc/Encryptcall.c:17:89: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+../EncyptingFunc/Encryptcall.c:22:90: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+     char* lcEncryptKey2  =  ((GetValueForKey(ENCRYPT_KEY2, ENCRYPT_CONFIG , pConfigObject)));
+                                                                                          ^
+../EncyptingFunc/Encryptcall.c:22:90: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+../EncyptingFunc/Encryptcall.c:28:93: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+     char* lcEncryptingFunc = ((GetValueForKey(ENCRYPT_METHOD, ENCRYPT_CONFIG , pConfigObject)));
+                                                                                             ^
+../EncyptingFunc/Encryptcall.c:28:93: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+../EncyptingFunc/Encryptcall.c:34:93: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+     char* lcDecryptingFunc = ((GetValueForKey(DECRYPT_METHOD, ENCRYPT_CONFIG , pConfigObject)));
+                                                                                             ^
+../EncyptingFunc/Encryptcall.c:34:93: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+../EncyptingFunc/Encryptcall.c: In function ‘int Decrypt(char*, long long int)’:
+../EncyptingFunc/Encryptcall.c:98:58: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    int lnRetVal =  GetConfig(ENCRYPT_CONFIG,pConfigObject);
+                                                          ^
+../EncyptingFunc/Encryptcall.c:103:89: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+    char* lcEncryptKey1  =  ((GetValueForKey(ENCRYPT_KEY1, ENCRYPT_CONFIG , pConfigObject)));
+                                                                                         ^
+../EncyptingFunc/Encryptcall.c:103:89: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+../EncyptingFunc/Encryptcall.c:108:90: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+     char* lcEncryptKey2  =  ((GetValueForKey(ENCRYPT_KEY2, ENCRYPT_CONFIG , pConfigObject)));
+                                                                                          ^
+../EncyptingFunc/Encryptcall.c:108:90: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+../EncyptingFunc/Encryptcall.c:114:93: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+     char* lcEncryptingFunc = ((GetValueForKey(ENCRYPT_METHOD, ENCRYPT_CONFIG , pConfigObject)));
+                                                                                             ^
+../EncyptingFunc/Encryptcall.c:114:93: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+../EncyptingFunc/Encryptcall.c:120:93: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+     char* lcDecryptingFunc = ((GetValueForKey(DECRYPT_METHOD, ENCRYPT_CONFIG , pConfigObject)));
+                                                                                             ^
+../EncyptingFunc/Encryptcall.c:120:93: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]

@@ -1,0 +1,12 @@
+########################################
+#                                      #
+#           ENCRYPT-CONFIG             #
+#                                      #
+########################################
+      ENCRYPT_METHOD  =   dofunc
+
+      DECRYPT_METHOD  =   dofunc
+
+      ENCRYPT_KEY1    =   2 
+
+      ENCRYPT_KEY2    =   2

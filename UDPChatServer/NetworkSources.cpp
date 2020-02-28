@@ -20,6 +20,7 @@ void FillSockAddrin(long sin_family, unsigned short int sin_port, long long sin_
 
 int NetWorkInitialize(int& nSockfd)
 {
+   TESTLOG("NetworkInitialize called");
    if(pConfigObject == NULL)
    {
       return -1;

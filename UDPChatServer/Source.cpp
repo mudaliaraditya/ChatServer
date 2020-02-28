@@ -249,6 +249,7 @@ int ExecuteFunction(tagData& stData)
    int lnRetVal = 0;
    long lnMessageCode = stData.nMessageCode;
    tagData* lpstData = nullptr;
+   TESTLOG("Execute function called");
    int lnReturnVal = 0;
    switch (lnMessageCode)
    {
@@ -297,6 +298,7 @@ int ExecuteFunction(tagData& stData)
                LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
                exit(EXIT_FAILURE);
             }
+            TESTLOG("Registered user in store");
             
          }
          break;
@@ -670,7 +672,7 @@ void* RecieverThread(void* pData)
                               lpstData = nullptr;
                       }
                       //printf("%s, %d", strerror(errno), __LINE__);
-                      LOG_LOGGER("%s : RecvUDPData failed", strerror(errno));
+                      LOG_LOGGER("stderr : %s : RecvUDPData failed", strerror(errno));
                       exit(EXIT_FAILURE);
               }
      }
@@ -1674,6 +1676,8 @@ int main()
       TESTOUT("Error in intializing Log files exiting");
       return -1;
    }
+   //TESTOUT("ERROR and Data Logging Initialized");
+   TESTLOG("LOGGING started");
 
    //LOG File Handling END
    //LOG_LOGGER("%d",1);

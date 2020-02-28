@@ -1,0 +1,11 @@
+14:51:41.742254 28-01-2020 | 1784 | lstData.nGlobalIdentifier is set as 0 
+ | PreSender() | thread id :140171691575104 | client.cpp:999
+14:53:30.855263 28-01-2020 | 1784 | ABC 
+ | main() | thread id :140171691575104 | client.cpp:1705
+14:53:30.855448 28-01-2020 | 1784 | lstData.nGlobalIdentifier is set as 0 
+ | PreSender() | thread id :140171691575104 | client.cpp:999
+14:53:30.855448 28-01-2020 | 1784 | lstData.nGlobalIdentifier is set as 0 
+ | PreSender() | thread id :140171691575104 | client.cpp:999
+14:53:30.855528 28-01-2020 | 1784 | Releasing sender lock 734 
+ | SenderThread() | thread id :140171683178240 | client.cpp:734
+14:53:30.856413 28-01-2020 | 1784 | adding to resender store : resend time 1582881820 count 3 message code 1001 | AddResendingMessageToEventStoreWithCount() | thread id :140171683178240 | client.cpp:288
