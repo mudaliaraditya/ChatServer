@@ -532,6 +532,7 @@ int ExecuteResponse(tagData& stData)
                TESTLOG("response recieved %d \n",stData.nGlobalIdentifier);
                TESTLOG("Identifier Registered %s \n",stData.cIdentifier);
                g_nGlobalIdentifier = stData.nGlobalIdentifier;
+                 
                g_bWaitForResponse = false;
             }
             break;
@@ -815,11 +816,45 @@ void* RecieverThread(void* pVData)
           pthread_mutex_lock(&g_GlobalSeqnoMutex);
           if(lstRecvData.bFinalResponse == true)
           {
+
+
+
+/*
+
+
+
+struct tagData
+{
+    short            nCommand;
+    long long        nGlobalIdentifier;
+    char             cIdentifier[20 + 1];
+    int              nFrOrToServerFlg;
+    long             nMessageCode;
+    char             cBuffer[MAXLINE + 1];
+    char             cTarget[20 + 1];
+    char             cUniqueMessageIdentifier[30 + 1];
+    int              nSeqNo;
+    bool             bFinalResponse;
+    int              nLatestClntSeqNo;
+    int              nSessionId;
+    tagNetworkThread stNetWork;
+};
+
+
+
+
+*/
+
             TESTLOG( "Getting into loop of order packet %d", lstRecvData.nSeqNo);
             TESTLOG( "Current latest seqno is %d", g_nLatestRecivedSequenceNo);
             TESTLOG( "the message code is %d", lstRecvData.nMessageCode);
             TESTLOG( "the Identifer is %s", lstRecvData.cIdentifier);
-            TESTLOG( "the Identifer is %s", lstRecvData.cTarget);
+            TESTLOG( "the command is %d", lstRecvData.nCommand);
+            TESTLOG( "the buffer is %s", lstRecvData.cBuffer);
+            TESTLOG( "the unique id is %s", lstRecvData.cUniqueMessageIdentifier);
+            TESTLOG( "the final resp flag is %d", lstRecvData.bFinalResponse);
+            TESTLOG( "the session id is %d", lstRecvData.nSessionId);
+            TESTLOG( "the target Identifer is %s", lstRecvData.cTarget);
 
             if(lstRecvData.nSeqNo == g_nExpectedSeqNo)
             {
@@ -1024,6 +1059,10 @@ struct tagData
                       //while ((getchar()) != '\n');
                       cout << "enter identifier c" << endl;
                       cin >> stData.cIdentifier;
+                      if(stData.cIdentifier[0] == '\\')
+                      {
+                            stData.cIdentifier[0] = 0;
+                      }
                       cout << "enter command i" << endl;
                       cin >> stData.nCommand;
                       cout << "enter global identifier i" << endl;
@@ -1034,10 +1073,23 @@ struct tagData
                       cin >> stData.nMessageCode;
                       cout << "enter Buffer data c" << endl;
                       cin >> stData.cBuffer;
+
+                      if(stData.cBuffer[0] == '\\')
+                      {
+                            stData.cBuffer[0] = 0;
+                      }
                       cout << "enter Target c" << endl;
                       cin >> stData.cTarget;
+                      if(stData.cTarget[0] == '\\')
+                      {
+                            stData.cTarget[0] = 0;
+                      }
                       cout << "enter UniqueMesageIdentifier c" << endl;
                       cin >> stData.cUniqueMessageIdentifier;
+                      if(stData.cUniqueMessageIdentifier[0] == '\\')
+                      {
+                            stData.cUniqueMessageIdentifier[0] = 0;
+                      }
                       cout << "enter SeqNo i" << endl;
                       cin >> stData.nSeqNo;
                       cout << "enter FinalResponse b" << endl;
