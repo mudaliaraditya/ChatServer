@@ -730,6 +730,22 @@ void* SenderThread(void* pVData)
           if(!g_cSenderDataStore.empty())
           {
             lstToSendData = g_cSenderDataStore.front();
+
+
+            TESTLOG( "sequence no is  %d", lstToSendData.nSeqNo);
+            TESTLOG( "Current latest seqno is %d", g_nLatestRecivedSequenceNo);
+            TESTLOG( "the message code is %d", lstToSendData.nMessageCode);
+            TESTLOG( "the Identifer is %s", lstToSendData.cIdentifier);
+            TESTLOG( "the command is %d", lstToSendData.nCommand);
+            TESTLOG( "the buffer is %s", lstToSendData.cBuffer);
+            TESTLOG( "the unique id is %s", lstToSendData.cUniqueMessageIdentifier);
+            TESTLOG( "the final resp flag is %d", lstToSendData.bFinalResponse);
+            TESTLOG( "the session id is %d", lstToSendData.nSessionId);
+            TESTLOG( "the target Identifer is %s", lstToSendData.cTarget);
+
+
+
+
             g_cSenderDataStore.pop_front();
             pthread_mutex_unlock(&g_SenderMutex);
             TESTLOG ("Releasing sender lock %d \n",__LINE__);
@@ -845,7 +861,7 @@ struct tagData
 
 */
 
-            TESTLOG( "Getting into loop of order packet %d", lstRecvData.nSeqNo);
+            TESTLOG( "sequence no is  %d", lstRecvData.nSeqNo);
             TESTLOG( "Current latest seqno is %d", g_nLatestRecivedSequenceNo);
             TESTLOG( "the message code is %d", lstRecvData.nMessageCode);
             TESTLOG( "the Identifer is %s", lstRecvData.cIdentifier);
@@ -1655,11 +1671,11 @@ int main(int argc,char* argv[])
    }
    while(g_bProgramShouldWork == true)
    {
-          do
+          //do
           {
             //SetRand(lstData.cUniqueMessageIdentifier,30);
           }
-          while(VerifyUniqueness(lstData.cUniqueMessageIdentifier) != 0);
+          //while(VerifyUniqueness(lstData.cUniqueMessageIdentifier) != 0);
           pthread_mutex_lock(&g_GlobalSeqnoMutex);
           if((g_nSeqNo + 1) != INT_MAX)
           {
