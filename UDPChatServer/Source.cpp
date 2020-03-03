@@ -1140,7 +1140,7 @@ int RejectDummyMsgCode(long long nMessageCode)
 {
    if(nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY)
    {
-      return -1;
+      return (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY;
    }
    return 0;
 }
@@ -1284,9 +1284,9 @@ void* ProcessThread(void* pArg)
       //sleep(3);
 
       lnReturnVal  = HandleRequest(lstData);
-      if(lnReturnVal <= -1)
+      if(lnReturnVal != 0)
       {
-         if(lnReturnVal == -1)
+         if(lnReturnVal == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY)
          {
              /*lnReturnVal = pthread_mutex_unlock(&g_cResponseMutex);
              if (lnReturnVal != 0)

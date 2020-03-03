@@ -108,6 +108,12 @@ loggingout:    \
 
 
 long getMicrotime();
+
+
+// cFileStream -- On which file to write
+// cPath       -- Directory Of the file
+// cName       -- Name Of the file
+// cExt        -- extension of the file
 int InitiateLoggingFor(std::fstream& cFileStream,char* cPath,char* cName,char* cExt);
 
 

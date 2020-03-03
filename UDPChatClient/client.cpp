@@ -1400,6 +1400,13 @@ void* PrintMessagesFromSet(void* cArg)
   }
 }
 
+
+#ifndef COREGEN
+static void SetCoreUnlimited()
+{
+   return;
+}
+#endif
 #ifdef COREGEN
 static void SetCoreUnlimited()
 {
@@ -1407,8 +1414,8 @@ static void SetCoreUnlimited()
    lstRLimit.rlim_cur = RLIM_INFINITY;
    lstRLimit.rlim_max = RLIM_INFINITY;
    setrlimit( RLIMIT_CORE, &lstRLimit );
+   return;
 }
-
 #endif
 
 
@@ -1427,6 +1434,7 @@ int MakeHandlerHandleSignal(int nSignal ,void (*pHandleSignal)(int))
 //UDpChatServer 21/12/2018 Aditya M.:END
 int main(int argc,char* argv[])
 {
+   SetCoreUnlimited();
    g_PID = getpid();
    g_nPThreadMain = pthread_self();
    if(0 !=   MakeHandlerHandleSignal(SIGINT,HandleSignal))
