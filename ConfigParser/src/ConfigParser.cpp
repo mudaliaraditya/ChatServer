@@ -29,13 +29,13 @@ extern "C"
 ConfigParserHandle*   CreateNewMap()
 {
     const std::lock_guard<std::mutex> lock(g_i_ConfigParser_mutex);
-    return (ConfigParserHandle*)(new map< string,map < string,string > >);
+    return (ConfigParserHandle*)(new ConfigParserConfigHolder());
 }
 
 void DeleteNewMap(void* pMap)
 {
     const std::lock_guard<std::mutex> lock(g_i_ConfigParser_mutex);
-    map< string,map < string,string > >* lpcMap = (map< string,map < string,string > >*)pMap;
+    ConfigParserConfigHolder* lpcMap = (ConfigParserConfigHolder*)pMap;
     delete lpcMap;
     pMap = NULL;
 }
@@ -45,14 +45,14 @@ void DeleteNewMap(void* pMap)
 char* GetValueForKey(char* cKey,char* cFileName , ConfigParserHandle* pcVMap)
 {
    const std::lock_guard<std::mutex> lock(g_i_ConfigParser_mutex);
-   map<string, map<string,string> >* pcMap = (map<string, map<string,string> >*)pcVMap;    
-   map<string, map<string,string> >::iterator lcIterator =  pcMap->find(cFileName);
+   ConfigParserConfigHolder* pcMap = (ConfigParserConfigHolder*)pcVMap;    
+   ConfigParserConfigHolder::iterator lcIterator =  pcMap->find(cFileName);
    if(lcIterator == pcMap->end())
    { 
         return NULL;
    }
-   map<string,string> lcNao = lcIterator->second;
-   map<string,string>::iterator lcIteratori =  lcNao.find(cKey);
+   ConfigKeyVal lcNao = lcIterator->second;
+   ConfigKeyVal::iterator lcIteratori =  lcNao.find(cKey);
    if(lcIteratori == lcNao.end())
    {    
         return NULL;
@@ -179,7 +179,7 @@ int CheckForSpce(char cVal)
 
 
 
-int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < string,string > >* pcBigMap)
+int AddTokenToStore(string cString,ConfigKeyVal& cMap,ConfigParserConfigHolder* pcBigMap)
 {
    char lcBuffer[cString.length() + 1];
    char lcBufferForDQ[cString.length() + 1];//Temp Buffer for handling '"' strings
@@ -308,7 +308,7 @@ int AddTokenToStore(string cString,map<string,string>& cMap,map< string,map < st
          }
          lnCounter++;
    }
-   pair<map<std::string,std::string>::iterator,bool> lcIter =  cMap.insert(pair<string,string>(lcKey,lcVal));
+   pair<ConfigKeyVal::iterator,bool> lcIter =  cMap.insert(pair<string,string>(lcKey,lcVal));
    if(lcIter.second == false )
    {
        //cout << "duplicate" << endl;
@@ -324,8 +324,8 @@ int  GetConfig(char* cFileName,ConfigParserHandle* pMap)
     {
         return -1;
     }
-    map< string,map < string,string > >* lpcBigMap = (map< string,map < string,string > >*)pMap;
-    map<string,string> lcMap;
+    ConfigParserConfigHolder* lpcBigMap = (ConfigParserConfigHolder*)pMap;
+    ConfigKeyVal lcMap;
     int lnRetVal = 0;
     std::fstream file(cFileName);
     std::string str;
@@ -336,7 +336,7 @@ int  GetConfig(char* cFileName,ConfigParserHandle* pMap)
          return -1;
       }
     }
-    pair<map< string,map < string,string > >::iterator,bool> lcInsertIter = lpcBigMap->insert(pair<string, map<string,string> >(cFileName,lcMap));
+    pair< ConfigParserConfigHolder::iterator,bool> lcInsertIter = lpcBigMap->insert(pair<string, ConfigKeyVal >(cFileName,lcMap));
     if(lcInsertIter.second == false)
     {
       return -1;

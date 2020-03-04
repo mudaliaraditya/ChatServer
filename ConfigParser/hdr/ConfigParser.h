@@ -8,7 +8,7 @@
 #include<fstream>
 #include <thread>
 #include <mutex>
-
+#include <unordered_map>
 
 struct ConfigParserHandle
 {
@@ -19,5 +19,5 @@ struct ConfigParserHandle
 
 
 extern std::mutex g_i_ConfigParser_mutex;
-
-
+typedef std::unordered_map<std::string, std::string> ConfigKeyVal;
+typedef std::unordered_map<std::string, ConfigKeyVal>  ConfigParserConfigHolder;
