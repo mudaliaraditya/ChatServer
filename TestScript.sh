@@ -26,14 +26,14 @@ trap cleanup SIGINT SIGKILL
 ##########
 NOERRORHANDLE=0
 PWD=`pwd`
-cd UDPChatServer
-./TestScriptForServer.sh &
+cd UDPChatServer && ./TestScriptForServer.sh & 
 PIDS=($!)
-cd ..
-sleep 30
-cd UDPChatClient
-./TestRunScriptForClient.sh &
+#cd ..
+sleep 10
+echo "end of sleep"
+cd UDPChatClient &&  ./TestRunScriptForClient.sh & 
 PIDC=($!)
+echo "started clients"
 sleep 15
 NOERRORHANDLE=1;
 while true; do
