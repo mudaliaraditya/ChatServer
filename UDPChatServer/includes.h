@@ -24,6 +24,7 @@
 #include <deque>
 #include <vector>
 #include <stdint.h>
+#include <limits.h>
 #include "defines.h"
 #include "structs.h"
 #include "enums.h"

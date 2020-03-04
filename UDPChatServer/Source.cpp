@@ -297,6 +297,7 @@ int ExecuteFunction(tagData& stData)
             }                                                
             stData.nGlobalIdentifier = g_nClientIdentifier++;
             pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
+            tagData* lpstNewUserData = NULL;
             lpstNewUserData = new tagData(stData);
             if(lpstNewUserData == NULL)
             {

@@ -47,5 +47,5 @@ clean :
 	rm *.so || true
 	rm *.o || true
 	rm .TEST || true
-	rm CompileError.txt
+	rm CompileError.txt || true
 	cd ../ConfigParser/ && make clean || true

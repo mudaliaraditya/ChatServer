@@ -8,7 +8,8 @@ all : .TEST bin/libconfigparse.so
 
 
 .TEST:
-	"." > CompileError.txt
+	rm CompileError.txt || true
+	touch CompileError.txt
 	touch .TEST
 
 
