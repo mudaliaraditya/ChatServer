@@ -18,12 +18,24 @@ enum class CMESSAGE_CODE_ACTIONS : long
     MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY              = 1009,//the reciever client sends this transcode to server to indicate the message has been recieved
     MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY_RES          = 1010,//the server informs the reciever client that the delivery message has reached the server
     MESSAGE_CODE_ACTIONS_CHAT_MSG_SERV_TO_CLI          = 1011,//final server response to the sender messager client
-    MESSAGE_CODE_ACTIONS_REGISTER_RESPONSE_FAIL        = 1012,
-    MESSAGE_CODE_ACTIONS_REGISTER_TARGET_RESPONSE_FAIL = 1013,
-    MESSAGE_CODE_ACTIONS_CHAT_RESPONSE_FAILURE         = 1014,
-    MESSAGE_CODE_ACTIONS_CHAT_MESSAGE_FAILURE          = 1015,
-    MESSAGE_CODE_ACTIONS_CHAT_CANCEL_ALL               = 2000,//revert
-    MESSAGE_CODE_ACTIONS_DUMMY                         = 3000,//to ensure sequence nos are being tracked
+    MESSAGE_CODE_ACTIONS_CHAT_CANCEL_ALL                    = 2000,
+    MESSAGE_CODE_ACTIONS_DUMMY                              = 3000,////to ensure sequence nos are being tracked
+    MESSAGE_CODE_ACTIONS_REGISTER_FAILURE                   = 10012,
+    MESSAGE_CODE_ACTIONS_REGISTER_FAILURE_RESPONSE          = 10013,
+    MESSAGE_CODE_ACTIONS_REGISTER_TARGET_FAILURE            = 10014,
+    MESSAGE_CODE_ACTIONS_REGISTER_TARGET_FAILURE_RESPONSE   = 10015,
+    MESSAGE_CODE_ACTIONS_CHAT_MESSAGE_FAILURE               = 10016,
+    MESSAGE_CODE_ACTIONS_CHAT_MESSAGE_FAILURE_RESPONSE      = 10017,
+    MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY_FAILURE           = 10018,
+    MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY_FAILURE_RESPONSE  = 10019, 
+};
+
+enum class ERRORCODE : int32_t
+{
+    ERRORCODE_MAX_CLIENT                                  =     1114,
+    ERRORCODE_SESION_ERROR                                =     1116,
+    ERRORCODE_CLIENTID_INSERTION_ERROR                    =     1117,
+    ERRORCODE_GLOBAL_IDENTIFIER_NOT_FOUND                 =     1119,
 };
 
 

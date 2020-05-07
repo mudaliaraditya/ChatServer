@@ -10,6 +10,8 @@ struct tagData;
 struct tagCSequenceNo;
 
 struct tagNetworkThread;
+struct tagBufferData;
+
 struct tagNetworkThread
 {
    int                nFD;
@@ -26,18 +28,19 @@ struct tagCSequenceNo
 
 struct tagData
 {
-    short            nCommand;
-    long long        nGlobalIdentifier;
-    char             cIdentifier[20 + 1];
-    int              nFrOrToServerFlg;
-    long             nMessageCode;
-    char             cBuffer[MAXLINE + 1];
-    char             cTarget[20 + 1];
-    char             cUniqueMessageIdentifier[30 + 1];
-    int              nSeqNo;
-    bool             bFinalResponse;
-    int              nLatestClntSeqNo;
-    int              nSessionId;
+
+	short   nCommand;
+	int64_t nGlobalIdentifier;
+	char    cIdentifier[20 + 1];
+	int32_t nFrOrToServerFlg;
+	int32_t nMessageCode;
+	char    cBuffer[MAXLINE + 1];
+	char    cTarget[20 + 1];
+	char    cUniqueMessageIdentifier[30 + 1];
+	int32_t nSeqNo;
+	bool    bFinalResponse;
+	int32_t nLatestClntSeqNo;
+	int32_t nSessionId;
     tagNetworkThread stNetWork;
 };
 

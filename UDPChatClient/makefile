@@ -42,6 +42,14 @@ libencrypt.so : ../EncyptingFunc/encryptor/encrypt.c ../EncyptingFunc/encryptor/
    
 
 
+
+refresh : clean all
+	rm -rf Logs
+	mkdir Logs
+
+
+
+
 clean :
 	rm *.out || true
 	rm *.so || true

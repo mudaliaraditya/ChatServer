@@ -238,6 +238,28 @@ enum CState {
 
 //int g_nSeqNo = 0;
 
+void DummmyBrkPt()
+{
+}
+
+template <typename Mutex,typename Store,typename Data>
+int AddToStore(Mutex& mutex,Store& store,Data& data)
+{
+     pthread_mutex_lock(&mutex);
+     store.push_back(data);
+     pthread_mutex_unlock(&mutex);
+}
+
+template <typename Mutex,typename Store,typename Data>
+void GetFromStore(Mutex& mutex,Store& store,Data& st)
+{
+     pthread_mutex_lock(&mutex);
+     st = store.front();
+     store.pop_front();
+     pthread_mutex_unlock(&mutex);
+     //return stdata;
+}
+
 
 
 tagTimeData  GetTimeTag(tagData stData,long long nTime,int lnNo)
@@ -439,15 +461,16 @@ void* CheckResponse(void*)
                pthread_mutex_unlock(&g_GlobalSeqnoMutex);
                
                TESTLOG("resending data \n");
-               g_cSenderDataStore.push_front(lcIter->second.stData);
+               
                if(lcIter->second.m_nCounter > 1)
                {
                       TESTLOG("Resending Data :%s %d %s %d %s %d %s %s %s %d","Message Code:", lcIter->second.stData.nMessageCode,"the seq no is ", lcIter->second.stData.nSeqNo , " the LatestRecieved Seq no is " , lcIter->second.stData.nLatestClntSeqNo , " from user id and name ", lcIter->second.stData.cIdentifier ," " , lcIter->second.stData.nGlobalIdentifier);
                       lcIter->second.m_nCounter--;
-                      lcIter->second.m_nTime = time(NULL) + 3;
+                      lcIter->second.m_nTime = time(NULL) + GetResendingTime();
+                      g_cSenderDataStore.push_front(lcIter->second.stData);
                       g_cEventResender.insert(pair<time_t,tagTimeData>(lcIter->second.m_nTime,lcIter->second));
                }
-               lnSleeptIme = lcIter->first;
+               lnSleeptIme = lcIter->second.m_nTime;
                g_cEventResender.erase(lcIter);
             }
 
@@ -457,7 +480,8 @@ void* CheckResponse(void*)
           pthread_mutex_unlock(&g_ReSenderMutex);
           if(lnSleeptIme > 0)
           {
-             this_thread::sleep_for(std::chrono::seconds(lnSleeptIme - time(NULL)));
+             //this_thread::sleep_for(std::chrono::seconds(lnSleeptIme - time(NULL)));
+             sleep(lnSleeptIme - time(NULL));
           }
    }
 }
@@ -522,6 +546,7 @@ void SetUniqueRand(char* cBuf,int nSize)
 ///this will be the last place where a message would end/cause effect
 int ExecuteResponse(tagData& stData)
 {
+   TESTLOG("In ExecuteResponse Message Code is %ld ",stData.nMessageCode);
    long lnMessageCode = stData.nMessageCode;
    switch(lnMessageCode)
    {
@@ -535,6 +560,16 @@ int ExecuteResponse(tagData& stData)
             }
             break;
 
+          case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_FAILURE_RESPONSE):
+            {
+                g_nGlobalIdentifier = -1;
+                g_bWaitForResponse = false;
+               
+                 if(0 == AddToStore(g_FeedBackLoopMutex,g_cFeedbackStore,stData))
+                 {
+                 }
+            }
+            break;
           case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET_RESPONSE):
             {
                g_nSessionId = stData.nSessionId;
@@ -542,11 +577,21 @@ int ExecuteResponse(tagData& stData)
                g_bWaitForResponse = false;
             }
             break;
-          case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_RESPONSE_FAIL):
-             {
-                memset(g_cIdentifier,0,strlen(g_cIdentifier));
-             }
-             break;
+          case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET_FAILURE_RESPONSE):
+            {
+               //g_nSessionId = stData.nSessionId;
+               //TESTLOG( "target fixed \n");
+               //g_bWaitForResponse = false;
+               g_nSessionId = 0;
+               //TESTLOG( "target fixed \n");
+               g_bWaitForResponse = false; 
+               if(0 == AddToStore(g_FeedBackLoopMutex,g_cFeedbackStore,stData))
+               {
+               }
+            }
+            break;
+
+
           case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE):
             {
                //printf("%s : %s", stData.cIdentifier, stData.cBuffer );
@@ -586,6 +631,15 @@ int ExecuteResponse(tagData& stData)
 
             }
             break;
+          case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE_FAILURE_RESPONSE:
+            {
+               g_nSessionId = -1;
+               if(0 == AddToStore(g_FeedBackLoopMutex,g_cFeedbackStore,stData))
+               {
+               }
+
+            }
+          break;
           //final transcode indicating that the message has reached the client
           case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_SERV_TO_CLI:
             {
@@ -609,13 +663,14 @@ int ExecuteResponse(tagData& stData)
                TESTLOG("chat sent \n"); 
             }
             break;
+/*
           case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_CANCEL_ALL):
             {
                 TESTLOG("unable to find target reverting");
                 g_nSessionId = 0;
                 g_bWaitForResponse = 0;
                 ClearResenderStore(); 
-            }
+            }*/
           default :
             {
                return -1;
@@ -1001,6 +1056,7 @@ int PreSender(tagData& stData)
    {
           case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER:
             {
+               TESTLOG ("In Message code:%ld:MESSAGE_CODE_ACTIONS_REGISTER",(long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER)); 
                //pthread_mutex_lock(&g_ConsoleIOMutex);
                cout << "Enter your Identifier ID" << endl;
                //pthread_mutex_unlock(&g_ConsoleIOMutex);
@@ -1027,6 +1083,7 @@ int PreSender(tagData& stData)
             break;
           case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET:
             {
+               TESTLOG ("In Message code :%ld:MESSAGE_CODE_ACTIONS_REGISTER_TARGET",(long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER)); 
                TESTLOG("Registering message sent.\n");
 
                memcpy(stData.cIdentifier, g_cIdentifier, 20);
@@ -1057,6 +1114,7 @@ int PreSender(tagData& stData)
           //To send chats
           case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT:
             {
+               TESTLOG ("In Message code :%ld:MESSAGE_CODE_ACTIONS_REGISTER_TARGET",(long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT)); 
                stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT;
                strncpy(stData.cIdentifier, g_cIdentifier, 20);
                if(g_nConnectedTest == 0)
@@ -1166,7 +1224,7 @@ int PreSender(tagData& stData)
                        //cin.clear();
                        //cin.ignore(numeric_limits<streamsize>::max(), '\n');
                        cout << "Enter Chat Data" << endl;
-                       do{
+/*                       do{
                                string lcInput = "";
                                getline(cin, lcInput);
                                if(lcInput.empty())
@@ -1185,6 +1243,62 @@ int PreSender(tagData& stData)
                                }
                        //}while(*(stData.cBuffer) == '\n' || *(stData.cBuffer) == '\0');
                        }while(true);
+*/
+   fd_set lcReadFd;
+   struct timeval TimeValStruct;
+   int lnRetVal;
+   char lcBuffer[100] = {0};
+   int lnReadBytes = 0;
+   /* Watch stdin (fd 0) to see when it has input. */
+
+     /* Wait up to five seconds. */
+   /* Don't rely on the value of TimeValStruct now! */
+   while(true)
+   {
+
+      TimeValStruct.tv_sec = 5;
+      TimeValStruct.tv_usec = 0;
+
+
+      FD_ZERO(&lcReadFd);
+      FD_SET(0, &lcReadFd);
+      lnRetVal = -1;
+      lnRetVal = select(1, &lcReadFd, NULL, NULL, &TimeValStruct);
+      if (lnRetVal == -1)
+      {
+         perror("select()");
+      }
+      else if (lnRetVal)
+      {
+         //printf("Data is available now.\n");
+         //cin >> lcBuffer;
+         //cout << lcBuffer;
+         while ((getchar()) != '\n');
+         lnReadBytes = read(STDIN_FILENO, lcBuffer, 128);
+         //cout << lcBuffer;
+         strncpy(stData.cBuffer, lcBuffer, strnlen(lcBuffer,127));
+         fflush(stdin);
+         if(lnReadBytes==0)
+         {
+           // cout << "Enter Pressed \n";
+           continue;
+         }
+         else
+         {
+            //cout << lcBuffer << endl;
+            break;
+         }
+      }
+      else
+      {
+         //printf("No data within five seconds.\n");
+         //fflush(stdin);
+         if(!g_cFeedbackStore.empty())
+         return 112;
+         continue;
+      }
+   }
+
                }
                stData.nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST;
                stData.nFrOrToServerFlg = (long)CEToFromServer::CEToFromServer_CLNT_TO_SERV;
@@ -1258,6 +1372,45 @@ int JoinKillThreads()
                       exit(EXIT_FAILURE);
                }
     return 0;
+}
+int HandleFailure(tagData& stData,int32_t nMessageCode)
+{
+   TESTLOG ("In HandleFailure");
+   switch(nMessageCode)
+   {
+
+      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_FAILURE_RESPONSE):
+         {
+            // g_nGlobalIdentifier = -1;
+            stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER;
+         }
+         break;
+
+      case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET_FAILURE_RESPONSE:
+         {
+            stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET;
+            // g_nSessionId = stData.nSessionId;
+            // TESTLOG( "target fixed \n");
+            // g_bWaitForResponse = false;
+         }
+         break;
+      case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE_FAILURE_RESPONSE:
+         {
+            stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET;
+
+         }
+         break;
+
+      case (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY_FAILURE_RESPONSE:  
+         {
+
+            stData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT;
+         }
+         break;
+
+   }
+   return 0;
+
 }
 
 void HandleSignal(int nSignal)
@@ -1417,6 +1570,21 @@ static void SetCoreUnlimited()
    return;
 }
 #endif
+   
+   int AddDummyMessagingForSeqNo()
+   {
+          int lnRetVal = 0;
+          tagData lstDummyMessageData = {0};
+          lstDummyMessageData.nMessageCode =(long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY;
+          SetRand(lstDummyMessageData.cUniqueMessageIdentifier,30);
+          lnRetVal = AddResendingMessageToEventStoreDummy(lstDummyMessageData);
+          if (lnRetVal != 0)
+          {
+                  LOG_LOGGER("%s","Error in First Message");
+                  return -1;
+          }
+          return 0;
+   }
 
 
 int MakeHandlerHandleSignal(int nSignal ,void (*pHandleSignal)(int))
@@ -1432,6 +1600,7 @@ int MakeHandlerHandleSignal(int nSignal ,void (*pHandleSignal)(int))
 
 
 //UDpChatServer 21/12/2018 Aditya M.:END
+
 int main(int argc,char* argv[])
 {
    SetCoreUnlimited();
@@ -1457,6 +1626,262 @@ int main(int argc,char* argv[])
    }
 
 
+   //long nTime = time(NULL) +  GetResendingTime() ;
+   //cout << time(NULL) << endl;
+   //cout << nTime  << endl;
+   //sleep(nTime - time(NULL));
+   lnRetVal = InitiateLogging();
+   if(lnRetVal != 0)
+   {
+      return -1;
+   }
+   g_nArgs = argc;
+   g_nFlagNoResendDupli = 0;
+   g_pcParam = argv;
+//for random no generation
+   srand ((time(NULL)));
+
+
+   key_t key = ftok("shmfile",65); 
+
+   //shared mem use 
+   // shmget returns an identifier in shmid 
+   int shmid = shmget(key, sizeof(tagSharedMem),0666|IPC_CREAT); 
+
+   //shared mem handling 
+   tagSharedMem* lpstSharedmemData = (tagSharedMem*) shmat(shmid,(void*)0,0);
+   memset(lpstSharedmemData, 0,sizeof(tagSharedMem));
+   lpstSharedmemData->nState = STATE_INITIALIZE;
+   //shared mem use
+   //int lnRetVal = 0;
+   char lcBufferServerIP[100 + 1];
+   char lcBufferPort[100 + 1];
+   //char* cServerIP,int nServerIPLen ,char* cPort,int nPortLen
+   lnRetVal  = GetConfiguration(lcBufferServerIP,100, lcBufferPort,100);
+   if ( 0 > lnRetVal)
+   {
+      cout << "invalid config" << endl;
+      exit(EXIT_FAILURE);
+   }
+   time_t     lnTime =         0;
+              lnTime =         time(NULL);
+   struct tm* lpsttm =          gmtime(&lnTime);
+   char       lcBuffera[200] = {0};
+   int        lnRandNo =       rand()%100;
+   int        lnUnsentMsg = 0;
+   char lcSeqIdentifier[LENGHT_OF_BASE_SEQ_NO + 1] = {0};
+
+
+   //if the user starts the program the following way
+   // ./a.out TEST ABC QWE
+   //where ABC will be the identififier and QWE be target
+   if(argc == 5)
+   {
+          if( strncmp("TEST", g_pcParam[1], 4) == 0)
+          {
+             g_nTesting = 1;
+          }
+   }
+   else if(argc == 4)
+   {
+          if( strncmp("TEST", g_pcParam[1], 4) == 0)
+          {
+            g_nTesting = 1;
+          }
+   }
+   else if(argc == 2)
+   {
+         if( strncmp("TEST", g_pcParam[1], 4) == 0)
+          {
+            g_nTesting = 2;
+          }
+   }
+
+   size_t lnLen = 0;
+   if ( (g_nSockFd = CreateUDPSocketIP()) < 0 )
+   {
+          perror("socket creation failed");
+          exit(EXIT_FAILURE);
+   }
+
+   FillSockAddrin(AF_INET, htons(atol(lcBufferPort)), (in_addr_t)(inet_addr(lcBufferServerIP)), &g_ServAddr);
+
+   tagData lstData = {0};
+
+   lstData.stNetWork.nFD                = g_nSockFd;
+   lstData.stNetWork.nMessageLen        = sizeof(tagData);
+   lstData.stNetWork.nFlags             = MSG_WAITALL;
+   lstData.stNetWork.stSockAddr         = g_ServAddr;
+   lstData.stNetWork.nSockLen           = sizeof(g_ServAddr);
+
+   g_pstThrdDataRcvr = new tagData();
+   g_pstThrdSndr     = new tagData();
+#ifdef LOGGING
+   TESTLOG( "sockfd is %d\n", g_pstThrdDataRcvr->stNetWork.nFD );
+#endif
+   //sleep(1);
+   //Creation Of threads
+   memcpy(g_pstThrdDataRcvr, &lstData, sizeof(tagData));
+   memcpy(g_pstThrdSndr, &lstData, sizeof(tagData));
+
+   pthread_create(&g_nPThreadReciever, NULL, RecieverThread, g_pstThrdDataRcvr);
+   pthread_create(&g_nPThreadSender, NULL, SenderThread, g_pstThrdSndr);
+
+   if(g_nFlagNoResendDupli == 0)
+   {
+          pthread_create(&g_nPThreadCheckResponse, NULL,CheckResponse,NULL);
+   }
+   //End of Creation of Threads
+
+   lstData.nMessageCode = (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER;
+   {
+/*
+          tagData lstDummyMessageData = {0};
+          lstDummyMessageData.nMessageCode =(long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY;
+          SetRand(lstDummyMessageData.cUniqueMessageIdentifier,30);
+          lnRetVal = AddResendingMessageToEventStoreDummy(lstDummyMessageData);
+          if (lnRetVal != 0)
+          {
+                  LOG_LOGGER("%s","Error in First Message");
+                  return -1;
+          }
+          //tagTimeData lstTimeData(time(NULL)+3,lstDummyMessageData, INT_MAX) ;
+          //g_cEventResender.insert(pair<time_t,tagTimeData>(lstTimeData.m_nTime, lstTimeData)); //to Uncomment 
+*/
+    if(0 != AddDummyMessagingForSeqNo())
+   {
+      TESTLOG( "error occured at AddDummyMessagingForSeqNo\n");
+      exit(1);
+   }
+
+
+   }
+   while(g_bProgramShouldWork == true)
+   {
+         TESTLOG("New Message");
+         if(!g_cFeedbackStore.empty())
+          {
+             cout << "thres been a failure" << endl;
+             TESTLOG("theres been a failure");
+             tagData lstFailureMsg;
+             GetFromStore(g_FeedBackLoopMutex,g_cFeedbackStore,lstFailureMsg);
+             HandleFailure(lstData,lstFailureMsg.nMessageCode);
+          }
+          if(lnUnsentMsg == 0)
+          {
+             do
+             {
+               SetRand(lstData.cUniqueMessageIdentifier,30);
+             }
+             while(VerifyUniqueness(lstData.cUniqueMessageIdentifier) != 0);
+             pthread_mutex_lock(&g_GlobalSeqnoMutex);
+             if((g_nSeqNo + 1) != INT_MAX)
+             {
+                lstData.nSeqNo = g_nSeqNo++;
+             }
+             else
+             {
+                lstData.nSeqNo = 0;
+             }
+             lstData.nLatestClntSeqNo = g_nLatestRecivedSequenceNo;
+             pthread_mutex_unlock(&g_GlobalSeqnoMutex);
+          }
+           lnUnsentMsg = 0;
+          lnRetVal = PreSender(lstData);
+          if(0 != lnRetVal)
+          {
+            if(lnRetVal == 112)
+            {
+               lnUnsentMsg = 1;
+               continue;
+            }
+            LOG_LOGGER( "error occured at Presender \n");
+            exit(1);
+          }
+
+          //Taking Lock so that the other thread doesnt corrupt g_cSenderDataStore
+          pthread_mutex_lock(&g_SenderMutex); 
+#ifdef LOGGING
+          TESTLOG("Taking Sender lock %d" , __LINE__ );
+#endif
+          //Sending data to the Sender thread
+          g_cSenderDataStore.push_back(lstData); 
+
+          // unlocking the mutex
+          pthread_mutex_unlock(&g_SenderMutex);
+#ifdef LOGGING
+          TESTLOG("Releasing Sender lock %d" ,__LINE__ );
+#endif
+          TESTLOG("%s \n", lstData.cUniqueMessageIdentifier);
+          memset (lstData.cBuffer, 0,sizeof(lstData.cBuffer));
+          memset (lstData.cUniqueMessageIdentifier, 0, sizeof(lstData.cUniqueMessageIdentifier));
+
+          //shared memory usage
+          /* pthread_mutex_lock(&(lpstSharedmemData->m_cSharedMemMutex));
+          if(lpstSharedmemData->nState == STATE_INITIALIZE)
+          {
+          cout << "shared mem data " << lpstSharedmemData->cBuffer << endl;
+          strncpy(lpstSharedmemData->cBuffer, "hi", 2);
+          lpstSharedmemData->nState = STATE_WRITING_DONE;
+          cout << "shared mem data " << lpstSharedmemData->cBuffer << endl;
+          }
+          pthread_mutex_unlock(&(lpstSharedmemData->m_cSharedMemMutex));*/
+          //shared memory usage
+
+          lnRetVal = PostSender(lstData);
+          if(0 != lnRetVal)
+          {
+            TESTLOG("error occured at PostSender \n");
+            exit(1);
+          }
+          //cout << "sent message" << endl;
+
+   }
+   DeleteNewMap(pConfigObject);
+   if(lnRetVal != 0 )
+   {
+          printf("failure");
+   }
+   pthread_join(g_nPThreadSender,NULL);
+   pthread_join(g_nPThreadReciever,NULL);
+   delete g_pstThrdDataRcvr;
+   delete g_pstThrdSndr;
+
+   close(g_nSockFd);
+   return 0;
+}
+
+
+/*
+int main(int argc,char* argv[])
+{
+   SetCoreUnlimited();
+   g_PID = getpid();
+   g_nPThreadMain = pthread_self();
+   if(0 !=   MakeHandlerHandleSignal(SIGINT,HandleSignal))
+   {
+       cout << "WARNING : failure in intiating signalhandler." << endl;
+       //return -1;
+   }
+   pConfigObject = CreateNewMap();
+   if(pConfigObject == NULL)
+   {
+        cout << "ERROR : failure in CreateNewMap." << endl; 
+        return -1;
+   }
+   int lnRetVal = 0; 
+   lnRetVal =GetConfig(CNF_FILE_NAME,pConfigObject);
+   if(0 != lnRetVal)
+   {
+          cout << "ERROR : failure in getting " << CNF_FILE_NAME << " from config object.";
+          return -1;
+   }
+
+
+   //long nTime = time(NULL) +  GetResendingTime() ;
+   //cout << time(NULL) << endl;
+   //cout << nTime  << endl;
+   //sleep(nTime - time(NULL));
    lnRetVal = InitiateLogging();
    if(lnRetVal != 0)
    {
@@ -1576,6 +2001,7 @@ int main(int argc,char* argv[])
    }
    while(g_bProgramShouldWork == true)
    {
+          TESTLOG("New Message");
           do
           {
             SetRand(lstData.cUniqueMessageIdentifier,30);
@@ -1619,7 +2045,7 @@ int main(int argc,char* argv[])
           memset (lstData.cUniqueMessageIdentifier, 0, sizeof(lstData.cUniqueMessageIdentifier));
 
           //shared memory usage
-          /* pthread_mutex_lock(&(lpstSharedmemData->m_cSharedMemMutex));
+           pthread_mutex_lock(&(lpstSharedmemData->m_cSharedMemMutex));
           if(lpstSharedmemData->nState == STATE_INITIALIZE)
           {
           cout << "shared mem data " << lpstSharedmemData->cBuffer << endl;
@@ -1627,7 +2053,7 @@ int main(int argc,char* argv[])
           lpstSharedmemData->nState = STATE_WRITING_DONE;
           cout << "shared mem data " << lpstSharedmemData->cBuffer << endl;
           }
-          pthread_mutex_unlock(&(lpstSharedmemData->m_cSharedMemMutex));*/
+          pthread_mutex_unlock(&(lpstSharedmemData->m_cSharedMemMutex));
           //shared memory usage
 
           lnRetVal = PostSender(lstData);
@@ -1652,7 +2078,7 @@ int main(int argc,char* argv[])
    close(g_nSockFd);
    return 0;
 }
-
+*/
 
 
 string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand)

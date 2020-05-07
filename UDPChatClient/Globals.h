@@ -29,6 +29,7 @@
 std::deque<std::string>           g_cIdentifierStore;
 CEventResenderStore               g_cEventResender;
 std::deque<tagData>               g_cSenderDataStore;
+std::deque<tagData>               g_cFeedbackStore;
 CMessageStoreBySeqNo              g_cAllMessageStore;
 CSequenceStorebyUnOrderedSeqNo    g_cSeqStoreForUnOrderedSeqNo;
 CSequenceUnOrderedPacketsStore    g_cSeqNoUnOrderedPacketStore;
@@ -39,6 +40,7 @@ pthread_mutex_t              g_ReSenderMutex;
 pthread_mutex_t              g_ConsoleIOMutex;
 pthread_mutex_t              g_GlobalSeqnoMutex;
 pthread_mutex_t              g_CinVarMutex;
+pthread_mutex_t              g_FeedBackLoopMutex;
 
 pthread_t g_nPThreadReciever;
 pthread_t g_nPThreadSender;
