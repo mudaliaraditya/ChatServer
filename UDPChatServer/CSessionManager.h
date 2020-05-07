@@ -272,6 +272,18 @@ class CSessionManager
          return NULL;
       }
 
+      int RemoveSessionBySessionID(int nSessionId)
+      {
+         for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();lcIter++)
+         {
+            if((*lcIter)->GetSessionId() == nSessionId)
+            {
+               lcIter = m_cSessionStore.erase(lcIter);
+               return 0;
+            }
+         }
+         return -1;
+      }
 
 
       int GetGlobalClientIdentifierBySessionIdAndName(int nSessionId,std::string cName)

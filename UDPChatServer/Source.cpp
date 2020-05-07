@@ -51,7 +51,8 @@ string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand)
 
 tagBufferData ConvertToNetworkBuffer(tagData& stData)
 {
-   tagBufferData lstNetworkData = {0};
+   tagBufferData lstNetworkData;
+   memset(&lstNetworkData,0,sizeof(lstNetworkData));
    lstNetworkData.nCommand = stData.nCommand;
    lstNetworkData.nGlobalIdentifier = stData.nGlobalIdentifier;
    strncpy(lstNetworkData.cIdentifier ,stData.cIdentifier ,20);
@@ -70,7 +71,8 @@ tagBufferData ConvertToNetworkBuffer(tagData& stData)
 
 tagData ConvertToDataStruct(tagBufferData& stData)
 {
-   tagData lstBufferData = {0};
+   tagData lstBufferData;
+   memset(&lstBufferData,0,sizeof(lstBufferData));
    lstBufferData.nCommand = stData.nCommand;
    lstBufferData.nGlobalIdentifier = stData.nGlobalIdentifier;
    strncpy(lstBufferData.cIdentifier ,stData.cIdentifier , MAX_IDENTIFIER_LEN);
@@ -244,6 +246,122 @@ void HandleSignal(int nSignal)
    }
 }
 
+
+int AddToProcessStore(tagData* pstData)
+{
+      int lnRetVal = pthread_mutex_lock(&g_cProcessMutex);
+      if (lnRetVal != 0)
+      {
+         if(pstData != NULL)
+         {
+            delete pstData;
+            pstData = nullptr;
+         }
+         //printf("%s %d", strerror(errno), __LINE__);
+         LOG_LOGGER( "unable to take mutex lock %s",strerror(errno));
+         exit(EXIT_FAILURE);
+      }
+
+#ifdef LOGGING
+      TESTLOG("mtex acquired process reciever");
+#endif
+      g_cProcessList.push_back(pstData);
+      //pstData = nullptr; 
+
+      if ( 0  != pthread_cond_signal(&g_cCondVarForProcessThread))
+      {
+         LOG_LOGGER( "unable to signal process thread %s",strerror(errno));
+         exit(EXIT_FAILURE);
+      }
+      lnRetVal = pthread_mutex_unlock(&g_cProcessMutex);
+      if (lnRetVal != 0)
+      {
+         printf("%s %d", strerror(errno), __LINE__);
+         LOG_LOGGER( "unable to take mutex lock %s",strerror(errno));
+         exit(EXIT_FAILURE);
+      }
+   return 0;
+}
+
+int ModifyErrorCodenMessageCode(tagData& stData,int32_t nErrorCode,int32_t nMessageCode)
+{
+   memset(stData.cBuffer,0,MAXLINE + 1);
+   tagError* lpstError  = (tagError*)stData.cBuffer;
+   stData.nMessageCode = nMessageCode;
+   lpstError->nErrorCode = nErrorCode;
+   //return AddToProcessStore(stData);
+   return 0;
+}
+
+
+
+int32_t GetErrorCodeFromtagData(tagData& stData)
+{
+   tagError* lpstError  = (tagError*)stData.cBuffer;
+   return lpstError->nErrorCode;
+}
+
+
+void SetErrorString(tagData& stData)
+{
+   tagError* lpstError       = (tagError*)stData.cBuffer;
+   int32_t lnError = lpstError->nErrorCode;
+   memset(stData.cBuffer,0,MAXLINE + 1);
+   string lcErrorString = "";
+   switch(lnError)
+   {
+
+
+      case (int32_t)(ERRORCODE::ERRORCODE_MAX_CLIENT):
+      {
+               lcErrorString = "Max client no reached error";
+
+      }
+      break;           
+      case (int32_t)(ERRORCODE::ERRORCODE_SESION_ERROR):                      
+      {
+               lcErrorString = "Session Error";
+      }
+      break;
+      case (int32_t)(ERRORCODE::ERRORCODE_CLIENTID_INSERTION_ERROR):         
+      {
+               lcErrorString = "insertion failed";
+
+      }
+      break;
+      case (int32_t)(ERRORCODE::ERRORCODE_GLOBAL_IDENTIFIER_NOT_FOUND):           
+      {
+              lcErrorString = "unable to find identifier";
+
+      }
+      break;
+
+   }
+   memcpy(stData.cBuffer,lcErrorString.c_str(),lcErrorString.length());
+   return;
+}
+
+void PrintStateOfStores()
+{
+    for(auto lcIter : g_cClientIDStore)
+    {
+        tagData* lpstData = lcIter.second;
+        TESTLOG("value of nCommand %d",lpstData->nCommand);
+        TESTLOG("value of nGlobalIdentifier %d",lpstData->nGlobalIdentifier);
+        TESTLOG("value of cIdentifier %s",lpstData->cIdentifier);
+        TESTLOG("value of nFrOrToServerFlg %d",lpstData->nFrOrToServerFlg);
+        TESTLOG("value of nMessageCode %d",lpstData->nMessageCode);
+        TESTLOG("value of cBuffer %d",lpstData->cBuffer);
+        TESTLOG("value of cTarget %s",lpstData->cTarget);
+        TESTLOG("value of cUniqueMessageIdentifier %s",lpstData->cUniqueMessageIdentifier);
+        TESTLOG("value of nSeqNo %d",lpstData->nSeqNo);
+        TESTLOG("value of bFinalResponse %d",lpstData->bFinalResponse);
+        TESTLOG("value of nLatestClntSeqNo %d",lpstData->nLatestClntSeqNo);
+        TESTLOG("value of nSessionId %d",lpstData->nSessionId);
+    }
+    //return 0;
+}
+
 int ExecuteFunction(tagData& stData)
 {
    int lnRetVal = 0;
@@ -251,27 +369,42 @@ int ExecuteFunction(tagData& stData)
    tagData* lpstData = nullptr;
    TESTLOG("Execute function called");
    int lnReturnVal = 0;
+   TESTLOG("In ExecuteFunction nGlobal Identifier is %d string identifer is %s Message Code is %ld",stData.nGlobalIdentifier,stData.cIdentifier,lnMessageCode); 
    switch (lnMessageCode)
    {
       case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER) :
          {
-            pthread_mutex_lock(&g_cGlobalIdentifierMutex); 
-            //incrementint the sequenceNo
-            if(((g_nClientIdentifier + 1) == INT_MAX))
-            {
-                //g_nClientIdentifier = 0;
-                LOG_LOGGER("Max clients reached");
-                exit(EXIT_FAILURE);
-            }
-            stData.nGlobalIdentifier = g_nClientIdentifier++;
-            pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
-
+            TESTLOG("In Processing for MESSAGE_CODE_ACTIONS_REGISTER with message code %ld",lnMessageCode); 
+            tagData* lpstData = NULL;
             lpstData = new tagData(stData);
             if(lpstData == NULL)
             {
                LOG_LOGGER("new error");
-               exit(EXIT_FAILURE);
+               return 112;
+               //exit(EXIT_FAILURE);
             }
+            pthread_mutex_lock(&g_cGlobalIdentifierMutex); 
+            //incrementint the sequenceNo
+            if(((g_nClientIdentifier + 1) == INT_MAX))
+            {
+               //g_nClientIdentifier = 0;
+               LOG_LOGGER("Max clients reached");
+               //exit(EXIT_FAILURE);
+               pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
+               if(ModifyErrorCodenMessageCode(stData,(int32_t)ERRORCODE::ERRORCODE_MAX_CLIENT,(int32_t)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_FAILURE))== 0)
+               {
+                  delete lpstData;
+                  lpstData = NULL;
+                  LOG_LOGGER("ERRORNO %d",(int32_t)ERRORCODE::ERRORCODE_MAX_CLIENT);
+                  return 112;
+               }
+               return -1;
+
+            }
+            stData.nGlobalIdentifier = g_nClientIdentifier++;
+            pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
+            lpstData->nGlobalIdentifier = stData.nGlobalIdentifier;
+
             if ( EXIT_SUCCESS != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
@@ -291,7 +424,15 @@ int ExecuteFunction(tagData& stData)
                   exit(1);
                }
 
-               exit(EXIT_FAILURE);
+               //exit(EXIT_FAILURE);
+               if(ModifyErrorCodenMessageCode(stData,(int32_t)ERRORCODE::ERRORCODE_CLIENTID_INSERTION_ERROR,(int32_t)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_FAILURE))== 0)
+               {
+                  //delete lpstNewUserData;
+                  //lpstNewUserData = NULL;
+                  LOG_LOGGER("ERRORNO %d",(int32_t)ERRORCODE::ERRORCODE_CLIENTID_INSERTION_ERROR);
+                  return 112;
+               }
+               return -1;
             }
             if ( EXIT_SUCCESS != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             { 
@@ -305,6 +446,8 @@ int ExecuteFunction(tagData& stData)
 
       case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET) :
          {
+
+            TESTLOG("In Processing for MESSAGE_CODE_ACTIONS_REGISTER_TARGET with message code %ld",lnMessageCode); 
             if ( EXIT_SUCCESS != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
@@ -330,7 +473,7 @@ int ExecuteFunction(tagData& stData)
                if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
                {   
                   LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
-                  exit(1);
+                  exit(EXIT_FAILURE);
                }
                exit(EXIT_FAILURE);
             }
@@ -339,6 +482,7 @@ int ExecuteFunction(tagData& stData)
             tagSessionIdentifierData lstSessionIdentifier;
             lstSessionIdentifier.sName = stData.cIdentifier;
             lstSessionIdentifier.nGlobalIdentifier = stData.nGlobalIdentifier;
+            TESTLOG("Checking for session for identifer %s",stData.cIdentifier);
             g_cSessionManager.TakeLock();
             int lnSessionExists = g_cSessionManager.DoesFreeSessionExistForUser(stData.cTarget);
             if(lnSessionExists != 0)
@@ -350,11 +494,476 @@ int ExecuteFunction(tagData& stData)
                   { 
                     LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
                     g_cSessionManager.ReleaseLock();//Take caer of each mutex lock when you get failed
-                    exit(1);
+                    exit(EXIT_FAILURE);
                   }
                   LOG_LOGGER("Unable to create a session for %s",stData.cIdentifier);
                   g_cSessionManager.ReleaseLock();
+                  if(ModifyErrorCodenMessageCode(stData,(int32_t)ERRORCODE::ERRORCODE_SESION_ERROR,(int32_t)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET_FAILURE))== 0)
+                  {
+                     LOG_LOGGER("ERRORNO %d",(int32_t)ERRORCODE::ERRORCODE_SESION_ERROR);
+                     return 112;
+                  }
+               }
+               int lnSessionId =   g_cSessionManager.GetFreeUserSessionIdForUser(stData.cIdentifier);
+               if(lnSessionId == -1)//ng
+               {
+                  LOG_LOGGER("Unable to find a session for %s",stData.cIdentifier);
+                  g_cSessionManager.ReleaseLock();
+                  //return -1;
+                  if(ModifyErrorCodenMessageCode(stData,(int32_t)ERRORCODE::ERRORCODE_SESION_ERROR,(int32_t)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET_FAILURE))== 0)
+                  {
+                     LOG_LOGGER("ERRORNO %d",(int32_t)ERRORCODE::ERRORCODE_SESION_ERROR);
+                     return 112;
+                  }
+               }
+               stData.nSessionId = lnSessionId;
+               lcData.nSessionId = lnSessionId;
+            }
+            else
+            {
+               TESTLOG("for target %s there is a free session ",stData.cTarget);
+               int lnSessionId =   g_cSessionManager.GetFreeUserSessionIdForUser(stData.cTarget);
+               if(lnSessionId == -1)
+               {
+                  LOG_LOGGER("Unable to find a session for %s",stData.cIdentifier);
+                  g_cSessionManager.ReleaseLock();
+                  // return -1;
+                  if(ModifyErrorCodenMessageCode(stData,(int32_t)ERRORCODE::ERRORCODE_SESION_ERROR,(int32_t)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET_FAILURE))== 0)
+                  {
+                     LOG_LOGGER("ERRORNO %d",(int32_t)ERRORCODE::ERRORCODE_SESION_ERROR);
+                     return 112;
+                  }
+               }
+               lnRetVal = g_cSessionManager.AddMoreUserToSession(lnSessionId,lstSessionIdentifier);
+               if(lnRetVal != 0)
+               {
+                   if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+                   { 
+                     LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+                     g_cSessionManager.ReleaseLock();//Take caer of each mutex lock when you get failed
+                     exit(1);
+                   }
+                  LOG_LOGGER("Unable to add user %s to session %d", stData.cIdentifier, lnSessionId);
+                  g_cSessionManager.ReleaseLock();
                   return -1;
+               }
+               stData.nSessionId = lnSessionId;
+               lcData.nSessionId = lnSessionId;
+            }
+            if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+            { 
+               LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+               g_cSessionManager.ReleaseLock();//Take caer of each mutex lock when you get failed
+               exit(1);
+            }
+            g_cSessionManager.ReleaseLock();//
+         }
+         break;
+
+      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT) :
+         {
+            TESTLOG("In Processing for MESSAGE_CODE_ACTIONS_CHAT with message code %ld",lnMessageCode); 
+            char lcBuffer[sizeof(tagData)] = { 0 };
+
+            if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
+            { 
+               LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+               exit(1);
+            }
+            map<int , tagData*>::iterator lcIter = g_cClientIDStore.find(stData.nGlobalIdentifier);
+            if (lcIter == g_cClientIDStore.end())
+            {
+               printf("%d not found", stData.cIdentifier);
+               printf("%s %d", strerror(errno), __LINE__);
+               if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                  LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+                  exit(EXIT_FAILURE);
+               }
+               exit(EXIT_FAILURE);
+            }    
+
+            int lnGlobalTargetIdentifier = g_cSessionManager.GetGlobalClientIdentifierBySessionIdAndName(stData.nSessionId, stData.cTarget);
+            if(lnGlobalTargetIdentifier < 0)
+            {
+                if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                  LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+                  exit(EXIT_FAILURE);
+               }
+               LOG_LOGGER("ERROR");
+               exit(EXIT_FAILURE);
+            }
+
+            map<int , tagData*>::iterator lcTargetIter;// = //g_cClientIDStore.find(lcIter->second->cTarget);
+            for(map<int,tagData*>::iterator lcIterClientIdentityStore = g_cClientIDStore.begin(); lcIterClientIdentityStore != g_cClientIDStore.end() ; lcIterClientIdentityStore++)
+            {
+               TESTLOG("%d is being compared with %d",lcIterClientIdentityStore->second->nGlobalIdentifier,lnGlobalTargetIdentifier);
+               if(lcIterClientIdentityStore->second->nGlobalIdentifier == lnGlobalTargetIdentifier)
+               {
+                  lcTargetIter = lcIterClientIdentityStore;
+                  break;
+               }
+            }
+            if (lcTargetIter == g_cClientIDStore.end())
+            {
+               if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                  LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+                  exit(EXIT_FAILURE);
+               }
+               LOG_LOGGER("%s %s %s %s","Target not found" ,lcIter->second->cTarget ,  "By Identifier " , stData.cIdentifier );
+               printf("%s %d", strerror(errno), __LINE__);
+               exit(EXIT_FAILURE);
+            }
+
+            tagData* lpNewData = new tagData();
+            if(NULL == lpNewData)
+            {
+                if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                 LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+                 exit(EXIT_FAILURE);
+               }
+               LOG_LOGGER("memory error");
+               exit(EXIT_FAILURE);
+            }
+            memcpy(lpNewData, lcTargetIter->second, sizeof(tagData));
+            if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+            {
+               LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+               exit(EXIT_FAILURE);
+            }
+            lpNewData->nCommand =     (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
+
+            strncpy(lpNewData->cIdentifier, stData.cIdentifier, MAX_IDENTIFIER_LEN);
+
+            lpNewData->nMessageCode =  (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE;
+
+            lpNewData->nSeqNo = stData.nSeqNo;
+
+            strncpy(lpNewData->cBuffer, stData.cBuffer, MAXLINE);
+
+            strncpy(lpNewData->cTarget, stData.cTarget, MAX_IDENTIFIER_LEN);
+
+            strncpy(lpNewData->cUniqueMessageIdentifier, stData.cUniqueMessageIdentifier, 30);
+
+            pthread_mutex_lock(&g_cResponseMutex);
+
+            g_cResponseList.push_back((lpNewData));
+            if ( 0 !=  pthread_mutex_unlock(&g_cResponseMutex) )
+            {
+               LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+               exit(EXIT_FAILURE);
+            }
+         }
+         break;
+      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY):
+         {
+
+
+            tagData lstData = stData;
+            lstData.nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_SERV_TO_CLI;
+            if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
+            {
+               LOG_LOGGER("%s ", "error in mutex");
+               printf("%s %d", strerror(errno), __LINE__);
+               exit(EXIT_FAILURE);
+            }
+            map<int, tagData*>::iterator lcSenderIter = g_cClientIDStore.find(stData.nGlobalIdentifier);
+            if (lcSenderIter == g_cClientIDStore.end())
+            {
+                if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                 LOG_LOGGER("%s %s", stData.cIdentifier , "not found");
+                 printf("%s %d", strerror(errno), __LINE__);
+                 exit (EXIT_FAILURE); 
+               }
+               LOG_LOGGER("%s %s", stData.cIdentifier , " not found");
+               printf("%s %d", strerror(errno), __LINE__);
+               exit(EXIT_FAILURE);
+            }
+            TESTLOG("Delivery Handling ");
+            tagData* lpNewData = new tagData();
+            if(NULL == lpNewData )
+            {
+                if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                  LOG_LOGGER("%s %s", stData.cIdentifier , "not found");
+                  printf("%s %d", strerror(errno), __LINE__);
+                  exit (EXIT_FAILURE); 
+               }
+               LOG_LOGGER("memory error");
+               exit(EXIT_FAILURE);
+            }
+            memcpy(lpNewData, lcSenderIter->second, sizeof(tagData));
+            if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+            {
+               LOG_LOGGER("%s %s", stData.cIdentifier , "not found");
+               printf("%s %d", strerror(errno), __LINE__);
+               exit (EXIT_FAILURE); 
+            }
+            cout << "the seq no is "     << lstData.nSeqNo << endl;
+            cout << "the Identifier is " << lstData.cIdentifier << endl;
+            cout << "the Target is " << lstData.cTarget << endl;
+            cout << lstData.nMessageCode << endl;// lcIter1->second->nMessageCode;
+
+            lpNewData->nCommand        = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_CONF;
+            lpNewData->nSeqNo          = lstData.nSeqNo;
+            lpNewData->bFinalResponse  = true;
+
+            strncpy(lpNewData->cIdentifier, lstData.cIdentifier, MAX_IDENTIFIER_LEN);
+
+            strncpy(lpNewData->cTarget, lstData.cTarget, MAX_IDENTIFIER_LEN);
+
+            lpNewData->nMessageCode    = lstData.nMessageCode;// lcIter1->second->nMessageCode;
+
+            strncpy(lpNewData->cBuffer, lstData.cBuffer, MAXLINE);
+            strncpy(lpNewData->cTarget, lstData.cTarget, MAX_IDENTIFIER_LEN);
+            strncpy(lpNewData->cUniqueMessageIdentifier, lstData.cUniqueMessageIdentifier, 30);
+
+            pthread_mutex_lock(&g_cResponseMutex);
+
+            g_cResponseList.push_back((lpNewData));
+
+            pthread_mutex_unlock(&g_cResponseMutex);
+            //End of Forward Handling
+         }
+         break;
+      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_FAILURE):
+         {
+            TESTLOG("In Processing for MESSAGE_CODE_ACTIONS_REGISTER_FAILURE with message code %ld",lnMessageCode); 
+            auto lcIter = g_cClientIDStore.find(stData.nGlobalIdentifier); //(pair<int , tagData*>(stData.nGlobalIdentifier, lpstNewUserData))).second;
+            if(lcIter->first == false)
+            {
+               LOG_LOGGER("%s %s", stData.cIdentifier , "not found");
+               printf("%s %d", strerror(errno), __LINE__);
+               exit (EXIT_FAILURE);
+            }
+            auto lcClientStoreIter = lcIter->second;
+            g_cClientIDStore.erase(lcIter);
+         }
+         break;
+      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET_FAILURE):
+         {
+            TESTLOG("In Processing for MESSAGE_CODE_ACTIONS_REGISTER_TARGET_FAILURE with message code %ld",lnMessageCode); 
+            
+            auto lcIter = g_cClientIDStore.find(stData.nGlobalIdentifier);//(pair<int , tagData*>(stData.nGlobalIdentifier, lpstNewUserData))).second;
+            if(lcIter->first == false)
+            {
+               LOG_LOGGER("%s %s", stData.cIdentifier , "not found");
+               printf("%s %d", strerror(errno), __LINE__);
+               exit (EXIT_FAILURE);
+            }
+            auto lcClientStoreIter = lcIter->second;
+            tagData* lpstData = lcClientStoreIter;
+            memset(lpstData->cTarget,0,strlen(lpstData->cTarget));
+            lpstData->nSessionId = 0;
+
+         }
+         break;
+      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MESSAGE_FAILURE):
+         {
+            TESTLOG("In Processing for MESSAGE_CODE_ACTIONS_CHAT_MESSAGE_FAILURE with message code %ld",lnMessageCode); 
+            g_cSessionManager.TakeLock();
+            int lnSessionExists = g_cSessionManager.DoesFreeSessionExistForUser(stData.cIdentifier);
+             if(0 == lnSessionExists)
+             {
+                lnSessionExists =  g_cSessionManager.GetFreeUserSessionIdForUser(stData.cIdentifier);
+                if ( 0 != g_cSessionManager.RemoveSessionBySessionID(lnSessionExists) )
+                {
+                   LOG_LOGGER("free session for %s was not found",stData.cIdentifier);
+                   LOG_LOGGER("%s %s", stData.cIdentifier , "not found");
+                   printf("%s %d", strerror(errno), __LINE__);
+                   //exit (EXIT_FAILURE);
+                }
+             }
+            PrintStateOfStores();
+            g_cSessionManager.ReleaseLock();
+            TESTLOG("to find nGlobalIdentifier %d", stData.nGlobalIdentifier);
+            auto lcIter = g_cClientIDStore.find(stData.nGlobalIdentifier);//(pair<int , tagData*>(stData.nGlobalIdentifier, lpstNewUserData))).second;
+            if(lcIter != g_cClientIDStore.end())
+            {
+               LOG_LOGGER("ERROR in CHAT failure");
+               LOG_LOGGER("%s %s", stData.cIdentifier , "not found");
+               printf("%s %d", strerror(errno), __LINE__);
+               //exit (EXIT_FAILURE);
+            }
+            else
+            {
+               auto lcClientStoreIter = lcIter->second;
+               tagData* lpstData = lcClientStoreIter;
+               memset(lpstData->cTarget,0,strlen(lpstData->cTarget));
+               lpstData->nSessionId = 0;
+            }
+            stData.nSessionId = 0;
+            memset(&(stData.cTarget),0,strlen(stData.cTarget));
+         }
+         break;
+      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY_FAILURE):
+         {
+            TESTLOG("In Processing for MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY_FAILURE with message code %ld",lnMessageCode); 
+
+         }
+         break;
+
+
+
+      default :
+         {
+            TESTLOG("invalid or dummy message code" );
+         }
+         break;
+
+   }
+
+   return 0;
+}
+
+
+
+/*
+int ExecuteFunction(tagData& stData)
+{
+   int lnRetVal = 0;
+   long lnMessageCode = stData.nMessageCode;
+   tagData* lpstData = nullptr;
+   TESTLOG("Execute function called");
+   int lnReturnVal = 0;
+   TESTLOG("In ExecuteFunction nGlobal Identifier is %d string identifer is %s Message Code is %ld",stData.nGlobalIdentifier,stData.cIdentifier,lnMessageCode); 
+   switch (lnMessageCode)
+   {
+      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER) :
+         {
+            TESTLOG("In Processing for MESSAGE_CODE_ACTIONS_REGISTER with message code %ld",lnMessageCode); 
+            tagData* lpstData = NULL;
+            lpstData = new tagData(stData);
+            if(lpstData == NULL)
+            {
+               LOG_LOGGER("new error");
+               return 112;
+               //exit(EXIT_FAILURE);
+            }
+            pthread_mutex_lock(&g_cGlobalIdentifierMutex); 
+            //incrementint the sequenceNo
+            if(((g_nClientIdentifier + 1) == INT_MAX))
+            {
+               //g_nClientIdentifier = 0;
+               LOG_LOGGER("Max clients reached");
+               //exit(EXIT_FAILURE);
+               pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
+               if(ModifyErrorCodenMessageCode(stData,(int32_t)ERRORCODE::ERRORCODE_MAX_CLIENT,(int32_t)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_FAILURE))== 0)
+               {
+                  delete lpstNewUserData;
+                  lpstNewUserData = NULL;
+                  LOG_LOGGER("ERRORNO %d",(int32_t)ERRORCODE::ERRORCODE_MAX_CLIENT);
+                  return 112;
+               }
+               return -1;
+
+            }
+            stData.nGlobalIdentifier = g_nClientIdentifier++;
+            pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
+            lpstData->nGlobalIdentifier = stData.nGlobalIdentifier;
+
+            if ( EXIT_SUCCESS != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
+            {
+               LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
+               exit(EXIT_FAILURE);
+            }
+            //as its nearly impossible to get this as an update hence i am using this technique that is first i am going to allocate memory then inserts
+            bool lbRetValInsClientIdStore = (g_cClientIDStore.insert(pair<int , tagData*>(stData.nGlobalIdentifier, lpstData))).second;
+            if (lbRetValInsClientIdStore == false)
+            {
+               delete lpstData;
+               lpstData = nullptr;
+               printf("duplicate identifier insert to identifier(%s) store failed ", stData.cIdentifier);
+               printf("%s %d", strerror(errno), __LINE__);
+               if ( EXIT_SUCCESS != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                  LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+                  exit(1);
+               }
+
+               //exit(EXIT_FAILURE);
+               if(ModifyErrorCodenMessageCode(stData,(int32_t)ERRORCODE::ERRORCODE_CLIENTID_INSERTION_ERROR,(int32_t)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_FAILURE))== 0)
+               {
+                  //delete lpstNewUserData;
+                  //lpstNewUserData = NULL;
+                  LOG_LOGGER("ERRORNO %d",(int32_t)ERRORCODE::ERRORCODE_CLIENTID_INSERTION_ERROR);
+                  return 112;
+               }
+               return -1;
+            }
+            if ( EXIT_SUCCESS != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+            { 
+               LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+               exit(EXIT_FAILURE);
+            }
+            TESTLOG("Registered user in store");
+            
+         }
+         break;
+
+      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET) :
+         {
+
+            TESTLOG("In Processing for MESSAGE_CODE_ACTIONS_REGISTER_TARGET with message code %ld",lnMessageCode); 
+            if ( EXIT_SUCCESS != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
+            {
+               LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
+               exit(EXIT_FAILURE);
+            }
+            map<int , tagData*>::iterator lcSenderIterator = g_cClientIDStore.find(stData.nGlobalIdentifier);
+            if (lcSenderIterator == g_cClientIDStore.end())
+            {
+               printf("%d not found", stData.cIdentifier);
+               printf("%s %d", strerror(errno), __LINE__);
+               if ( EXIT_SUCCESS != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {
+                  LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+                  exit(EXIT_FAILURE);
+               } 
+               exit(EXIT_FAILURE);
+               
+            }
+
+            if(lcSenderIterator->second == nullptr)
+            {
+               LOG_LOGGER("invalid ptr");
+               if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+               {   
+                  LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+                  exit(EXIT_FAILURE);
+               }
+               exit(EXIT_FAILURE);
+            }
+            tagData& lcData = *(lcSenderIterator->second);
+            strncpy(lcData.cTarget, stData.cTarget, MAX_IDENTIFIER_LEN);
+            tagSessionIdentifierData lstSessionIdentifier;
+            lstSessionIdentifier.sName = stData.cIdentifier;
+            lstSessionIdentifier.nGlobalIdentifier = stData.nGlobalIdentifier;
+            TESTLOG("Checking for session for identifer %s",stData.cIdentifier);
+            g_cSessionManager.TakeLock();
+            int lnSessionExists = g_cSessionManager.DoesFreeSessionExistForUser(stData.cTarget);
+            if(lnSessionExists != 0)
+            {
+               lnRetVal = g_cSessionManager.CreateASession(lstSessionIdentifier,2,true);
+               if(lnRetVal != 0)
+               {
+                  if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
+                  { 
+                    LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+                    g_cSessionManager.ReleaseLock();//Take caer of each mutex lock when you get failed
+                    exit(EXIT_FAILURE);
+                  }
+                  LOG_LOGGER("Unable to create a session for %s",stData.cIdentifier);
+                  g_cSessionManager.ReleaseLock();
+                  if(ModifyErrorCodenMessageCode(stData,(int32_t)ERRORCODE::ERRORCODE_SESION_ERROR,(int32_t)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET_FAILURE))== 0)
+                  {
+                     LOG_LOGGER("ERRORNO %d",(int32_t)ERRORCODE::ERRORCODE_SESION_ERROR);
+                     return 112;
+                  }
                }
                int lnSessionId =   g_cSessionManager.GetFreeUserSessionIdForUser(stData.cIdentifier);
                stData.nSessionId = lnSessionId;
@@ -566,10 +1175,11 @@ int ExecuteFunction(tagData& stData)
 
    return 0;
 }
+*/
 //ConvertingRequestToResponse
 int GetResponseForFunction(tagData& stData)
 {
-   long& lnMessageCode = stData.nMessageCode;
+   int32_t& lnMessageCode = stData.nMessageCode;
    switch (lnMessageCode)
    {
          case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER) :

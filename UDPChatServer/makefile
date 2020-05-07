@@ -52,6 +52,7 @@ libencrypt.so : ../EncyptingFunc/encryptor/encrypt.c
 	cd ../EncyptingFunc/ && make
 	cp ../EncyptingFunc/libencrypt.so .
 
+refresh : clean all
 
 clean : 
 	rm *.out || true

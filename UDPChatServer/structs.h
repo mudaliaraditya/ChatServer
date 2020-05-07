@@ -30,7 +30,7 @@ struct tagCSequenceNo
 {
    char cFinalSeqNo[30 + 1];
 };
-
+/*
 struct tagData
 {
     short nCommand;
@@ -47,7 +47,7 @@ struct tagData
     int nSessionId;
     tagNetworkThread stNetWork;
 };
-
+*/
 
 /*
    nGlobalIdentifier == unique Identifier so that each client can be uniquely identified
@@ -75,6 +75,20 @@ struct tagBufferData
     bool    bFinalResponse;
     int32_t nLatestClntSeqNo;
     int32_t nSessionId;
+};
+
+
+
+
+struct tagData : public tagBufferData
+{
+    tagNetworkThread stNetWork;
+};
+
+
+struct tagError
+{
+   int32_t nErrorCode;
 };
 
 struct tagTimeData
