@@ -70,5 +70,6 @@ ConfigParserHandle*     pConfigObject;
 int       g_nSeqNo = 0;
 bool      g_bOutOfOrder = false;
 long      g_PID=0;
+__thread char  g_cThreadName[20 + 1];
 #endif /* GLOBALS_H */
 

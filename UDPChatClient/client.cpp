@@ -409,6 +409,7 @@ tagData ConvertToDataStruct(tagBufferData& stData)
 
 void* CheckResponse(void*)
 {
+   strncpy(g_cThreadName,"CheckResponseThread",19);
    char lcUniqueIdentifierBuffer[30 + 1] = {0};
    int lnSleeptIme = 0;
    while(g_bProgramShouldWork == true)
@@ -447,7 +448,7 @@ void* CheckResponse(void*)
                       lcIter->second.m_nTime = time(NULL) + 3;
                       g_cEventResender.insert(pair<time_t,tagTimeData>(lcIter->second.m_nTime,lcIter->second));
                }
-               lnSleeptIme = lcIter->first;
+               lnSleeptIme = lcIter->second.m_nTime;
                g_cEventResender.erase(lcIter);
             }
 
@@ -457,7 +458,8 @@ void* CheckResponse(void*)
           pthread_mutex_unlock(&g_ReSenderMutex);
           if(lnSleeptIme > 0)
           {
-             this_thread::sleep_for(std::chrono::seconds(lnSleeptIme - time(NULL)));
+             //this_thread::sleep_for(std::chrono::seconds(lnSleeptIme - time(NULL)));
+             sleep((lnSleeptIme - time(NULL)));
           }
    }
 }
@@ -708,6 +710,7 @@ bool IsMessageUnique(tagData stData)
 
 void* SenderThread(void* pVData)
 {
+   strncpy(g_cThreadName,"SenderThread",12);
    int lnDataRecievedLen = 0;
    tagData* lpstData = (tagData*)pVData;
 
@@ -773,6 +776,7 @@ void* SenderThread(void* pVData)
 
 void* RecieverThread(void* pVData)
 {
+   strncpy(g_cThreadName,"RecieverThread",14);
    string lcKey ="";
    int lnDataRecievedLen = 0;
    tagData* lpstData = (tagData*)pVData;
@@ -1434,6 +1438,7 @@ int MakeHandlerHandleSignal(int nSignal ,void (*pHandleSignal)(int))
 //UDpChatServer 21/12/2018 Aditya M.:END
 int main(int argc,char* argv[])
 {
+   strncpy(g_cThreadName,"MainThread",10);
    SetCoreUnlimited();
    g_PID = getpid();
    g_nPThreadMain = pthread_self();

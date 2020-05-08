@@ -63,5 +63,6 @@ int g_ExceptionRaised = 0;
 
 int g_nReady_for_reading = 0;
 
+__thread char  g_cThreadName[20 + 1];
 #endif
 

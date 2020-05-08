@@ -74,7 +74,7 @@ extern int g_ExceptionRaised;
 
 extern int g_nReady_for_reading;
 
-
+extern __thread char  g_cThreadName[20 + 1];
 class CDataStoreManager
 {
 

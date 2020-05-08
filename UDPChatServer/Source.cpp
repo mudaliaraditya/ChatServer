@@ -630,6 +630,7 @@ int GetResponseForFunction(tagData& stData)
 #ifndef WIN32
 void* RecieverThread(void* pData)
 {
+   strncpy(g_cThreadName,"CheckResponseThread",19);
    TESTLOG("%s","Thread : Reciever Thread");
    tagData* lpstData = NULL;
    fd_set          lnInput_set;
@@ -890,6 +891,7 @@ void* RecieverThread(void* pData)
 
 void* EventThread(void*)
 {
+     strncpy(g_cThreadName,"EventThread",19);
    char lcUniqueIdentifierBuffer[30 + 1] = {0};
    int lnSleeptIme = 0;
    tagData* lpstData = NULL;
@@ -1182,6 +1184,7 @@ int HandleRequest(tagData* pstData)
 
 void* ProcessThread(void* pArg)
 {
+   strncpy(g_cThreadName,"ProcessThread",13);
    TESTLOG("%s","Thread : Process Thread");
    int lnReturnVal = 0;
 
@@ -1335,6 +1338,7 @@ void* ProcessThread(void* pArg)
  */
 void* SenderThread(void* pArg)
 {
+   strncpy(g_cThreadName,"SenderThread",12);
    TESTLOG("%s","Thread : Sender Thread");
    tagData* lpstData = nullptr;
    int lnReturnVal = 0;
