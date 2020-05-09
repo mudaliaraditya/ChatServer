@@ -18,6 +18,15 @@ typedef std::vector<tagSessionIdentifierData>::iterator            CSessionStore
 
 
 
+template<typename T,typename G>
+int ClearStore(T& cStore);
+
+
+
+
+template<typename T,typename G>
+int ClearPairStore(T& cStore);
+
 
 
 std::string SuffixAppropirateUniqueIdentifier(std::string lcString, short nCommand);
@@ -66,6 +75,15 @@ void* EventHandling(void* pEventHandlingArg);
 int RejectDummyMsgCode(long long nMessageCode);
 
 
+/*
+Handles Conversion from Request to Response
+Process Data
+*/
+int HandleRequest(tagData* pstData);
+
+
+
+
 
 void* ProcessThread(void* pArg);
 
@@ -93,5 +111,26 @@ int InitializeAllMutex();
 
    #endif
 
+
+int InitiateLogging();
+
+
+int CreateAllThreads();
+
+
+
+
+void Initialize();
+
+
+
+int JoinAllThreads();
+
+
+
+int DestroyMutexCondVar();
+
+
+int main();
 
 #endif
