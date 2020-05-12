@@ -6,13 +6,13 @@
 {                                                 \
    {                                                \
       \
-       LOGGINGI(g_cfstream,cToBeLogged,##__VA_ARGS__)\
+       LOG(ERROR,g_cfstream,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 #define TESTLOG(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
-     LOGGINGI(g_cDatafstream,cToBeLogged,##__VA_ARGS__)\
+      LOG(INFO,g_cDatafstream,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 
@@ -21,7 +21,7 @@
 #define TESTOUT(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
-     LOGGINGI(std::cout,cToBeLogged,##__VA_ARGS__)\
+     LOG(INFO,std::cout,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 

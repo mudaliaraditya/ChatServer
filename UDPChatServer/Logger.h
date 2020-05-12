@@ -12,7 +12,7 @@
       char lcTimeLogBuffer[700] = {0};\
       GETTIMEBUFFER(lcTimeLogBuffer);\
       snprintf(lcBufferMessage,500,cToBeLogged, ##__VA_ARGS__);         \
-      (cFileStream <<  lcTimeLogBuffer << " | " << lcBufferMessage <<  " | "<< __func__ <<"() | " << "thread id :" << pthread_self() << " | "<<__FILE__<< ":"<<__LINE__ <<endl);           \
+      (cFileStream <<  lcTimeLogBuffer << " | " << lcBufferMessage <<  " | "<< __func__ <<"() | " << "thread id :" << pthread_self() << " | "<<__FILE__<< ":"<<__LINE__ << std::endl);           \
    }               \
 }
 
@@ -42,7 +42,7 @@
 
 enum LOG_LEVEL{INFO = 1 ,DEBUG = 2,WARN = 4,ERROR = 8,FATAL = 16,OUT = 32};
 
-#define ACTUALLOG(nEnum,cToBeLogged, ...)\
+#define ACTUALLOG(nEnum,cToBeLogged,cFileStream, ...)\
 {\
 {\
     \
@@ -50,33 +50,33 @@ enum LOG_LEVEL{INFO = 1 ,DEBUG = 2,WARN = 4,ERROR = 8,FATAL = 16,OUT = 32};
     switch(nEnum )                   \
     {                               \
         case INFO:                  \
-        snprintf(lcVar,1500," | %s | %s","INFO",cToBeLogged);\
-        TESTLOG( lcVar, ##__VA_ARGS__);  \
+        snprintf(lcVar,1500,"%s | %s  ","INFO",cToBeLogged);\
+        LOGGINGI(cFileStream ,lcVar, ##__VA_ARGS__);  \
         lnEnum=lnEnum - INFO;               \
         break;                      \
         case DEBUG:                 \
-        snprintf(lcVar,1500," | %s | %s","DEBUG",cToBeLogged);\
-        TESTLOG( lcVar, ##__VA_ARGS__);  \
+        snprintf(lcVar,1500,"%s | %s  ","DEBUG",cToBeLogged);\
+        LOGGINGI(cFileStream ,lcVar, ##__VA_ARGS__);  \
         lnEnum=lnEnum - DEBUG;              \
         break;                      \
         case WARN:                  \
-        snprintf(lcVar,1500," | %s | %s","WARN",cToBeLogged);\
-        TESTLOG( lcVar, ##__VA_ARGS__);  \
+        snprintf(lcVar,1500,"%s | %s  ","WARN",cToBeLogged);\
+        LOGGINGI(cFileStream ,lcVar, ##__VA_ARGS__);  \
         lnEnum=lnEnum - WARN;               \
         break;                      \
         case OUT:                   \
-        snprintf(lcVar,1500," | %s | %s","WARN",cToBeLogged);\
-        TESTOUT( lcVar, ##__VA_ARGS__);  \
+        snprintf(lcVar,1500,"%s | %s  ","WARN",cToBeLogged);\
+        LOGGINGI(cFileStream ,lcVar, ##__VA_ARGS__);  \
         lnEnum=lnEnum - OUT;                \
         break;                      \
         case ERROR:                 \
-        snprintf(lcVar,1500," | %s | %s","ERROR",cToBeLogged);\
-        LOG_LOGGER( lcVar, ##__VA_ARGS__)\
+        snprintf(lcVar,1500,"%s | %s  ","ERROR",cToBeLogged);\
+        LOGGINGI(cFileStream ,lcVar, ##__VA_ARGS__)\
         lnEnum = lnEnum - ERROR;              \
         break;                      \
         case FATAL:                 \
-        snprintf(lcVar,1500," | %s | %s","FATAL",cToBeLogged);\
-        LOG_LOGGER( lcVar, ##__VA_ARGS__)\
+        snprintf(lcVar,1500,"%s | %s ","FATAL",cToBeLogged);\
+        LOGGINGI(cFileStream , lcVar, ##__VA_ARGS__)\
         lnEnum=lnEnum - FATAL;              \
         break;                      \
     }                               \
@@ -87,22 +87,26 @@ enum LOG_LEVEL{INFO = 1 ,DEBUG = 2,WARN = 4,ERROR = 8,FATAL = 16,OUT = 32};
 \
 }
 
-#define LOG(nEnum,cToBeLogged, ...) \
+#define LOG(nEnum,cFileStream,cToBeLogged, ...) \
 {\
-                   \
+   {\
+    __label__ loggingout; \
     int lnBitCheck = 1;\
     int lnEnum = nEnum;\
-    ACTUALLOG(lnEnum,cToBeLogged, ##__VA_ARGS__);\
-    switch(lnEnum)\
+    ACTUALLOG(lnEnum,cToBeLogged,cFileStream, ##__VA_ARGS__);\
+   goto loggingout; \
+/*    switch(lnEnum)\
     {   case 0:\
         break;\
         default:\
         DO_THING_8(cToBeLogged, ##__VA_ARGS__);   \
         break;                           \
-    }                                \
-loggingout:    \
+    }       \
+*/                         \
+;loggingout:    \
     int n;\
     \
+ }\
 }                            
 
 
