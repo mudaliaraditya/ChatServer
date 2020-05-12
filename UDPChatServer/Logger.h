@@ -2,7 +2,7 @@
 #define LOGGER_H
 #include "includes.h"
 
-
+extern unsigned short g_nLogLevel;
 #define LOGGINGI(cFileStream,cToBeLogged, ...)\
 {\
     \
@@ -40,7 +40,7 @@
 #define DO_THING_16(cToBeLogged, ...) DO_THING_8(cToBeLogged, ##__VA_ARGS__); DO_THING_8(cToBeLogged, ##__VA_ARGS__)
 
 
-enum LOG_LEVEL{INFO = 1 ,DEBUG = 2,WARN = 4,ERROR = 8,FATAL = 16,OUT = 32};
+enum LOG_LEVEL{INFO = 2 ,DEBUG = 4,WARN = 8,ERROR = 16,FATAL = 32,OUT = 1};
 
 #define ACTUALLOG(nEnum,cToBeLogged,cFileStream, ...)\
 {\
@@ -93,6 +93,7 @@ enum LOG_LEVEL{INFO = 1 ,DEBUG = 2,WARN = 4,ERROR = 8,FATAL = 16,OUT = 32};
     __label__ loggingout; \
     int lnBitCheck = 1;\
     int lnEnum = nEnum;\
+    if(g_nLogLevel > lnEnum){ goto loggingout;}\
     ACTUALLOG(lnEnum,cToBeLogged,cFileStream, ##__VA_ARGS__);\
    goto loggingout; \
 /*    switch(lnEnum)\
