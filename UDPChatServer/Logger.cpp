@@ -2,7 +2,7 @@
 
 using namespace std;
 
-unsigned short g_nLogLevel = 8;
+int g_nLogLevel = 0;
 long getMicrotime()
 {
    struct timeval currentTime;
@@ -39,4 +39,25 @@ int InitiateLoggingFor(fstream& cFileStream,char* cPath,char* cName,char* cExt)
     cFileStream.seekg(ios::end);
    return 0;
 }
+
+int GetLoggingLevel(char* pcLoggingLvl)
+{
+   std::map<std::string,int> m_cLogLvl;
+   m_cLogLvl["INFO"]  = INFO;
+   m_cLogLvl["DEBUG"] = DEBUG;
+   m_cLogLvl["WARN"]  = WARN;
+   m_cLogLvl["ERROR"] = ERROR;
+   m_cLogLvl["FATAL"] = FATAL;
+   m_cLogLvl["OUT"]   = OUT;
+   m_cLogLvl["TEST"]  = TEST;
+   auto lcIter = m_cLogLvl.find(pcLoggingLvl);
+   if(lcIter ==  m_cLogLvl.end())
+   {
+      return -1;
+   }
+   //std::pair<std::string,int> lcPair  = (*lcIter);
+   //return lcPair.second;
+   return lcIter->second;
+}
+
 

@@ -16,12 +16,36 @@
    }                                             \
 }
 
+#define DEBUGLOG(cToBeLogged, ...)             \
+{                                                 \
+   {                                                \
+      LOG(DEBUG,g_cDatafstream,cToBeLogged,##__VA_ARGS__)\
+   }                                             \
+}
+
+
+#define TESTINGOUT(cToBeLogged, ...)             \
+{                                                 \
+   {                                                \
+      LOG(TEST,std::cout,cToBeLogged,##__VA_ARGS__)\
+   }                                             \
+}
+
+
+#define TESTINGLOG(cToBeLogged, ...)             \
+{                                                 \
+   {                                                \
+     LOG(TEST,g_cDatafstream,cToBeLogged,##__VA_ARGS__)\
+   }                                             \
+}
+
+
 
 
 #define TESTOUT(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
-     LOG(INFO,std::cout,cToBeLogged,##__VA_ARGS__)\
+     LOG(OUT,std::cout,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 

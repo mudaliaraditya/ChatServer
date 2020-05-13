@@ -41,7 +41,7 @@ NetworkSources.o : NetworkSources.cpp
 globals.o : globals.cpp
 	${CXX} -c globals.cpp -std=c++11 -lpthread -g -ggdb3 -I../ConfigParser/hdr -I../EncyptingFunc -I../EncyptingFunc/encryptor/  2>> CompileError.txt
 
-Logger.o : Logger.cpp
+Logger.o : Logger.cpp Logger.h CustomLogger.h
 	${CXX} -c Logger.cpp  -ggdb3 -I../ConfigParser/hdr -I../ConfigParser/hdr -I../EncyptingFunc/encryptor/ -I../EncyptingFunc
 
 ../EncyptingFunc/Encryptcall.o : ../EncyptingFunc/Encryptcall.c

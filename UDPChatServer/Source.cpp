@@ -173,7 +173,7 @@ int CleanUp()
    for( CEventResenderStoreIterator lcIter = g_cEventResender.begin(); g_cEventResender.end() != lcIter; lcIter++)
    {
       tagTimeData lstData = (lcIter->second);
-      TESTLOG("message code :  %d, Identifier :  %d, data : %s \n",lstData.stData.nMessageCode,lstData.stData.nGlobalIdentifier,lstData.stData.cBuffer);
+      TESTLOG("message code :  %d, Identifier :  %d, data : %s ",lstData.stData.nMessageCode,lstData.stData.nGlobalIdentifier,lstData.stData.cBuffer);
    }
    if(pConfigObject != NULL)
    {
@@ -650,9 +650,7 @@ void* RecieverThread(void* pData)
       }
       tagBufferData lstBufferData;
       lnSockAddrlen = sizeof(cliaddr);
-#ifdef LOGGING
-      cout << "Recieving.." << endl;
-#endif
+      TESTINGOUT("Recieving..")
       FD_ZERO(&lnInput_set);
       FD_SET(g_nMainSockFd, &lnInput_set);
 
@@ -694,9 +692,7 @@ void* RecieverThread(void* pData)
         exit(1);
       } 
       *lpstData = ConvertToDataStruct(lstBufferData);
-#ifdef LOGGING
-      TESTLOG("Recieved");
-#endif
+      TESTINGOUT("Recieved");
       TESTLOG("%s %s", " packet with message identifier : ",lpstData->cUniqueMessageIdentifier);
       TESTLOG("%s %s" ," packet with data from " , lpstData->cIdentifier );
       TESTLOG("%s %d", " packet with data from ", lpstData->nMessageCode );
@@ -716,18 +712,12 @@ void* RecieverThread(void* pData)
             exit(EXIT_FAILURE);
          }
 
-#ifdef LOGGING
-         cout << "Taking Identifier Mutex" << __LINE__ <<endl;
-#endif
+         TESTINGOUT("Taking Identifier Mutex")
          //!        Rejecting duplicates any extra packets are discarded
-#ifdef LOGGING
-#endif
          TESTLOG("duplicate packet Rejction started and lesser seq no rejection ");
          if(lpstData->nLatestClntSeqNo > lpstData->nSeqNo)
          {
             pthread_mutex_lock(&g_ReSenderMutex);
-#ifdef LOGGING
-#endif
             if(!g_cEventResender.empty())
             {
                for(CEventResenderStoreIterator lcIter =  g_cEventResender.begin();lcIter !=  g_cEventResender.end();)
@@ -753,9 +743,7 @@ void* RecieverThread(void* pData)
                }
             } 
             pthread_mutex_unlock(&g_ReSenderMutex);
-#ifdef LOGGING
-            cout << "Releasing Resender Mutex" << __LINE__ <<endl;
-#endif
+            TESTINGOUT("Releasing Resender Mutex");
          }
          string lcKey = SuffixAppropirateUniqueIdentifier(lpstData->cUniqueMessageIdentifier, (short)lpstData->nCommand);
          {
@@ -763,10 +751,8 @@ void* RecieverThread(void* pData)
             if( lcIterIdentifierStringStore != g_cIdentifierStore.end())
             {
                TESTLOG("%s : Duplicate Packet with identifier %s", strerror(errno), lcKey.c_str());
-               #ifdef LOGGING
-                  cout << "duplicate packet" << endl;
-                  cout << lpstData->cUniqueMessageIdentifier << " duplicated" << endl;;
-               #endif
+               TESTINGOUT("duplicate packet");
+               TESTINGOUT("%s %s" ,lpstData->cUniqueMessageIdentifier, " duplicated");
                lbDiscardPacket = true;
             }
             if(true == lbDiscardPacket)
@@ -789,18 +775,14 @@ void* RecieverThread(void* pData)
                   lpstData = nullptr;
                }
 
-               LOG_LOGGER("%s : Duplicate Packet with identifier %s after checking for duplicate packets\n", strerror(errno), lcKey.c_str());
+               LOG_LOGGER("%s : Duplicate Packet with identifier %s after checking for duplicate packets", strerror(errno), lcKey.c_str());
                exit(-1);     
             } 
          }
 
-#ifdef LOGGING
-         cout << "Done with Duplicate Packet Rejection" << endl;
-#endif
+         TESTINGOUT("Done with Duplicate Packet Rejection");
          pthread_mutex_unlock( &g_cIdentifierMutex);
-#ifdef LOGGING
-         cout << "Releasing Identifier Mutex" << __LINE__ <<endl;
-#endif
+         TESTINGOUT("Releasing Identifier Mutex");
 
          {
             cout << "deleting all old data" << endl;
@@ -824,11 +806,9 @@ void* RecieverThread(void* pData)
       lpstData->stNetWork.nSockFD = g_nMainSockFd;
       lpstData->stNetWork.nSizeofStrtSockAddr = sizeof(sockaddr_in);
       lpstData->stNetWork.nFlags = MSG_CONFIRM;
-      #ifdef LOGGING        
-      cout << "chat data " << lpstData->cBuffer << endl;
-      cout << "identifier " << lpstData->cIdentifier << endl;
-      cout << "target " << lpstData->cTarget << endl;
-      #endif        
+      TESTINGOUT("%s %s","chat data ", lpstData->cBuffer);
+      TESTINGOUT("%s %s", "identifier ", lpstData->cIdentifier);
+      TESTINGOUT("%s %s","target " ,lpstData->cTarget);
       lnRetVal = pthread_mutex_lock(&g_cProcessMutex);
       if (lnRetVal != 0)
       {
@@ -849,9 +829,7 @@ void* RecieverThread(void* pData)
          exit(EXIT_FAILURE);
       }
 
-#ifdef LOGGING
-      TESTLOG("mtex acquired process reciever");
-#endif
+      TESTINGLOG("mtex acquired process reciever");
       g_cProcessList.push_back(lpstData);
       lpstData = nullptr; 
       if ( 0  != pthread_cond_signal(&g_cCondVarForProcessThread))
@@ -866,9 +844,7 @@ void* RecieverThread(void* pData)
          LOG_LOGGER( "unable to take mutex lock %s",strerror(errno));
          exit(EXIT_FAILURE);
       }
-#ifdef LOGGING
-      TESTLOG("mtex Released process reciever" );
-#endif
+      TESTINGLOG("mtex Released process reciever" );
 
    } 
 
@@ -899,16 +875,12 @@ void* EventThread(void*)
    {
 
           pthread_mutex_lock(&g_ReSenderMutex);
-#ifdef LOGGING
-#endif
-#ifdef LOGGING
-          TESTLOG("taking sender lock \n");
-#endif
+          TESTINGLOG("taking sender lock ");
           if(!g_cEventResender.empty())
           {
             CEventResenderStoreIterator lcIter = g_cEventResender.begin();
-            TESTLOG("iterator time %d \n", lcIter->first);
-            TESTLOG("current time %d \n",time(NULL));
+            TESTLOG("iterator time %d ", lcIter->first);
+            TESTLOG("current time %d ",time(NULL));
             if(lcIter->first <= time(NULL) )
             {
 
@@ -923,7 +895,7 @@ void* EventThread(void*)
                      // strncpy(lcIter->second.stData.cUniqueMessageIdentifier, lcUniqueIdentifierBuffer,strlen(lcIter->second.stData.cUniqueMessageIdentifier)); 
                }
                //lcIter->second.stData.nLatestClntSeqNo = g_nLatestRecivedSequenceNo;
-               TESTLOG("resending data \n");
+               TESTLOG("resending data ");
                lpstData = new tagData();
                if(NULL == lpstData)
                {
@@ -947,13 +919,9 @@ void* EventThread(void*)
 
           }
 
-#ifdef LOGGING
-          TESTLOG("releasing sender mutex \n");
-#endif
+          TESTINGLOG("releasing sender mutex ");
           pthread_mutex_unlock(&g_ReSenderMutex);
-#ifdef LOGGING
-          TESTLOG("releasing resender mutex \n");
-#endif
+          TESTINGLOG("releasing resender mutex ");
           //checks for resender events only once a second
           //sleep(1);
           if(lnSleeptIme != 0)
@@ -1025,9 +993,7 @@ int DeleteMsgFromResenderStoreByUniqueIdentifier(const tagData lstRecvData )
       perror("mutex lock error");
       exit(1);
    }
-#ifdef LOGGING
-   TESTLOG("%s %d", "Taking Resender Mutex" ,__LINE__ );
-#endif
+   TESTINGLOG("%s %d", "Taking Resender Mutex" ,__LINE__ );
    TESTLOG("%s %d %s %d %s %s %s %d", "the seq no is ", lstRecvData.nSeqNo , " the LatestRecieved Seq no is " , lstRecvData.nLatestClntSeqNo , " from user id and name ", lstRecvData.cIdentifier ," " , lstRecvData.nGlobalIdentifier);
    for(CEventResenderStoreIterator lcIter =  g_cEventResender.begin();lcIter != g_cEventResender.end();)
    {
@@ -1083,9 +1049,7 @@ int DeleteMsgFromResenderStoreByUniqueIdentifier(const tagData lstRecvData )
       exit(1);
 
    }
-#ifdef LOGGING
-   cout << "Releasing Resender Mutex" << __LINE__ <<endl;
-#endif
+   TESTINGOUT("Releasing Resender Mutex");
    TESTLOG("%s","finished deleting messages");
 
    return 0;
@@ -1201,12 +1165,8 @@ void* ProcessThread(void* pArg)
             perror("unable to take lock");
             exit(EXIT_FAILURE);
          }
-         #ifdef LOGGING
-           TESTLOG("%s %d","Taking Process Mutex in Process Thread" , __LINE__);
-        #endif
-        #ifdef LOGGING
-           TESTLOG("In function ProcessThread thread id = %d\n", pthread_self());
-        #endif
+           TESTINGLOG("%s %d","Taking Process Mutex in Process Thread" , __LINE__);
+           TESTINGLOG("In function ProcessThread thread id = %d", pthread_self());
 
 
          while(g_cProcessList.empty())
@@ -1221,9 +1181,7 @@ void* ProcessThread(void* pArg)
                perror("unable to unlock");      
                exit(EXIT_FAILURE);
             }
-   #ifdef LOGGING
-            TESTLOG("%s %d", "Releasing Process Mutex in cond var" , __LINE__ );
-   #endif
+            TESTINGLOG("%s %d", "Releasing Process Mutex in cond var" , __LINE__ );
                if((false == g_bProgramShouldWork) && g_cProcessList.empty())
             {
                //lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
@@ -1241,9 +1199,7 @@ void* ProcessThread(void* pArg)
          if(!g_cProcessList.empty())
          {
 
-   #ifdef LOGGING
-            TESTLOG("%s", "process thread process mutex acquired" );
-   #endif
+            TESTINGLOG("%s", "process thread process mutex acquired" );
             lstData = g_cProcessList.front();
             TESTLOG( "Process fired" );
             g_cProcessList.pop_front();         
@@ -1272,12 +1228,8 @@ void* ProcessThread(void* pArg)
          perror("unable to unlock");
          exit(EXIT_FAILURE);
       }
-#ifdef LOGGING
-      TESTLOG( "Releasing Process Mutex %d", __LINE__ );
-#endif
-#ifdef LOGGING           
-      TESTLOG("%s", "process thread process mutex acquired");
-#endif
+      TESTINGLOG( "Releasing Process Mutex %d", __LINE__ );
+      TESTINGLOG("%s", "process thread process mutex acquired");
       if(NULL == lstData)
       {
          LOG_LOGGER("NULL lstData");
@@ -1313,9 +1265,7 @@ void* ProcessThread(void* pArg)
          exit(EXIT_FAILURE);
       }
 
-#ifdef LOGGING
-      TESTLOG ("%s","processthread mutex lock acquired");
-#endif
+      TESTINGLOG ("%s","processthread mutex lock acquired");
       g_cResponseList.push_back(lstData);
 
       lnReturnVal = pthread_mutex_unlock(&g_cResponseMutex);
@@ -1325,9 +1275,7 @@ void* ProcessThread(void* pArg)
          perror("unable to take lock");
          exit(EXIT_FAILURE);
       }
-#ifdef LOGGING
-      TESTLOG("%s","processthread mutex lock released");
-#endif
+      TESTINGLOG("%s","processthread mutex lock released");
    }
    //pthread_exit(NULL);   
    return NULL;
@@ -1396,10 +1344,8 @@ void* SenderThread(void* pArg)
       memset(&lcBuffer, 0, lnDataStructSize);
       delete (lpstData);
       lpstData = nullptr;
-#ifdef LOGGING        
-      printf("%s", strerror(errno));
-      printf("Hello message sent.\n");
-#endif
+      TESTINGOUT("%s", strerror(errno));
+      TESTINGOUT("the message was sent.");
    }
    return NULL;
 }
@@ -1646,8 +1592,9 @@ int DestroyMutexCondVar()
         return lnRetVal;
 }
 
-int main()
+int main(int argc,char* argv[])
 {
+
    int lnRetVal =0;
    Initialize();
    
@@ -1682,6 +1629,8 @@ int main()
    }
    //TESTOUT("ERROR and Data Logging Initialized");
    TESTLOG("LOGGING started");
+   TESTLOG("Hi");
+   TESTLOG("Hi");
 
    //LOG File Handling END
    //LOG_LOGGER("%d",1);
@@ -1702,7 +1651,6 @@ int main()
    {
       //printf("%s %d", strerror(errno), __LINE__);
       LOG_LOGGER("%s : conditional var init has failed", strerror(errno));
-      //printf("\n conditional var init has failed\n");
       exit (EXIT_FAILURE);
    }
 
@@ -1885,10 +1833,8 @@ DWORD WINAPI SenderThread(LPVOID pArg)
          exit(EXIT_FAILURE);
       }
       //#define LOGGING
-#ifdef LOGGING        
-      printf("%s", strerror(errno));
-      printf("Hello message sent.\n");
-#endif
+      TESTINGOUT("%s", strerror(errno));
+      TESTINGOUT("Hello message sent.\n");
       //#undefine LOGGING
       //}
    }
@@ -2317,9 +2263,7 @@ int main()
          exit(EXIT_FAILURE);
 
       }
-#ifdef LOGGING
-      printf("%s", strerror(errno));
-#endif
+      TESTINGOUT("%s", strerror(errno));
       if (lstData.nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER)
       {
          lstData.lnSockFD = sockfd;
@@ -2330,23 +2274,19 @@ int main()
          lstData.stNetWork.flags = 0;
          // memcpy(&(lstData.stNetWork), &cliaddr, sizeof(cliaddr));
       }
-#ifdef LOGGING
-      cout << cliaddr.sin_addr.s_addr << endl;
-      cout << cliaddr.sin_family << endl;
-      cout << cliaddr.sin_port << endl;
-      cout << cliaddr.sin_zero << endl;
-#endif
+      TESTINGOUT( cliaddr.sin_addr.s_addr);
+      TESTINGOUT( cliaddr.sin_family )
+      TESTINGOUT( cliaddr.sin_port );
+      TESTINGOUT(cliaddr.sin_zero );
 #ifndef singlethread
       memcpy(&(lstData.stNetWork.addr), &cliaddr, sizeof(sockaddr_in));
       lstData.stNetWork.fd = sockfd;
       //lstData.stNetWork.addr
       lstData.stNetWork.restrict = sizeof(sockaddr_in);
       lstData.stNetWork.flags = 0;
-#ifdef LOGGING        
-      cout << "chat data " << lstData.cBuffer << endl;
-      cout << "identifier " << lstData.cIdentifier << endl;
-      cout << "target " << lstData.cTarget << endl;
-#endif        
+      TESTINGOUT("%s %s","chat data " , lstData.cBuffer );
+      TESTINGOUT("%s %s","identifier " , lstData.cIdentifier );
+      TESTINGOUT("%s %s", "target " , lstData.cTarget );
       EnterCriticalSection(&g_cProcessMutex);
       if (lnRetVal != 0)
       {
@@ -2361,9 +2301,7 @@ int main()
       {
          g_cLockerInt = 1;
       }
-#ifdef LOGGING
-      cout << "mtex acquired process main" << endl;
-#endif
+      TESTINGOUT( "mtex acquired process main" );
       g_cProcessList.push_back(lstData);
 
       EnterCriticalSection(&g_cProcessMutexCounter);
@@ -2385,9 +2323,7 @@ int main()
          printf("%s %d", strerror(errno), __LINE__);
          exit(EXIT_FAILURE);
       }
-#ifdef LOGGING
-      cout << "mtex Released process main" << endl;
-#endif
+      TESTINGOUT( "mtex Released process main");
 #endif
 #ifdef singlethread
       int lnVal = ExecuteFunction(lstData);

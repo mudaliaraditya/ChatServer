@@ -131,6 +131,6 @@ int JoinAllThreads();
 int DestroyMutexCondVar();
 
 
-int main();
+int main(int argc,char* argv[]);
 
 #endif
