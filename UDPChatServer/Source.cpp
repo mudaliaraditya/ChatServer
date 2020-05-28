@@ -1,4 +1,5 @@
 #include "includes.h"
+
 using namespace std;
 
 string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand)
@@ -1592,6 +1593,27 @@ int DestroyMutexCondVar()
         return lnRetVal;
 }
 
+
+#ifndef COREGEN
+static void SetCoreUnlimited()
+{
+   return;
+}
+#endif
+#ifdef COREGEN
+static void SetCoreUnlimited()
+{
+   struct rlimit lstRLimit ;
+   lstRLimit.rlim_cur = RLIM_INFINITY;
+   lstRLimit.rlim_max = RLIM_INFINITY;
+   setrlimit( RLIMIT_CORE, &lstRLimit );
+   return;
+}
+#endif
+
+
+
+
 int main(int argc,char* argv[])
 {
 
@@ -1613,6 +1635,26 @@ int main(int argc,char* argv[])
    {
       return -1;
    }
+
+/*   if(pConfigObject == NULL)
+   {
+      return -1;
+   }
+*/
+   char* lcLogLvl  =  ((GetValueForKey(CNF_LOG_LEVEL, CNF_FILE_NAME , pConfigObject)));
+   if(lcLogLvl == NULL)
+   {
+      return -1;
+   }
+   g_nLogLevel = GetLoggingLevel(lcLogLvl);
+   if(g_nLogLevel == -1)
+   {
+      return -1;
+   }
+   if(0 !=  DeleteKeyVal(lcLogLvl))
+   {
+      return -1; 
+   }
    //LOG File Handling START
    if(0 !=  InitiateLoggingFor(g_cDatafstream,"Logs","data","log"))
    //if (0 !=InitiateLogging())
@@ -1629,8 +1671,6 @@ int main(int argc,char* argv[])
    }
    //TESTOUT("ERROR and Data Logging Initialized");
    TESTLOG("LOGGING started");
-   TESTLOG("Hi");
-   TESTLOG("Hi");
 
    //LOG File Handling END
    //LOG_LOGGER("%d",1);

@@ -16,6 +16,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <signal.h>
+#include <sys/resource.h>
 #include <fstream>
 #include <sstream> 
 #include <map>

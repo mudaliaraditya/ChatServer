@@ -1,8 +1,12 @@
 #pragma once
+#ifndef STRUCT_H
+#define STRUCT_H 
 #ifndef WIN32
 #include "defines.h"
 //#include "includes.h"
-
+#include <sys/types.h>         
+#include <sys/socket.h>
+#include <netinet/in.h>
 #pragma pack(1)
 
 struct tagData;
@@ -136,4 +140,5 @@ struct tagData
 };
 
 
+#endif
 #endif

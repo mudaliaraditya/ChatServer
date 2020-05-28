@@ -1,7 +1,6 @@
 #pragma once
 #ifndef ENUMS_H
-#define ENUMS_H
- 
+#define ENUMS_H 
 enum class CMESSAGE_CODE_ACTIONS : long 
 {
     MESSAGE_CODE_ACTIONS_INVALID                       = 1000,
