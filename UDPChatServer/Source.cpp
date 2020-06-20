@@ -103,7 +103,7 @@ int CleanUp()
       printf("%s, %d", strerror(errno), __LINE__);
       exit(EXIT_FAILURE);
    }
-   lnRetVal = close(g_nMainSockFd);
+   /*lnRetVal =*/ close(g_nMainSockFd);
    if(lnRetVal != 0)
    {
       cout << "issue in closing socket" << endl;
@@ -275,6 +275,7 @@ void HandleSignal(int nSignal)
             return;
          }
    }
+   return;
 }
 
 int ExecuteFunction(tagData& stData)
@@ -308,6 +309,7 @@ int ExecuteFunction(tagData& stData)
             if ( 0 != pthread_mutex_lock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("unable to take Lock on g_cDataGlobalPortStoreMutex");
+               delete lpstNewUserData;
                exit(1);
             }
             bool lbVal1 = (g_cClientIDStore.insert(pair<int , tagData*>(stData.nGlobalIdentifier, lpstNewUserData))).second;
@@ -322,6 +324,7 @@ int ExecuteFunction(tagData& stData)
             if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             { 
                LOG_LOGGER("unable to unLock on g_cDataGlobalPortStoreMutex");
+               delete lpstNewUserData;
                exit(1);
             }
             // bool lbVal = (g_cPortIdentifier.insert(pair<string, tagData*>(stData.cIdentifier, lpstNewUserData))).second;
@@ -464,6 +467,7 @@ int ExecuteFunction(tagData& stData)
             if ( 0 != pthread_mutex_unlock(&g_cDataGlobalPortStoreMutex))
             {
                LOG_LOGGER("unable to unLock on %s","g_cDataGlobalPortStoreMutex");
+               delete lpstForwardMessageData;
                exit(EXIT_FAILURE);
             }
             lpstForwardMessageData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_REQUEST_CLI;
@@ -512,6 +516,8 @@ int ExecuteFunction(tagData& stData)
             {
                LOG_LOGGER("%s %s", stData.cIdentifier , "not found");
                printf("%s %d", strerror(errno), __LINE__);
+               delete lpNewData;
+               lpNewData = nullptr;
                exit (EXIT_FAILURE); 
             }
             cout << "the seq no is "     << lstData.nSeqNo << endl;
@@ -643,20 +649,23 @@ void* RecieverThread(void* pData)
 
       lnReady_for_readingr = select(g_nMainSockFd + 1, &input_set, NULL, NULL, &timeout);
       //cout << "value of Slect ret "<< lnReady_for_readingr << endl;
-      if (lnReady_for_readingr) {
-      lnNoOfBytes = RecvUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &cliaddr, lnSockAddrlen);
-      if (lnNoOfBytes <= 0)
+      if (lnReady_for_readingr) 
       {
-         cout << "" << endl;
-         if(lpstData != NULL)
+         lnNoOfBytes = RecvUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &cliaddr, lnSockAddrlen);
+         if (lnNoOfBytes <= 0)
          {
-            delete lpstData;
-            lpstData = nullptr;
+            cout << "" << endl;
+            if(lpstData != NULL)
+            {
+               delete lpstData;
+               lpstData = nullptr;
+            }
+            //printf("%s, %d", strerror(errno), __LINE__);
+            LOG_LOGGER("%s : RecvUDPData failed", strerror(errno));
+            if(g_bProgramShouldWork)
+            exit(EXIT_FAILURE);
+            continue;
          }
-         //printf("%s, %d", strerror(errno), __LINE__);
-         LOG_LOGGER("%s : RecvUDPData failed", strerror(errno));
-         exit(EXIT_FAILURE);
-      }
      }
      else
      {
@@ -672,7 +681,11 @@ void* RecieverThread(void* pData)
       if( lnRetVal != 0)
       {
         LOG_LOGGER("%s : Decryption failed", strerror(errno));
-        exit(1);
+        delete lpstData;
+        lpstData = nullptr;
+        if(g_bProgramShouldWork)
+           exit(EXIT_FAILURE);
+        continue;
       } 
       *lpstData = ConvertToDataStruct(lstBufferData);
 #ifdef LOGGING
@@ -694,7 +707,9 @@ void* RecieverThread(void* pData)
                lpstData = nullptr;
             }
             LOG_LOGGER("%s : mutex lock failed", strerror(errno));
-            exit(EXIT_FAILURE);
+            if(g_bProgramShouldWork)
+               exit(EXIT_FAILURE);
+            continue;
          }
 
 #ifdef LOGGING
@@ -786,8 +801,10 @@ void* RecieverThread(void* pData)
                }
 
                LOG_LOGGER("%s : Duplicate Packet with identifier %s after checking for duplicate packets\n", strerror(errno), lcKey.c_str());
-               exit(-1);     
-            } 
+               if(g_bProgramShouldWork)
+                  exit(-1);
+               continue;
+            }
          }
 
 #ifdef LOGGING
@@ -932,7 +949,7 @@ void* EventThread(void*)
                       lcIter->second.m_nTime = time(NULL) + 3;
                       g_cEventResender.insert(pair<time_t,tagTimeData>(lcIter->second.m_nTime,lcIter->second));
                }
-               lnSleeptIme = lcIter->first;
+               lnSleeptIme = lcIter->second.m_nTime;
                g_cEventResender.erase(lcIter);
                pthread_mutex_unlock(&g_cResponseMutex);
             }
@@ -948,9 +965,11 @@ void* EventThread(void*)
 #endif
           //checks for resender events only once a second
           //sleep(1);
-          if(lnSleeptIme != 0)
+          int lnCurrentTime = time(NULL);
+          int TotalSleep = lnSleeptIme - lnCurrentTime;
+          if(TotalSleep > 0)
           {
-             sleep(lnSleeptIme - time(NULL));
+             sleep(TotalSleep);
           }
    }
    pthread_exit(NULL);
@@ -1226,6 +1245,8 @@ void* ProcessThread(void* pArg)
       {
          printf("%s, %d", strerror(errno), __LINE__);
          perror("unable to unlock");
+         delete lstData;
+         lstData = nullptr;
          exit(EXIT_FAILURE);
       }
 #ifdef LOGGING
@@ -1262,6 +1283,8 @@ void* ProcessThread(void* pArg)
       {
          TESTLOG("%s %d", "wrong response code" , lstData->nMessageCode );
          printf("%s", strerror(errno));
+         delete lstData;
+         lstData = nullptr;
          exit(EXIT_FAILURE);
       }
 
@@ -1270,6 +1293,8 @@ void* ProcessThread(void* pArg)
       {
          LOG_LOGGER("%s, %d", strerror(errno), __LINE__);
          perror("unable to take lock");
+         delete lstData;
+         lstData = nullptr;
          exit(EXIT_FAILURE);
       }
 #ifdef LOGGING
@@ -1282,6 +1307,8 @@ void* ProcessThread(void* pArg)
       {
          printf("%s, %d", strerror(errno), __LINE__);
          perror("unable to take lock");
+         delete lstData;
+         lstData = nullptr;
          exit(EXIT_FAILURE);
       }
 #ifdef LOGGING
@@ -1322,6 +1349,8 @@ void* SenderThread(void* pArg)
       {
          LOG_LOGGER("error nullptr");
          printf("%s, %d", strerror(errno), __LINE__);
+         delete lpstData;
+         lpstData = nullptr;
          exit(EXIT_FAILURE);
       }
 
@@ -1331,6 +1360,8 @@ void* SenderThread(void* pArg)
       {
          printf("%s, %d", strerror(errno), __LINE__);
          perror("unable to take lock");
+         delete lpstData;
+         lpstData = nullptr;
          exit(EXIT_FAILURE);
       }
       if(g_nFlagDupliResend == 0)
@@ -1342,6 +1373,8 @@ void* SenderThread(void* pArg)
       if(lnReturnVal != 0)
       {
         TESTLOG("%s","Thread : Sender Thread");
+        delete lpstData;
+        lpstData = nullptr;
         exit(EXIT_FAILURE); 
       }
       memcpy(&lcBuffer, (char*)&lstBufferData, lnDataStructSize);
@@ -1349,6 +1382,8 @@ void* SenderThread(void* pArg)
       if (0 > lnReturnVal)
       {
          printf("%s, %d", strerror(errno), __LINE__);
+         delete lpstData;
+         lpstData = nullptr;
          exit(EXIT_FAILURE);
       }
       memset(&lcBuffer, 0, lnDataStructSize);
