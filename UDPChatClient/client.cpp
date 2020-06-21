@@ -1651,9 +1651,16 @@ int main(int argc,char* argv[])
    }
    pthread_join(g_nPThreadSender,NULL);
    pthread_join(g_nPThreadReciever,NULL);
-   delete g_pstThrdDataRcvr;
-   delete g_pstThrdSndr;
-
+   if(g_pstThrdDataRcvr != NULL)
+   {
+      delete g_pstThrdDataRcvr;
+      g_pstThrdDataRcvr = NULL;
+   }
+   if(g_pstThrdSndr != NULL)
+   {
+      delete g_pstThrdSndr;
+      g_pstThrdSndr = NULL;
+   }
    close(g_nSockFd);
    return 0;
 }
