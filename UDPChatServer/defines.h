@@ -16,3 +16,5 @@
 #define DES_SUF_IDN "DS"
 #define DEC_SUF_IDN "DC"
 #define MAX_IDENTIFIER_LEN 20
+#define CNF_LOG_LEVEL "LOG_LEVEL"
+#define COREGEN

@@ -2,7 +2,7 @@
 
 using namespace std;
 
-unsigned short g_nLogLevel = 8;
+int g_nLogLevel = 0;
 long getMicrotime()
 {
    struct timeval currentTime;

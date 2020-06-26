@@ -1,5 +1,6 @@
 #ifndef CUSTOM_LOGGER_H
 #define CUSTOM_LOGGER_H
+#pragma once
 #include "Logger.h"
 
 #define LOG_LOGGER(cToBeLogged, ...)             \
@@ -12,14 +13,14 @@
 #define TESTLOG(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
-      LOG(INFO,g_cDatafstream,cToBeLogged,##__VA_ARGS__)\
+      LOG(INFO,g_cfstreamDataLogger,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 
 #define DEBUGLOG(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
-      LOG(DEBUG,g_cDatafstream,cToBeLogged,##__VA_ARGS__)\
+      LOG(DEBUG,g_cfstreamDataLogger,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 
@@ -35,7 +36,7 @@
 #define TESTINGLOG(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
-     LOG(TEST,g_cDatafstream,cToBeLogged,##__VA_ARGS__)\
+     LOG(TEST,g_cfstreamDataLogger,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 

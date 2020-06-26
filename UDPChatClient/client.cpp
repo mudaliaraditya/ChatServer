@@ -141,14 +141,14 @@ INITIALIZE()\
 
 #define COREGEN
 int g_nConnectedTest = 0;
-long getMicrotime()
+/*long getMicrotime()
 {
    struct timeval currentTime;
    gettimeofday(&currentTime, NULL);
    //return currentTime.tv_sec * (int)1e6 + currentTime.tv_usec;
    return currentTime.tv_usec;
-}
-
+}*/
+/*
 #define LOG_LOGGER(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
@@ -192,7 +192,7 @@ long getMicrotime()
    }                                             \
 }
 
-
+*/
 
 
 int VerifyUniqueness(char* cUniqueMessage);

@@ -3,7 +3,7 @@
 #define TYPEDEF_H
 #include<map>
 #include<set>
-
+#include "structs.h" 
 
    typedef std::multimap<time_t,tagTimeData>                            CEventResenderStore;
    typedef std::multimap<time_t,tagTimeData>::iterator                  CEventResenderStoreIterator;

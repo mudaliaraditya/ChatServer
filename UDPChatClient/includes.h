@@ -1,3 +1,5 @@
+#ifndef INCLUDES_H
+#define INCLUDES_H
 #pragma once
 #ifndef WIN32
 #include <iostream>
@@ -37,6 +39,8 @@
 #include "client.h"
 #include "NetworkSources.h"
 #include "Encryptcall.h"
+#include "Logger.h"
+#include "CustomLogger.h"
 #endif
 #ifdef WIN32
 
@@ -66,4 +70,5 @@
 //#include <c:\Program Files (x86)\Windows Kits\8.1\Include\shared\inaddr.h>
 #pragma comment (lib,"wsock32.lib")
 #pragma comment (lib, "Ws2_32.lib")
+#endif
 #endif

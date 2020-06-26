@@ -1,8 +1,9 @@
 #ifndef LOGGER_H
 #define LOGGER_H
+#pragma once
 #include "includes.h"
 
-extern unsigned short g_nLogLevel;
+extern  int g_nLogLevel;
 #define LOGGINGI(cFileStream,cToBeLogged, ...)\
 {\
     \
@@ -26,8 +27,10 @@ extern unsigned short g_nLogLevel;
       g_nTime = time(NULL);\
       long long lnMicro = getMicrotime();\
       struct tm*  lpsttm =  localtime(&g_nTime);\
+      struct tm lstTime = {0};\
+      memcpy(&lstTime,lpsttm,sizeof(struct tm));\
       char lcBufferTime[200] = {0};                       \
-      snprintf(lcBufferTime,200,"%d:%d:%d.%d %d-%d-%d",lpsttm->tm_hour, lpsttm->tm_min, lpsttm->tm_sec, lnMicro,lpsttm->tm_mday,lpsttm->tm_mon,lpsttm->tm_year );\
+      snprintf(lcBufferTime,200,"%02d:%02d:%02d.%06d %02d-%02d-%4d",lstTime.tm_hour, lstTime.tm_min, lstTime.tm_sec, lnMicro,lstTime.tm_mday,lstTime.tm_mon,lstTime.tm_year + + 1900 );\
       snprintf(cTimeBuffer,500,"%s",lcBufferTime);\
    }\
 }
@@ -79,6 +82,11 @@ enum LOG_LEVEL{INFO = 32 ,DEBUG = 16,WARN = 64,ERROR = 128,FATAL = 256,OUT = 8,T
         LOGGINGI(cFileStream , lcVar, ##__VA_ARGS__)\
         lnEnum=lnEnum - FATAL;              \
         break;                      \
+        case TEST:\
+        snprintf(lcVar,1500,"%s | %s ","TEST",cToBeLogged);\
+        LOGGINGI(cFileStream , lcVar, ##__VA_ARGS__)\
+        lnEnum=lnEnum - TEST;              \
+        break;                              \
     }                               \
     \
                                     \
@@ -120,7 +128,6 @@ long getMicrotime();
 // cName       -- Name Of the file
 // cExt        -- extension of the file
 int InitiateLoggingFor(std::fstream& cFileStream,char* cPath,char* cName,char* cExt);
-
 
 
 int GetLoggingLevel(char* pcLoggingLvl);
