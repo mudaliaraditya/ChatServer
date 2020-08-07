@@ -1,6 +1,16 @@
 #ifndef LOGGER_H
 #define LOGGER_H
-#include "includes.h"
+#include <errno.h>
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <string.h> 
+#include <string>
+#include <sys/time.h>  
+#include <fstream>
+#include <sstream> 
+#include "globals.h"
+#include "Logger.h"
+#include "CustomLogger.h"
 
 extern unsigned short g_nLogLevel;
 #define LOGGINGI(cFileStream,cToBeLogged, ...)\
