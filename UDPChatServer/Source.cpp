@@ -103,10 +103,10 @@ int CleanUp()
       printf("%s, %d", strerror(errno), __LINE__);
       exit(EXIT_FAILURE);
    }
-   /*lnRetVal =*/ close(g_nMainSockFd);
+   close(g_nMainSockFd);
    if(lnRetVal != 0)
    {
-      cout << "issue in closing socket" << endl;
+      TESTOUT("issue in closing socket");
       LOG_LOGGER("unable to close reciver socket");
       exit(1);
    }
@@ -257,15 +257,15 @@ void HandleSignal(int nSignal)
                exit(EXIT_FAILURE);
             }
             //exit(EXIT_SUCCESS);
-           //cin.putback('S');
-           g_ExceptionRaised = 1;
-           streambuf *backup;
-           string S = "S";
-           stringstream oss(S);
-           backup = cin.rdbuf();
-           cin.rdbuf(oss.rdbuf());
-           ready_for_reading = 0;
-           return;
+            //cin.putback('S');
+            g_ExceptionRaised = 1;
+            streambuf *backup;
+            string S = "S";
+            stringstream oss(S);
+            backup = cin.rdbuf();
+            cin.rdbuf(oss.rdbuf());
+            ready_for_reading = 0;
+            return;
          }
          break;
 
@@ -456,7 +456,7 @@ int ExecuteFunction(tagData& stData)
                printf("%s %d", strerror(errno), __LINE__);
                exit(EXIT_FAILURE);
             }
-//Code for forwarding data to the other client
+            //Code for forwarding data to the other client
             tagData* lpstForwardMessageData = new tagData();
             if(NULL == lpstForwardMessageData)
             {
@@ -482,7 +482,7 @@ int ExecuteFunction(tagData& stData)
 
             g_cResponseList.push_back((lpstForwardMessageData));
             pthread_mutex_unlock(&g_cResponseMutex);
-//End of Forwarding code
+            //End of Forwarding code
          }
          break;
       case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY):
@@ -502,7 +502,7 @@ int ExecuteFunction(tagData& stData)
                printf("%s %d", strerror(errno), __LINE__);
                exit(EXIT_FAILURE);
             }
-//Code for handling forwarding
+            //Code for handling forwarding
             lstData.nMessageCode = (long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_SERV_TO_CLI;
             TESTLOG("Delivery Handling ");
             tagData* lpNewData = new tagData();
@@ -520,10 +520,10 @@ int ExecuteFunction(tagData& stData)
                lpNewData = nullptr;
                exit (EXIT_FAILURE); 
             }
-            cout << "the seq no is "     << lstData.nSeqNo << endl;
-            cout << "the Identifier is " << lstData.cIdentifier << endl;
-            cout << "the Target is " << lstData.cTarget << endl;
-            cout << lstData.nMessageCode << endl;// lcIter1->second->nMessageCode;
+            TESTOUT ("the seq no is %ld"     ,lstData.nSeqNo );
+            TESTOUT ("the Identifier is %s " ,lstData.cIdentifier );
+            TESTOUT ( "the Target is %s"  ,lstData.cTarget );
+            TESTOUT ("%ld",lstData.nMessageCode);// lcIter1->second->nMessageCode;
             lpNewData->nCommand = (short)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_CONF;
             lpNewData->nSeqNo = lstData.nSeqNo;
             lpNewData->bFinalResponse = true;
@@ -539,7 +539,7 @@ int ExecuteFunction(tagData& stData)
             g_cResponseList.push_back((lpNewData));
 
             pthread_mutex_unlock(&g_cResponseMutex);
-//End of Forward Handling
+            //End of Forward Handling
 
          }
          break;
@@ -559,7 +559,7 @@ int GetResponseForFunction(tagData& stData)
    long& lnMessageCode = stData.nMessageCode;
    switch (lnMessageCode)
    {
-         case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER) :
+      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER) :
          {
 
             stData.nMessageCode = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_RESPONSE);
@@ -569,7 +569,7 @@ int GetResponseForFunction(tagData& stData)
          }
          break;
 
-         case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET) :
+      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET) :
          {
 
             stData.nMessageCode = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER_TARGET_RESPONSE);
@@ -579,7 +579,7 @@ int GetResponseForFunction(tagData& stData)
          }
          break;
 
-         case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT) :
+      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT) :
          {
 
             stData.nMessageCode = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_RESPONSE);
@@ -588,7 +588,7 @@ int GetResponseForFunction(tagData& stData)
          }
          break;
 
-         case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY) :
+      case (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY) :
          {
 
             stData.nMessageCode = (long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_CHAT_MSG_DELIVRY_RES);
@@ -597,13 +597,13 @@ int GetResponseForFunction(tagData& stData)
          }
          break;
 
-         case ((long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY)) :
+      case ((long long)(CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY)) :
          {
 
             return 0;
          }
 
-         default :
+      default :
          {
             TESTLOG("%s","Invalid case");
             //perror("invalid case in GetResponseForFunc");
@@ -632,8 +632,8 @@ void* RecieverThread(void* pData)
       lpstData = new tagData();
       if(NULL == lpstData)
       {
-          LOG_LOGGER("error in new");
-          exit(-1);
+         LOG_LOGGER("error in new");
+         exit(-1);
       }
       tagBufferData lstBufferData;
       lnSockAddrlen = sizeof(cliaddr);
@@ -648,7 +648,6 @@ void* RecieverThread(void* pData)
 
 
       lnReady_for_readingr = select(g_nMainSockFd + 1, &input_set, NULL, NULL, &timeout);
-      //cout << "value of Slect ret "<< lnReady_for_readingr << endl;
       if (lnReady_for_readingr) 
       {
          lnNoOfBytes = RecvUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &cliaddr, lnSockAddrlen);
@@ -660,32 +659,31 @@ void* RecieverThread(void* pData)
                delete lpstData;
                lpstData = nullptr;
             }
-            //printf("%s, %d", strerror(errno), __LINE__);
             LOG_LOGGER("%s : RecvUDPData failed", strerror(errno));
             if(g_bProgramShouldWork)
-            exit(EXIT_FAILURE);
+               exit(EXIT_FAILURE);
             continue;
          }
-     }
-     else
-     {
+      }
+      else
+      {
          if(lpstData != NULL)
          {
             delete lpstData;
             lpstData = nullptr;
          }
          continue;
-     }
-     cout << "data recieved" << endl;
+      }
+      cout << "data recieved" << endl;
       lnRetVal =  Decrypt(reinterpret_cast<char*>(&lstBufferData),sizeof(lstBufferData));
       if( lnRetVal != 0)
       {
-        LOG_LOGGER("%s : Decryption failed", strerror(errno));
-        delete lpstData;
-        lpstData = nullptr;
-        if(g_bProgramShouldWork)
-           exit(EXIT_FAILURE);
-        continue;
+         LOG_LOGGER("%s : Decryption failed", strerror(errno));
+         delete lpstData;
+         lpstData = nullptr;
+         if(g_bProgramShouldWork)
+            exit(EXIT_FAILURE);
+         continue;
       } 
       *lpstData = ConvertToDataStruct(lstBufferData);
 #ifdef LOGGING
@@ -771,10 +769,10 @@ void* RecieverThread(void* pData)
             if( lcIterIdentifierStringStore != g_cIdentifierStore.end())
             {
                TESTLOG("%s : Duplicate Packet with identifier %s", strerror(errno), lcKey.c_str());
-               #ifdef LOGGING
-                  cout << "duplicate packet" << endl;
-                  cout << lpstData->cUniqueMessageIdentifier << " duplicated" << endl;;
-               #endif
+#ifdef LOGGING
+               cout << "duplicate packet" << endl;
+               cout << lpstData->cUniqueMessageIdentifier << " duplicated" << endl;;
+#endif
                lbDiscardPacket = true;
             }
             //}
@@ -819,15 +817,15 @@ void* RecieverThread(void* pData)
          {
             cout << "deleting all old data" << endl;
             TESTLOG("DeleteMsgFromResenderStoreByUniqueIdentifier started")
-            if(DeleteMsgFromResenderStoreByUniqueIdentifier(*lpstData) != EXIT_SUCCESS)
-            {
-               if(lpstData != NULL)
+               if(DeleteMsgFromResenderStoreByUniqueIdentifier(*lpstData) != EXIT_SUCCESS)
                {
-                  delete lpstData;
-                  lpstData = nullptr;
-               } 
-               exit(1);
-            }
+                  if(lpstData != NULL)
+                  {
+                     delete lpstData;
+                     lpstData = nullptr;
+                  } 
+                  exit(1);
+               }
          }
       }
       if (lpstData->nMessageCode == (long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_REGISTER)
@@ -838,11 +836,11 @@ void* RecieverThread(void* pData)
       lpstData->stNetWork.fd = g_nMainSockFd;
       lpstData->stNetWork.restrict = sizeof(sockaddr_in);
       lpstData->stNetWork.flags = MSG_CONFIRM;
-      #ifdef LOGGING        
+#ifdef LOGGING        
       cout << "chat data " << lpstData->cBuffer << endl;
       cout << "identifier " << lpstData->cIdentifier << endl;
       cout << "target " << lpstData->cTarget << endl;
-      #endif        
+#endif        
       lnRetVal = pthread_mutex_lock(&g_cProcessMutex);
       if (lnRetVal != 0)
       {
@@ -862,7 +860,7 @@ void* RecieverThread(void* pData)
       g_cProcessList.push_back(lpstData);
       lpstData = nullptr; 
 
-      
+
 
       if ( 0  != pthread_cond_signal(&g_cCondVarForProcessThread))
       {
@@ -882,7 +880,6 @@ void* RecieverThread(void* pData)
 
    } 
 
-   //cout << "deleting newly created struct" << endl;
    if(lpstData != nullptr)
    {
       delete lpstData;
@@ -890,7 +887,6 @@ void* RecieverThread(void* pData)
    }
    pthread_exit(NULL);
    return NULL;
-   //pthread_exit(NULL);
 }
 
 
@@ -907,123 +903,77 @@ void* EventThread(void*)
    while(g_bProgramShouldWork == true)
    {
 
-          pthread_mutex_lock(&g_ReSenderMutex);
+      pthread_mutex_lock(&g_ReSenderMutex);
 #ifdef LOGGING
 #endif
 #ifdef LOGGING
-          TESTLOG("taking sender lock \n");
+      TESTLOG("taking sender lock \n");
 #endif
-          if(!g_cEventResender.empty())
-          {
-            CEventResenderStoreIterator lcIter = g_cEventResender.begin();
-            TESTLOG("iterator time %d \n", lcIter->first);
-            TESTLOG("current time %d \n",time(NULL));
-            if(lcIter->first <= time(NULL) )
+      if(!g_cEventResender.empty())
+      {
+         CEventResenderStoreIterator lcIter = g_cEventResender.begin();
+         TESTLOG("iterator time %d \n", lcIter->first);
+         TESTLOG("current time %d \n",time(NULL));
+         if(lcIter->first <= time(NULL) )
+         {
+
+
+            if((long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY == lcIter->second.stData.nMessageCode)
             {
-
-
-               if((long long)CMESSAGE_CODE_ACTIONS::MESSAGE_CODE_ACTIONS_DUMMY == lcIter->second.stData.nMessageCode)
-               {
-                     // TESTLOG("Sending dummy message \n");
-                     // do
-                     // {
-                     //   SetRand(lcUniqueIdentifierBuffer, 30);
-                     // }while(VerifyUniqueness(lcUniqueIdentifierBuffer) != 0);
-                     // strncpy(lcIter->second.stData.cUniqueMessageIdentifier, lcUniqueIdentifierBuffer,strlen(lcIter->second.stData.cUniqueMessageIdentifier)); 
-               }
-               //lcIter->second.stData.nLatestClntSeqNo = g_nLatestRecivedSequenceNo;
-               TESTLOG("resending data \n");
-               lpstData = new tagData();
-               if(NULL == lpstData)
-               {
-                  LOG_LOGGER("new error");
-                  exit(-1);
-               }
-               memcpy(lpstData,&(lcIter->second.stData),sizeof(tagData));
-               pthread_mutex_lock(&g_cResponseMutex);
-               g_cResponseList.push_front(lpstData);
-               if(lcIter->second.m_nCounter > 1)
-               {
-                      TESTLOG("Resending Data :%s %d %s %d %s %d %s %s %s %d","Message Code:", lcIter->second.stData.nMessageCode,"the seq no is ", lcIter->second.stData.nSeqNo , " the LatestRecieved Seq no is " , lcIter->second.stData.nLatestClntSeqNo , " from user id and name ", lcIter->second.stData.cIdentifier ," " , lcIter->second.stData.nGlobalIdentifier);
-                      lcIter->second.m_nCounter--;
-                      lcIter->second.m_nTime = time(NULL) + 3;
-                      g_cEventResender.insert(pair<time_t,tagTimeData>(lcIter->second.m_nTime,lcIter->second));
-               }
-               lnSleeptIme = lcIter->second.m_nTime;
-               g_cEventResender.erase(lcIter);
-               pthread_mutex_unlock(&g_cResponseMutex);
+               // TESTLOG("Sending dummy message \n");
+               // do
+               // {
+               //   SetRand(lcUniqueIdentifierBuffer, 30);
+               // }while(VerifyUniqueness(lcUniqueIdentifierBuffer) != 0);
+               // strncpy(lcIter->second.stData.cUniqueMessageIdentifier, lcUniqueIdentifierBuffer,strlen(lcIter->second.stData.cUniqueMessageIdentifier)); 
             }
+            //lcIter->second.stData.nLatestClntSeqNo = g_nLatestRecivedSequenceNo;
+            TESTLOG("resending data \n");
+            lpstData = new tagData();
+            if(NULL == lpstData)
+            {
+               LOG_LOGGER("new error");
+               exit(-1);
+            }
+            memcpy(lpstData,&(lcIter->second.stData),sizeof(tagData));
+            pthread_mutex_lock(&g_cResponseMutex);
+            g_cResponseList.push_front(lpstData);
+            if(lcIter->second.m_nCounter > 1)
+            {
+               TESTLOG("Resending Data :%s %d %s %d %s %d %s %s %s %d","Message Code:", lcIter->second.stData.nMessageCode,"the seq no is ", lcIter->second.stData.nSeqNo , " the LatestRecieved Seq no is " , lcIter->second.stData.nLatestClntSeqNo , " from user id and name ", lcIter->second.stData.cIdentifier ," " , lcIter->second.stData.nGlobalIdentifier);
+               lcIter->second.m_nCounter--;
+               lcIter->second.m_nTime = time(NULL) + 3;
+               g_cEventResender.insert(pair<time_t,tagTimeData>(lcIter->second.m_nTime,lcIter->second));
+            }
+            lnSleeptIme = lcIter->second.m_nTime;
+            g_cEventResender.erase(lcIter);
+            pthread_mutex_unlock(&g_cResponseMutex);
+         }
 
-          }
+      }
 
 #ifdef LOGGING
-          TESTLOG("releasing sender mutex \n");
+      TESTLOG("releasing sender mutex \n");
 #endif
-          pthread_mutex_unlock(&g_ReSenderMutex);
+      pthread_mutex_unlock(&g_ReSenderMutex);
 #ifdef LOGGING
-          TESTLOG("releasing resender mutex \n");
+      TESTLOG("releasing resender mutex \n");
 #endif
-          //checks for resender events only once a second
-          //sleep(1);
-          int lnCurrentTime = time(NULL);
-          int TotalSleep = lnSleeptIme - lnCurrentTime;
-          if(TotalSleep > 0)
-          {
-             sleep(TotalSleep);
-          }
+      //checks for resender events only once a second
+      //sleep(1);
+      int lnCurrentTime = time(NULL);
+      int TotalSleep = lnSleeptIme - lnCurrentTime;
+      if(TotalSleep > 0)
+      {
+         sleep(TotalSleep);
+      }
    }
    pthread_exit(NULL);
    return NULL;
 }
 
 //===========================================================================
-/*
-void* aEventThread(void*)
-{
-   while(true == g_bProgramShouldWork)
-   {
-      pthread_mutex_lock(&g_ReSenderMutex);
-#ifdef LOGGING
-      //out << "Taking Resender Mutex" << __LINE__ <<endl;
-#endif
-      if(!g_cEventResender.empty())
-      {
-         for(list<tagTimeData>::iterator lcIter =  g_cEventResender.begin();lcIter !=  g_cEventResender.end();)
-         {
-            if(lcIter->m_nTime <= time(NULL))
-            {
-               //cout << "hello" << endl;
-               if(lcIter->m_nCounter <= 0)
-               {
-                  lcIter = g_cEventResender.erase(lcIter);
-               }
-               else
-               {
-                  pthread_mutex_lock(&g_cResponseMutex);
-                  TESTLOG( "resending data","");
-                  g_cResponseList.push_front(new tagData(lcIter->stData));
-                  pthread_mutex_unlock(&g_cResponseMutex);
 
-                  lcIter->m_nCounter--;
-                  lcIter->m_nTime = time(NULL) + 10;
-                  lcIter++;
-               }
-            }
-            else
-            {
-               lcIter++;
-            }
-         }
-      }
-      pthread_mutex_unlock(&g_ReSenderMutex);
-#ifdef LOGGING
-      // cout << "Releasing Resender Mutex" << __LINE__ <<endl;
-#endif
-      sleep(1);
-   }
-   return NULL;
-}
-*/
 int DeleteMsgFromResenderStoreByUniqueIdentifier(const tagData lstRecvData )
 {
    TESTLOG("started deleting messages");
@@ -1046,27 +996,27 @@ int DeleteMsgFromResenderStoreByUniqueIdentifier(const tagData lstRecvData )
       TESTLOG("%s", lstData.stData.cUniqueMessageIdentifier );
       //message instore whose sequenceno is less than the latest clnt seqno that is recieved for the same user with same session id
       /*if(( (lstData.stData.nSessionId == lstRecvData.nSessionId) && (strcmp(lstData.stData.cIdentifier,lstRecvData.cIdentifier) == 0) &&
-       (
-            (long long)CCOMMAND_TYPE::CCOMMAND_TYPE_RESPONSE      == lstRecvData.nCommand ||
-            (long long)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_RES == lstRecvData.nCommand
-       )
+        (
+        (long long)CCOMMAND_TYPE::CCOMMAND_TYPE_RESPONSE      == lstRecvData.nCommand ||
+        (long long)CCOMMAND_TYPE::CCOMMAND_TYPE_DELIVERY_RES == lstRecvData.nCommand
+        )
 
-))
-      {
-         TESTLOG( "deleting all lower seqno for user id %d" , lstRecvData.nGlobalIdentifier );
-         lcIter = g_cEventResender.erase( lcIter);
-         //continue;
+        ))
+        {
+        TESTLOG( "deleting all lower seqno for user id %d" , lstRecvData.nGlobalIdentifier );
+        lcIter = g_cEventResender.erase( lcIter);
+      //continue;
       }
       else if((strcmp(lstData.stData.cUniqueMessageIdentifier,lstRecvData.cUniqueMessageIdentifier) == 0) && (lstData.stData.nSessionId == lstRecvData.nSessionId))
       {
-         //TESTLOG( "response recieved now erasing","" );
-         //lcIter = g_cEventResender.erase( lcIter);
-         //continue;
-         lcIter++;
+      //TESTLOG( "response recieved now erasing","" );
+      //lcIter = g_cEventResender.erase( lcIter);
+      //continue;
+      lcIter++;
       }
       else
       {
-         lcIter++;
+      lcIter++;
       } */
       if((lstData.stData.nSeqNo < lstRecvData.nLatestClntSeqNo) && (lstData.stData.nSessionId == lstRecvData.nSessionId) && (strcmp(lstData.stData.cIdentifier,lstRecvData.cIdentifier) == 0))
       {
@@ -1209,9 +1159,7 @@ void* ProcessThread(void* pArg)
                exit(EXIT_FAILURE);
             }
             break;
-            //return NULL;
          }
-         //continue;
       }
       if(!g_cProcessList.empty())
       {
@@ -1225,17 +1173,14 @@ void* ProcessThread(void* pArg)
       }
       else
       {
-          //if(false == g_bProgramShouldWork)
-           {
-             lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
-             if (lnReturnVal != 0)
-             {  
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to unlock");
-               exit(EXIT_FAILURE);
-             }
-             continue; 
-           }
+         lnReturnVal = pthread_mutex_unlock(&g_cProcessMutex);
+         if (lnReturnVal != 0)
+         {  
+            printf("%s, %d", strerror(errno), __LINE__);
+            perror("unable to unlock");
+            exit(EXIT_FAILURE);
+         }
+         continue; 
       }
 
       TESTLOG("%s %d %s ","the thread no is",pthread_self(), lstData->cBuffer );
@@ -1372,10 +1317,10 @@ void* SenderThread(void* pArg)
       lnReturnVal = Encrypt(reinterpret_cast<char*>(&lstBufferData),sizeof(lstBufferData));
       if(lnReturnVal != 0)
       {
-        TESTLOG("%s","Thread : Sender Thread");
-        delete lpstData;
-        lpstData = nullptr;
-        exit(EXIT_FAILURE); 
+         TESTLOG("%s","Thread : Sender Thread");
+         delete lpstData;
+         lpstData = nullptr;
+         exit(EXIT_FAILURE); 
       }
       memcpy(&lcBuffer, (char*)&lstBufferData, lnDataStructSize);
       lnReturnVal = sendto(lpstData->stNetWork.fd, (const char *)&lcBuffer, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(lpstData->stNetWork.addr), lpstData->stNetWork.restrict);
@@ -1399,13 +1344,6 @@ void* SenderThread(void* pArg)
    return NULL;
 }
 
-
-//#define LOG_LOGGER(cToBeLogged, ...)             \
-{                                                \
-   char lcBuffer[200] = {0};                       \
-      snprintf(lcBuffer,200,cToBeLogged, ##__VA_ARGS__);         \
-      (g_cfstream <<  lcBuffer << endl);           \
-}
 
 
 int InitializeAllMutex()
@@ -1472,7 +1410,7 @@ int InitiateLogging()
       g_cfstream.open(lcErrorLogFileName,ios::in|ios::out|ios::trunc);
       if(g_cfstream.fail())
       {
-          return EXIT_FAILURE;
+         return EXIT_FAILURE;
       }
       g_cfstream.clear();
    }
@@ -1489,7 +1427,7 @@ int InitiateLogging()
       g_cDatafstream.open(lcDataLogFileName, ios::in|ios::out|ios::trunc);
       if(g_cfstream.fail())
       {
-          return EXIT_FAILURE;
+         return EXIT_FAILURE;
       }
       g_cDatafstream.clear();
    }
@@ -1516,12 +1454,13 @@ int main()
    timeout.tv_sec = 1;
    timeout.tv_usec = 0;
 
-  
+
 
 
    pConfigObject = CreateNewMap();
    if(pConfigObject == NULL)
    {
+      TESTOUT("ConfigObject Creation Failed");
       return -1;
    } 
    lnRetVal =  GetConfig(CNF_FILE_NAME,pConfigObject); 
@@ -1536,7 +1475,6 @@ int main()
       return -1;
    }
    //LOG File Handling END
-   //LOG_LOGGER("%d",1);
 
    g_OS = 1;
 
@@ -1545,8 +1483,6 @@ int main()
    lnRetVal = NetWorkInitialize(g_nMainSockFd);
    if (lnRetVal != EXIT_SUCCESS)
    {
-      //printf("%s, %d", strerror(errno), __LINE__);
-      //perror("Network Initialize failed");
       LOG_LOGGER("%s : NetWorkInitialize failed", strerror(errno));
       exit(EXIT_FAILURE);
    }
@@ -1554,9 +1490,7 @@ int main()
    //initializing all - conditional variables and creating threads
    if (pthread_cond_init(&g_cCondVarForProcessThread,NULL) != 0)
    {
-      //printf("%s %d", strerror(errno), __LINE__);
       LOG_LOGGER("%s : conditional var init has failed", strerror(errno));
-      //printf("\n conditional var init has failed\n");
       exit (EXIT_FAILURE);
    }
 
@@ -1569,16 +1503,12 @@ int main()
    lnRetVal = pthread_create( &lnRecieverThread, NULL, RecieverThread, NULL);
    if(0 > lnRetVal)
    {
-      //printf("%s, %d", strerror(errno), __LINE__);
-      //perror("pthread create thread");
       LOG_LOGGER("%s : thread creation failed", strerror(errno));
       exit(EXIT_FAILURE);
    }
    lnRetVal = pthread_create(&lnSenderPThread, NULL, SenderThread, NULL);
    if(0 > lnRetVal)
    {
-      //printf("%s, %d", strerror(errno), __LINE__);
-      //perror("pthread create thread");
       LOG_LOGGER("%s : thread creation failed", strerror(errno));
       exit(EXIT_FAILURE);
    }
@@ -1636,100 +1566,98 @@ int main()
       }
    }
    if(g_ExceptionRaised == 0)
-  {
-   if(CleanUp() != 0)
    {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("cleanup dailed");
-      exit(EXIT_FAILURE);
-   }
+      if(CleanUp() != 0)
+      {
+         printf("%s, %d", strerror(errno), __LINE__);
+         perror("cleanup dailed");
+         exit(EXIT_FAILURE);
+      }
 
-   if(pConfigObject != NULL)
-   {
-      DeleteNewMap(pConfigObject);
-      pConfigObject = NULL;
-   }
+      if(pConfigObject != NULL)
+      {
+         DeleteNewMap(pConfigObject);
+         pConfigObject = NULL;
+      }
 
-   lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
-   if(lnNoOfBytes > 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to join lnPThreadEventTime");
-      exit(EXIT_FAILURE);
-   }
+      lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
+      if(lnNoOfBytes > 0)
+      {
+         printf("%s, %d", strerror(errno), __LINE__);
+         perror("unable to join lnPThreadEventTime");
+         exit(EXIT_FAILURE);
+      }
 
-   lnRetVal = pthread_join(lnRecieverThread,NULL);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to join lnPThreadEventTime");
-      exit(EXIT_FAILURE);
-   }
-   lnRetVal = pthread_join(lnPThreadEventTime,NULL);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to join lnPThreadEventTime");
-      exit(EXIT_FAILURE);
-   }
-
-   lnRetVal = pthread_join(lnSenderPThread,NULL);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to join lnSenderPThread");
-      exit(EXIT_FAILURE);
-   }
-
-   for (int lnCounter = 0; lnCounter< NO_OF_PROC_THREADS; lnCounter++)
-   {
-      lnRetVal = pthread_join(lnProcessPThread[lnCounter],NULL);
+      lnRetVal = pthread_join(lnRecieverThread,NULL);
       if (lnRetVal != 0)
       {
          printf("%s, %d", strerror(errno), __LINE__);
-         perror("unable to join processthread");
+         perror("unable to join lnPThreadEventTime");
          exit(EXIT_FAILURE);
       }
+      lnRetVal = pthread_join(lnPThreadEventTime,NULL);
+      if (lnRetVal != 0)
+      {
+         printf("%s, %d", strerror(errno), __LINE__);
+         perror("unable to join lnPThreadEventTime");
+         exit(EXIT_FAILURE);
+      }
+
+      lnRetVal = pthread_join(lnSenderPThread,NULL);
+      if (lnRetVal != 0)
+      {
+         printf("%s, %d", strerror(errno), __LINE__);
+         perror("unable to join lnSenderPThread");
+         exit(EXIT_FAILURE);
+      }
+
+      for (int lnCounter = 0; lnCounter< NO_OF_PROC_THREADS; lnCounter++)
+      {
+         lnRetVal = pthread_join(lnProcessPThread[lnCounter],NULL);
+         if (lnRetVal != 0)
+         {
+            printf("%s, %d", strerror(errno), __LINE__);
+            perror("unable to join processthread");
+            exit(EXIT_FAILURE);
+         }
+      }
+
+      lnRetVal = pthread_cond_destroy(&g_cCondVarForProcessThread);
+      if (lnRetVal != 0)
+      {
+         printf("%s, %d", strerror(errno), __LINE__);
+         perror("unable to destroy Conditional Variable");
+         exit(EXIT_FAILURE);
+      }
+
+
+      lnRetVal = pthread_mutex_destroy(&g_cProcessMutex);
+      if (lnRetVal != 0)
+      {
+         printf("%s, %d", strerror(errno), __LINE__);
+         perror("unable to destroy mutex");
+         exit(EXIT_FAILURE);
+      }
+
+
+      lnRetVal = pthread_mutex_destroy(&g_cResponseMutex);
+      if (lnRetVal != 0)
+      {
+         printf("%s, %d", strerror(errno), __LINE__);
+         perror("unable to destroy mutex");
+         exit(EXIT_FAILURE);
+      }
+
+
+      lnRetVal = pthread_mutex_destroy(&g_cIdentifierMutex);
+      if (lnRetVal != 0)
+      {
+         printf("%s, %d", strerror(errno), __LINE__);
+         perror("unable to destroy mutex");
+         exit(EXIT_FAILURE);
+      }
+
    }
-
-   //close(g_nMainSockFd);
-
-   lnRetVal = pthread_cond_destroy(&g_cCondVarForProcessThread);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to destroy Conditional Variable");
-      exit(EXIT_FAILURE);
-   }
-
-
-   lnRetVal = pthread_mutex_destroy(&g_cProcessMutex);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to destroy mutex");
-      exit(EXIT_FAILURE);
-   }
-
-
-   lnRetVal = pthread_mutex_destroy(&g_cResponseMutex);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to destroy mutex");
-      exit(EXIT_FAILURE);
-   }
-
-
-   lnRetVal = pthread_mutex_destroy(&g_cIdentifierMutex);
-   if (lnRetVal != 0)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      perror("unable to destroy mutex");
-      exit(EXIT_FAILURE);
-   }
-
-}
    return 0;
 }
 #endif
@@ -2148,21 +2076,21 @@ using namespace std;
 int main()
 {
    g_OS = 2;
-   WSADATA w = { 0 };						/* Used to open windows connection */
-   unsigned short port_number = 0;			/* Port number to use */
-   int a1 = 0, a2 = 0, a3 = 0, a4 = 0;					/* Components of address in xxx.xxx.xxx.xxx form */
-                                                   //int client_length = 0;					/* Length of client struct */
-                                                   //int bytes_received = 0;					/* Bytes received from client */
-                                                   //SOCKET sd = 0;							/* Socket descriptor of server */
-                                                   //struct sockaddr_in server = { 0 };			/* Information about the server */
-                                                   //struct sockaddr_in client = { 0 };			/* Information about the client */
-                                                   //char buffer[BUFFER_SIZE] = { 0 };			/* Where to store received data */
-                                                   ///struct hostent *hp = NULL;					/* Information about this computer */
-                                                   //char host_name[256] = { 0 };				/* Name of the server */
-                                                   //time_t current_time = 0;				/* Current time */
-                                                   //CRITICAL_SECTION g_cProcessMutex;
-                                                   //CRITICAL_SECTION g_cProcessMutexCounter;
-                                                   //CRITICAL_SECTION g_cResponseMutex;
+   WSADATA w = { 0 };                  /* Used to open windows connection */
+   unsigned short port_number = 0;         /* Port number to use */
+   int a1 = 0, a2 = 0, a3 = 0, a4 = 0;               /* Components of address in xxx.xxx.xxx.xxx form */
+   //int client_length = 0;               /* Length of client struct */
+   //int bytes_received = 0;               /* Bytes received from client */
+   //SOCKET sd = 0;                     /* Socket descriptor of server */
+   //struct sockaddr_in server = { 0 };         /* Information about the server */
+   //struct sockaddr_in client = { 0 };         /* Information about the client */
+   //char buffer[BUFFER_SIZE] = { 0 };         /* Where to store received data */
+   ///struct hostent *hp = NULL;               /* Information about this computer */
+   //char host_name[256] = { 0 };            /* Name of the server */
+   //time_t current_time = 0;            /* Current time */
+   //CRITICAL_SECTION g_cProcessMutex;
+   //CRITICAL_SECTION g_cProcessMutexCounter;
+   //CRITICAL_SECTION g_cResponseMutex;
 
    InitializeCriticalSection(&g_cProcessMutex);
 

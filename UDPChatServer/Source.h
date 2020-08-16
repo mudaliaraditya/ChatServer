@@ -75,14 +75,6 @@ void* SenderThread(void* pArg);
 
 
 
-//#define LOG_LOGGER(cToBeLogged, ...)             \
-{                                                \
-  char lcBuffer[200] = {0};                       \
-  snprintf(lcBuffer,200,cToBeLogged, ##__VA_ARGS__);         \
-  (g_cfstream <<  lcBuffer << endl);           \
-}
-
-
 
 int AddDataToStore(std::list<tagData> cList, pthread_mutex_t cMutex);
 
