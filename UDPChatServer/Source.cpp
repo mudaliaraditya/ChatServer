@@ -86,92 +86,189 @@ tagData ConvertToDataStruct(tagBufferData& stData)
    return lstlocalData;
 }
 
+void mask_sig(void)
+{
+	sigset_t mask;
+	sigemptyset(&mask); 
+	sigaddset(&mask, SIGINT); 
+	pthread_sigmask(SIG_BLOCK, &mask, NULL);
 
+}
+ 
 ////////////////////FINIALIZINGyyyy FUNCTIONS/////////////////////////
 int CleanUp()
 {
-   TESTLOG("%s","Doing Cleanup");
-   g_bProgramShouldWork = false;
-   int lnRetVal = 0;
-   tagBufferData lstBufferData = {0}; 
-   int lnSockAddrlen = sizeof(servaddr);
-   int lnDataStructSize = sizeof(tagBufferData);
-   //int lnNoOfBytes = SendUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &servaddr, lnSockAddrlen);
-   //lnRetVal = sendto(g_nMainSockFd, (const char *)&lstBufferData, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(servaddr), lnSockAddrlen);
-   if (0 > lnRetVal)
-   {
-      printf("%s, %d", strerror(errno), __LINE__);
-      exit(EXIT_FAILURE);
-   }
-   close(g_nMainSockFd);
-   if(lnRetVal != 0)
-   {
-      TESTOUT("issue in closing socket");
-      LOG_LOGGER("unable to close reciver socket");
-      exit(1);
-   }
-   shutdown(g_nMainSockFd , SHUT_RDWR);
-   //Cleaning g_cPortIdentifier store
-   for(CIteratotrIdentiferDataStore lcIter = g_cPortIdentifier.begin(); lcIter != g_cPortIdentifier.end();lcIter++)
-   {
-      tagData* lpstData = lcIter->second;
-      if(lpstData != nullptr)
-      {
-         delete (lpstData);
-         lpstData = nullptr;
-      }
-   }
+	TESTLOG("%s","Doing Cleanup");
+	g_bProgramShouldWork = false;
+	int lnRetVal = 0;
+	tagBufferData lstBufferData = {0}; 
+	int lnSockAddrlen = sizeof(servaddr);
+	int lnDataStructSize = sizeof(tagBufferData);
+	//int lnNoOfBytes = SendUDPData(g_nMainSockFd, (char *)&lstBufferData, sizeof(tagBufferData), &servaddr, lnSockAddrlen);
+	//lnRetVal = sendto(g_nMainSockFd, (const char *)&lstBufferData, lnDataStructSize, MSG_CONFIRM, (const struct sockaddr *) &(servaddr), lnSockAddrlen);
+	if (0 > lnRetVal)
+	{
+		printf("%s, %d", strerror(errno), __LINE__);
+		exit(EXIT_FAILURE);
+	}
+	close(g_nMainSockFd);
+	if(lnRetVal != 0)
+	{
+		TESTOUT("issue in closing socket");
+		LOG_LOGGER("unable to close reciver socket");
+		exit(1);
+	}
+	shutdown(g_nMainSockFd , SHUT_RDWR);
+	lnRetVal = ThreadDestroy();
+	if(lnRetVal != 0 )
+	{
+		TESTOUT("issue in closing socket");
+		LOG_LOGGER("unable to close reciver socket");
+		exit(1);
+	}
+	//Cleaning g_cPortIdentifier store
+	for(CIteratotrIdentiferDataStore lcIter = g_cPortIdentifier.begin(); lcIter != g_cPortIdentifier.end();lcIter++)
+	{
+		tagData* lpstData = lcIter->second;
+		if(lpstData != nullptr)
+		{
+			delete (lpstData);
+			lpstData = nullptr;
+		}
+	}
 
-   //Cleaning g_cResponseList store 
-   for(CIteratorDataStore lcIter = g_cResponseList.begin();g_cResponseList.end() != lcIter; lcIter++)
-   {
-      tagData* lpstData = *lcIter;
-      if(lpstData != nullptr)
-      {
-         delete (lpstData);
-         lpstData = nullptr;
-      }
-   }
+	//Cleaning g_cResponseList store 
+	for(CIteratorDataStore lcIter = g_cResponseList.begin();g_cResponseList.end() != lcIter; lcIter++)
+	{
+		tagData* lpstData = *lcIter;
+		if(lpstData != nullptr)
+		{
+			delete (lpstData);
+			lpstData = nullptr;
+		}
+	}
 
-   for(CIteratorDataStore lcIter = g_cProcessList.begin(); g_cProcessList.end() != lcIter; lcIter++)
-   {
-      tagData* lpstData = *lcIter;
-      if(lpstData != nullptr)
-      {
-         delete (lpstData);
-         lpstData = nullptr;
-      }
-   }
-   for(CClientIdDataStore::iterator lcIter = g_cClientIDStore.begin();lcIter != g_cClientIDStore.end();)
-   {
-      tagData* lpstData = lcIter->second;
-      if(lpstData != NULL)
-      {
-         delete lpstData;
-         lpstData = NULL;
-      }
-      lcIter = g_cClientIDStore.erase(lcIter);
-   }
+	for(CIteratorDataStore lcIter = g_cProcessList.begin(); g_cProcessList.end() != lcIter; lcIter++)
+	{
+		tagData* lpstData = *lcIter;
+		if(lpstData != nullptr)
+		{
+			delete (lpstData);
+			lpstData = nullptr;
+		}
+	}
+	for(CClientIdDataStore::iterator lcIter = g_cClientIDStore.begin();lcIter != g_cClientIDStore.end();)
+	{
+		tagData* lpstData = lcIter->second;
+		if(lpstData != NULL)
+		{
+			delete lpstData;
+			lpstData = NULL;
+		}
+		lcIter = g_cClientIDStore.erase(lcIter);
+	}
 
-   for( CEventResenderStoreIterator lcIter = g_cEventResender.begin(); g_cEventResender.end() != lcIter; lcIter++)
-   {
-      tagTimeData lstData = (lcIter->second);
-      TESTLOG("message code :  %d, Identifier :  %d, data : %s \n",lstData.stData.nMessageCode,lstData.stData.nGlobalIdentifier,lstData.stData.cBuffer);
-      //if(lpstData != nullptr)
-      //{
-      //   delete (lpstData);
-      //   lpstData = nullptr;
-      //}
-   }
+	for( CEventResenderStoreIterator lcIter = g_cEventResender.begin(); g_cEventResender.end() != lcIter; lcIter++)
+	{
+		tagTimeData lstData = (lcIter->second);
+		TESTLOG("message code :  %d, Identifier :  %d, data : %s \n",lstData.stData.nMessageCode,lstData.stData.nGlobalIdentifier,lstData.stData.cBuffer);
+	}
 
-   return 0;
+	if(pConfigObject != NULL)
+	{
+		DeleteNewMap(pConfigObject);
+		pConfigObject = NULL;
+	}
+
+	return 0;
 }
+//////////////////////////////////////////////////////////////////////
 
+int ThreadDestroy() 
+{
+	 int lnRetVal = 0;	
+    lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
+    if (lnRetVal != 0) 
+	 {
+        printf("%s, %d", strerror(errno), __LINE__);
+        perror("unable to join Process Threads");
+        exit(EXIT_FAILURE);
+    }
+
+    lnRetVal = pthread_join(lnRecieverThread, NULL);
+    if (lnRetVal != 0) 
+	 {
+        printf("%s, %d", strerror(errno), __LINE__);
+        perror("unable to join Reciver Thread ");
+        exit(EXIT_FAILURE);
+    }
+    lnRetVal = pthread_join(lnSenderPThread, NULL);
+    if (lnRetVal != 0) 
+	 {
+        printf("%s, %d", strerror(errno), __LINE__);
+        perror("unable to destroy Conditional Variable");
+        exit(EXIT_FAILURE);
+    }
+    lnRetVal = pthread_join(lnPThreadEventTime,NULL);
+	 if (lnRetVal != 0)
+    {
+        printf("%s, %d", strerror(errno), __LINE__);
+        perror("unable to destroy Conditional Variable");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int lnCounter = 0; lnCounter < NO_OF_PROC_THREADS; lnCounter++) 
+	 {
+        lnRetVal = pthread_join(lnProcessPThread[lnCounter], NULL);
+        if (lnRetVal != 0) 
+		  {
+            printf("%s, %d", strerror(errno), __LINE__);
+            perror("unable to destroy Conditional Variable");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    lnRetVal = pthread_cond_destroy(&g_cCondVarForProcessThread);
+    if (lnRetVal != 0) 
+	 {
+        printf("%s, %d", strerror(errno), __LINE__);
+        perror("unable to destroy Conditional Variable");
+        exit(EXIT_FAILURE);
+    }
+
+
+    lnRetVal = pthread_mutex_destroy(&g_cProcessMutex);
+    if (lnRetVal != 0)
+    {
+        printf("%s, %d", strerror(errno), __LINE__);
+        perror("unable to destroy mnutex");
+        exit(EXIT_FAILURE);
+    }
+
+    lnRetVal = pthread_mutex_destroy(&g_cResponseMutex);
+    if (lnRetVal != 0) 
+    {
+        printf("%s, %d", strerror(errno), __LINE__);
+        perror("unable to destroy mnutex");
+        exit(EXIT_FAILURE);
+    }
+
+
+    lnRetVal = pthread_mutex_destroy(&g_cIdentifierMutex);
+    if (lnRetVal != 0) 
+    {
+        printf("%s, %d", strerror(errno), __LINE__);
+        perror("unable to destroy mnutex");
+        exit(EXIT_FAILURE);
+    }
+    return 0;
+}
 ////////////////////FINIALIZINGyyyy1 FUNCTIONS/////////////////////////
 void HandleSignal(int nSignal) 
 {
+//	sleep(20);
    const char *signal_name;
-   signal(SIGINT,HandleSignal);
+   //signal(SIGINT,HandleSignal);
    sigset_t pending;
    int lnRetVal = 0;
 
@@ -180,85 +277,15 @@ void HandleSignal(int nSignal)
    {
       case SIGINT:
          {
-
+				static int x =0;
             printf("Caught SIGINT, exiting now\n");
-            g_bProgramShouldWork = false;
-            CleanUp();
-            if(pConfigObject != NULL)
-            {
-               DeleteNewMap(pConfigObject);
-               pConfigObject = NULL;
-            }
-            lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
-            if(lnRetVal != 0)
-            {
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to join Process Threads");
-               exit(EXIT_FAILURE);
-            }
-
-            lnRetVal = pthread_join(lnRecieverThread, NULL);
-            if (lnRetVal != 0)
-            {
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to join Reciver Thread ");
-               exit(EXIT_FAILURE);
-            }
-            lnRetVal = pthread_join(lnSenderPThread,NULL);
-            if (lnRetVal != 0)
-            {
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to destroy Conditional Variable");
-               exit(EXIT_FAILURE);
-            }
-
-            for (int lnCounter = 0; lnCounter< NO_OF_PROC_THREADS; lnCounter++)
-            {
-               lnRetVal = pthread_join(lnProcessPThread[lnCounter],NULL);
-               if (lnRetVal != 0)
-               {
-                  printf("%s, %d", strerror(errno), __LINE__);
-                  perror("unable to destroy Conditional Variable");
-                  exit(EXIT_FAILURE);
-               }
-            }
-
-            lnRetVal = pthread_cond_destroy(&g_cCondVarForProcessThread);
-            if (lnRetVal != 0)
-            {
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to destroy Conditional Variable");
-               exit(EXIT_FAILURE);
-            }
-
-
-            lnRetVal = pthread_mutex_destroy(&g_cProcessMutex);
-            if (lnRetVal != 0)
-            {
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to destroy mnutex");
-               exit(EXIT_FAILURE);
-            }
-
-            lnRetVal = pthread_mutex_destroy(&g_cResponseMutex);
-            if (lnRetVal != 0)
-            {
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to destroy mnutex");
-               exit(EXIT_FAILURE);
-            }
-
-
-            lnRetVal = pthread_mutex_destroy(&g_cIdentifierMutex);
-            if (lnRetVal != 0)
-            {
-               printf("%s, %d", strerror(errno), __LINE__);
-               perror("unable to destroy mnutex");
-               exit(EXIT_FAILURE);
-            }
-            //exit(EXIT_SUCCESS);
-            //cin.putback('S');
             g_ExceptionRaised = 1;
+            g_bProgramShouldWork = false;
+            lnRetVal = CleanUp();
+				if(lnRetVal != 0)
+				{
+					printf("error in cleanup");
+				}
             streambuf *backup;
             string S = "S";
             stringstream oss(S);
@@ -290,13 +317,13 @@ int ExecuteFunction(tagData& stData)
          {
             pthread_mutex_lock(&g_cGlobalIdentifierMutex);
             //incrementint the sequenceNo                    
-            if(((g_nClientIdentifier + 1) == INT_MAX))       
-            {                                                
-               //g_nClientIdentifier = 0;                   
-               LOG_LOGGER("Max clients reached");           
-               exit(EXIT_FAILURE);                          
-            }                                                
-            stData.nGlobalIdentifier = g_nClientIdentifier++;
+            if(((g_nClientIdentifier + 1) == INT_MAX))
+            {
+               //g_nClientIdentifier = 0;
+               LOG_LOGGER("Max clients reached");
+               exit(EXIT_FAILURE);
+            }
+				stData.nGlobalIdentifier = g_nClientIdentifier++;
             pthread_mutex_unlock(&g_cGlobalIdentifierMutex);
             tagData* lpstNewUserData = NULL;
             lpstNewUserData = new tagData(stData);
@@ -619,7 +646,8 @@ int GetResponseForFunction(tagData& stData)
 void* RecieverThread(void* pData)
 {
    TESTLOG("%s","Thread : Reciever Thread");
-   tagData* lpstData = NULL;
+	mask_sig();
+	tagData* lpstData = NULL;
    fd_set          input_set;
    struct timeval  timeout;
    int lnReady_for_readingr = 0;
@@ -897,7 +925,8 @@ void* RecieverThread(void* pData)
 
 void* EventThread(void*)
 {
-   char lcUniqueIdentifierBuffer[30 + 1] = {0};
+   mask_sig();
+	char lcUniqueIdentifierBuffer[30 + 1] = {0};
    int lnSleeptIme = 0;
    tagData* lpstData = NULL;
    while(g_bProgramShouldWork == true)
@@ -1112,7 +1141,8 @@ int RejectDummyMsgCode(long long nMessageCode)
 void* ProcessThread(void* pArg)
 {
    TESTLOG("%s","Thread : Process Thread");
-   int lnReturnVal = 0;
+	mask_sig();
+	int lnReturnVal = 0;
 
    tagData* lstData = nullptr;
    while (true == g_bProgramShouldWork)
@@ -1270,7 +1300,8 @@ void* ProcessThread(void* pArg)
 void* SenderThread(void* pArg)
 {
    TESTLOG("%s","Thread : Sender Thread");
-   tagData* lpstData = nullptr;
+	mask_sig();
+	tagData* lpstData = nullptr;
    int lnReturnVal = 0;
    // Initislization
    int lnDataStructSize = sizeof(tagBufferData);
@@ -1444,7 +1475,7 @@ int main()
    g_nFlagDupliResend = 0;
 
    //SIgnal Handling
-   signal(SIGINT, HandleSignal);
+   //signal(SIGINT, HandleSignal);
    struct sigaction lstSigAction = {0};
    lstSigAction.sa_flags = 0;
    lstSigAction.sa_handler  = HandleSignal;
@@ -1565,95 +1596,12 @@ int main()
          }
       }
    }
-   if(g_ExceptionRaised == 0)
+   if(g_ExceptionRaised == 0)//0 means exception hasnt been raised
    {
       if(CleanUp() != 0)
       {
          printf("%s, %d", strerror(errno), __LINE__);
          perror("cleanup dailed");
-         exit(EXIT_FAILURE);
-      }
-
-      if(pConfigObject != NULL)
-      {
-         DeleteNewMap(pConfigObject);
-         pConfigObject = NULL;
-      }
-
-      lnRetVal = pthread_cond_broadcast(&g_cCondVarForProcessThread);
-      if(lnNoOfBytes > 0)
-      {
-         printf("%s, %d", strerror(errno), __LINE__);
-         perror("unable to join lnPThreadEventTime");
-         exit(EXIT_FAILURE);
-      }
-
-      lnRetVal = pthread_join(lnRecieverThread,NULL);
-      if (lnRetVal != 0)
-      {
-         printf("%s, %d", strerror(errno), __LINE__);
-         perror("unable to join lnPThreadEventTime");
-         exit(EXIT_FAILURE);
-      }
-      lnRetVal = pthread_join(lnPThreadEventTime,NULL);
-      if (lnRetVal != 0)
-      {
-         printf("%s, %d", strerror(errno), __LINE__);
-         perror("unable to join lnPThreadEventTime");
-         exit(EXIT_FAILURE);
-      }
-
-      lnRetVal = pthread_join(lnSenderPThread,NULL);
-      if (lnRetVal != 0)
-      {
-         printf("%s, %d", strerror(errno), __LINE__);
-         perror("unable to join lnSenderPThread");
-         exit(EXIT_FAILURE);
-      }
-
-      for (int lnCounter = 0; lnCounter< NO_OF_PROC_THREADS; lnCounter++)
-      {
-         lnRetVal = pthread_join(lnProcessPThread[lnCounter],NULL);
-         if (lnRetVal != 0)
-         {
-            printf("%s, %d", strerror(errno), __LINE__);
-            perror("unable to join processthread");
-            exit(EXIT_FAILURE);
-         }
-      }
-
-      lnRetVal = pthread_cond_destroy(&g_cCondVarForProcessThread);
-      if (lnRetVal != 0)
-      {
-         printf("%s, %d", strerror(errno), __LINE__);
-         perror("unable to destroy Conditional Variable");
-         exit(EXIT_FAILURE);
-      }
-
-
-      lnRetVal = pthread_mutex_destroy(&g_cProcessMutex);
-      if (lnRetVal != 0)
-      {
-         printf("%s, %d", strerror(errno), __LINE__);
-         perror("unable to destroy mutex");
-         exit(EXIT_FAILURE);
-      }
-
-
-      lnRetVal = pthread_mutex_destroy(&g_cResponseMutex);
-      if (lnRetVal != 0)
-      {
-         printf("%s, %d", strerror(errno), __LINE__);
-         perror("unable to destroy mutex");
-         exit(EXIT_FAILURE);
-      }
-
-
-      lnRetVal = pthread_mutex_destroy(&g_cIdentifierMutex);
-      if (lnRetVal != 0)
-      {
-         printf("%s, %d", strerror(errno), __LINE__);
-         perror("unable to destroy mutex");
          exit(EXIT_FAILURE);
       }
 

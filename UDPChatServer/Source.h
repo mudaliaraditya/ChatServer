@@ -25,12 +25,14 @@ std::string SuffixAppropirateUniqueIdentifier(std::string lcString, short nComma
 
 
 
-
+void mask_sig(void);
 ////////////////////FINIALIZINGyyyy FUNCTIONS/////////////////////////
 int CleanUp();
 
 
 ////////////////////FINIALIZINGyyyy1 FUNCTIONS/////////////////////////
+int ThreadDestroy();
+
 void HandleSignal(int nSignal);
 
 
