@@ -18,15 +18,15 @@ CompileError :
 	 touch CompileError
 
 client.out : client.o
-	${CXX} -o client.out client.cpp NetworkSources.cpp Logger.cpp Globals.cpp -std=c++11 -lpthread -g  -lconfigparse -L. -I../ConfigParser/hdr -I../EncyptingFunc -I../EncyptingFunc/encryptor ../EncyptingFunc/Encryptcall.c -ldl -Wl,-R.  2> CompileError
+	${CXX} -o client.out client.cpp NetworkSources.cpp  Globals.cpp -std=c++11 -lpthread -g  -lconfigparse -L. -I../ConfigParser/hdr -I../EncyptingFunc -I../EncyptingFunc/encryptor ../EncyptingFunc/Encryptcall.c -ldl -Wl,-R.  -I../Logger 2> CompileError
 	touch .TEST
 
-client.o : client.cpp NetworkSources.cpp Logger.cpp Globals.cpp
-	${CXX} -c  client.cpp NetworkSources.cpp Logger.cpp Globals.cpp -std=c++11 -lpthread -g  -lconfigparse -L. -I../ConfigParser/hdr  -I../EncyptingFunc -I../EncyptingFunc/encryptor ../EncyptingFunc/Encryptcall.c  2> CompileError
+client.o : client.cpp NetworkSources.cpp  Globals.cpp
+	${CXX} -c  client.cpp NetworkSources.cpp  Globals.cpp -std=c++11 -lpthread -g  -lconfigparse -L. -I../ConfigParser/hdr  -I../EncyptingFunc -I../EncyptingFunc/encryptor ../EncyptingFunc/Encryptcall.c  -I../Logger 2> CompileError
 
 
 warn : client.cpp NetworkSources.cpp libconfigparse.so Globals.cpp
-	${CXX} -o client.out client.cpp Logger.cpp Globals.cpp -std=c++11 -lpthread -g -DLOGGING -Wall -DTESTLOGGING  -lconfigparse -L.  -I../ConfigParser/hdr  -I../EncyptingFunc    -I../EncyptingFunc/encryptor ../EncyptingFunc/Encryptcall.c -ldl -Wl,-R. 2> CompileError
+	${CXX} -o client.out client.cpp  Globals.cpp -std=c++11 -lpthread -g -DLOGGING -Wall -DTESTLOGGING  -lconfigparse -L.  -I../ConfigParser/hdr  -I../EncyptingFunc    -I../EncyptingFunc/encryptor ../EncyptingFunc/Encryptcall.c -ldl -Wl,-R. -I../Logger 2> CompileError
 	touch warn
 
 libconfigparse.so :  ../ConfigParser/.Complete

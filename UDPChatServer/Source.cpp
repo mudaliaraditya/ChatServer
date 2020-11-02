@@ -1839,8 +1839,9 @@ int main()
    {
       return -1;
    }
-   g_nLogLevel = GetLoggingLevel(lcLogLvl);
-   if(g_nLogLevel == -1)
+	unsigned short* lpLogLvl  = GetLogVarPtr();
+   *lpLogLvl = (unsigned short)GetLoggingLevel(lcLogLvl);
+   if(*lpLogLvl == 0)
    {
       return -1;
    }

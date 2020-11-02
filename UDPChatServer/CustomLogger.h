@@ -1,6 +1,7 @@
 #ifndef CUSTOM_LOGGER_H
 #define CUSTOM_LOGGER_H
 #include "Logger.h"
+#include "globals.h"
 
 #define LOG_LOGGER(cToBeLogged, ...)             \
 {                                                 \
