@@ -183,22 +183,7 @@ class CSessionManager
          return 0;
       }
 
-     //   int AddSecondUserToSession(std::string cFirstName,std::string cSecondName)
-      //   {
-      //      int lnRetVal = 0;
-      //      for(CSessionManagerStoreIterator lcIter = m_cSessionStore.begin(); lcIter != m_cSessionStore.end();lcIter++)
-      //      {
-      //         if((*lcIter)->UserExistsinSession(cFirstName) == 0)
-      //         {
-      //            lnRetVal = (*lcIter)->AddNextName(cSecondName);
-      //            if(lnRetVal == 0)
-      //            {
-      //               break;
-      //            }
-      //         }
-      //      }
-      //      return lnRetVal;
-      //   }
+
 
       int AddMoreUserToSession(int nSessionId,tagSessionIdentifierData stData)
       {

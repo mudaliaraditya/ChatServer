@@ -5,10 +5,11 @@ mkfile_dir= $(dir $(mkfile_path))
 
 CXX=g++
 
-all : .TEST   bin/libconfigparse.so
+all : .TEST   bin/libconfigparse.so bin/libconfigparse-static.a .Complete
 	touch  ${mkfile_dir}/.Complete
 	cp ${mkfile_dir}/bin/libconfigparse.so example/.
 
+.Complete : 
 
 .TEST:
 	rm -f ${mkfile_dir}/CompileError.txt || true
@@ -16,6 +17,8 @@ all : .TEST   bin/libconfigparse.so
 	touch  ${mkfile_dir}/.TEST
 	touch .TEST
 
+bin/libconfigparse-static.a : obj/ConfigParser.o
+	 ar rcs bin/libconfigparse-static.a obj/ConfigParser.o
 
 bin/libconfigparse.so : obj/ConfigParser.o
 	${CXX} -o   ${mkfile_dir}/bin/libconfigparse.so  ${mkfile_dir}/obj/ConfigParser.o -shared -fPIC -Ihdr/ -Wall -g -std=c++11 2>>  ${mkfile_dir}/CompileError.txt

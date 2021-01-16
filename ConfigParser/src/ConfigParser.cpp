@@ -258,6 +258,7 @@ int AddTokenToStore(string cString,ConfigKeyVal& cMap,ConfigParserConfigHolder* 
                               case '\n':
                               case '\r':
                               case  ' ':
+										case '	':
                               {
                               }
                               break;

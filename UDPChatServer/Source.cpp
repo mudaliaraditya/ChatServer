@@ -317,7 +317,6 @@ int ExecuteFunction(tagData& stData)
                   exit(1);
                   return -1;
                }
-
                if(g_bProgramShouldWork)
                exit(EXIT_FAILURE);
                return -1;
@@ -732,14 +731,6 @@ void* RecieverThread(void* pData)
    bool lbDiscardPacket = false;
    while (true == g_bProgramShouldWork)
    {
-      lpstData = new tagData();
-      if(NULL == lpstData)
-      {
-          LOG_LOGGER("error in new");
-          if(g_bProgramShouldWork)
-             exit(-1);
-          continue;
-      }
       tagBufferData lstBufferData;
       lnSockAddrlen = sizeof(cliaddr);
       TESTINGOUT("Recieving..")
@@ -757,11 +748,6 @@ void* RecieverThread(void* pData)
               if (lnNoOfBytes <= 0)
               {
                       cout << "" << endl;
-                      if(lpstData != NULL)
-                      {
-                              delete lpstData;
-                              lpstData = nullptr;
-                      }
                       //printf("%s, %d", strerror(errno), __LINE__);
                       LOG_LOGGER("stderr : %s : RecvUDPData failed", strerror(errno));
                       if(g_bProgramShouldWork)
@@ -771,28 +757,27 @@ void* RecieverThread(void* pData)
      }
      else
      {
-         if(lpstData != NULL)
-         {
-            delete lpstData;
-            lpstData = nullptr;
-         }
          continue;
-     }
-     cout << "data recieved" << endl;
+     } 
+      cout << "data recieved" << endl;
       lnRetVal =  Decrypt(reinterpret_cast<char*>(&lstBufferData),sizeof(lstBufferData));
       if( lnRetVal != 0)
       {
-        if(lpstData != NULL)
-        {
-           delete lpstData;
-           lpstData = nullptr;
-        }
         LOG_LOGGER("%s : Decryption failed", strerror(errno));
         if(g_bProgramShouldWork)
            exit(1);
         continue;
       } 
-      *lpstData = ConvertToDataStruct(lstBufferData);
+      lpstData = new tagData();
+      if(NULL == lpstData)
+      {
+          LOG_LOGGER("error in new");
+          if(g_bProgramShouldWork)
+             exit(-1);
+          continue;
+      }
+
+		*lpstData = ConvertToDataStruct(lstBufferData);
       TESTINGOUT("Recieved");
       TESTLOG("%s %s", " packet with message identifier : ",lpstData->cUniqueMessageIdentifier);
       TESTLOG("%s %s" ," packet with data from " , lpstData->cIdentifier );
@@ -801,19 +786,7 @@ void* RecieverThread(void* pData)
       TESTLOG("%s %d", " packet with last recieved seqno ", lpstData->nLatestClntSeqNo );
       if(g_nFlagDupliResend == 0)
       {
-         lnRetVal = pthread_mutex_lock( &g_cIdentifierMutex);
-         if (lnRetVal != EXIT_SUCCESS)
-         {
-            if(lpstData != NULL)
-            {
-               delete lpstData;
-               lpstData = nullptr;
-            }
-            LOG_LOGGER("%s : mutex lock failed", strerror(errno));
-            if(g_bProgramShouldWork)
-               exit(EXIT_FAILURE);
-            continue;
-         }
+
 
 #ifdef LOGGING
          cout << "Taking Identifier Mutex" << __LINE__ <<endl;
@@ -854,6 +827,19 @@ void* RecieverThread(void* pData)
             pthread_mutex_unlock(&g_ReSenderMutex);
             TESTINGOUT("Releasing Resender Mutex");
          }
+         lnRetVal = pthread_mutex_lock( &g_cIdentifierMutex);
+         if (lnRetVal != EXIT_SUCCESS)
+         {
+            if(lpstData != NULL)
+            {
+               delete lpstData;
+               lpstData = nullptr;
+            }
+            LOG_LOGGER("%s : mutex lock failed", strerror(errno));
+            if(g_bProgramShouldWork)
+               exit(EXIT_FAILURE);
+            continue;
+         }
          string lcKey = SuffixAppropirateUniqueIdentifier(lpstData->cUniqueMessageIdentifier, (short)lpstData->nCommand);
          {
             CIterIdentifierStringStore lcIterIdentifierStringStore  = g_cIdentifierStore.find(lcKey);
@@ -883,7 +869,7 @@ void* RecieverThread(void* pData)
                   delete lpstData;
                   lpstData = nullptr;
                }
-
+               pthread_mutex_unlock(&g_cIdentifierMutex);
                LOG_LOGGER("%s : Duplicate Packet with identifier %s after checking for duplicate packets\n", strerror(errno), lcKey.c_str());
                if(g_bProgramShouldWork)
                   exit(-1);
@@ -1391,7 +1377,6 @@ void* ProcessThread(void* pArg)
             exit(EXIT_FAILURE);
          continue;
       }
-      //sleep(3);
 
       lnReturnVal  = HandleRequest(lstData);
       if(lnReturnVal != 0)
@@ -1459,8 +1444,6 @@ void* SenderThread(void* pArg)
    //Initializatoin end
    while (true == g_bProgramShouldWork)
    {
-      //if(!g_cResponseList.empty())
-
       pthread_mutex_lock(&g_cResponseMutex);
       if (g_cResponseList.empty())
       {
@@ -1520,13 +1503,6 @@ void* SenderThread(void* pArg)
 }
 
 
-//#define LOG_LOGGER(cToBeLogged, ...)             \
-{                                                \
-   char lcBuffer[200] = {0};                       \
-      snprintf(lcBuffer,200,cToBeLogged, ##__VA_ARGS__);         \
-      (g_cfstream <<  lcBuffer << endl);           \
-}
-
 
 int InitializeAllMutex()
 { 
@@ -1572,52 +1548,6 @@ int InitializeAllMutex()
 #ifndef WIN32
 
 
-
-int InitiateLogging()
-{
-   //LOG File Handling START
-   time_t lnTime;
-   struct tm*  lpsttm = NULL; 
-   char lcErrorLogFileName[200] = {0};
-   lnTime = time(NULL);
-   lpsttm  = gmtime(&lnTime);
-   //snprintf(lcBuffera,200,"%d:%d:%d%d-%d-%d",psttm->tm_hour,psttm->tm_min,psttm->tm_sec,psttm->tm_mday,psttm->tm_mon,psttm->tm_year );
-   snprintf(lcErrorLogFileName,200,"%s/%s-%02d-%02d-%04d_%02d%02d%02d.%s","Logs","log",lpsttm->tm_mday,lpsttm->tm_mon +1  ,lpsttm->tm_year + 1900,lpsttm->tm_hour,lpsttm->tm_min,lpsttm->tm_sec,"log");
-   TESTLOG( "%s %s"," log file name ", lcErrorLogFileName );
-   g_cfstream.open(lcErrorLogFileName,ios::in|ios::out | ios::app);
-   if(g_cfstream.fail())
-   {
-      LOG_LOGGER("%s","g_cfstream failed truncating or creating new file"); 
-      LOG_LOGGER( "%s","g_cfstream failed truncating or creating new file");
-      g_cfstream.open(lcErrorLogFileName,ios::in|ios::out|ios::trunc);
-      if(g_cfstream.fail())
-      {
-          return EXIT_FAILURE;
-      }
-      g_cfstream.clear();
-   }
-   g_cfstream.seekp(ios::end); //output
-   g_cfstream.seekg(ios::end);
-
-   char lcDataLogFileName[200] = {0};
-   snprintf(lcDataLogFileName, 200, "%s/%s-%02d-%02d-%04d_%02d%02d%02d.%s", "Logs", "data", lpsttm->tm_mday, lpsttm->tm_mon + 1  , lpsttm->tm_year + 1900, lpsttm->tm_hour, lpsttm->tm_min, lpsttm->tm_sec,"log");
-   g_cDatafstream.open(lcDataLogFileName,ios::in|ios::out | ios::app);
-   if(g_cDatafstream.fail())
-   {
-      LOG_LOGGER("%s","g_cDatafstream failed truncating or creating new file"); 
-      LOG_LOGGER( "g_cDatafstream failed truncating or creating new file");
-      g_cDatafstream.open(lcDataLogFileName, ios::in|ios::out|ios::trunc);
-      if(g_cfstream.fail())
-      {
-          return EXIT_FAILURE;
-      }
-      g_cDatafstream.clear();
-   }
-   g_cDatafstream.seekp(ios::end); //output
-   g_cDatafstream.seekg(ios::end);
-
-   return 0;
-}
 
 
 int CreateAllThreads()
@@ -1821,6 +1751,7 @@ int main()
    pConfigObject = CreateNewMap();
    if(pConfigObject == NULL)
    {
+		TESTOUT("ERROR in creating config object")
       return -1;
    } 
    lnRetVal =  GetConfig(CNF_FILE_NAME,pConfigObject); 
@@ -1851,14 +1782,12 @@ int main()
    }
    //LOG File Handling START
    if(0 !=  InitiateLoggingFor(g_cDatafstream,"Logs","data","log"))
-   //if (0 !=InitiateLogging())
    {
       TESTOUT("Error in intializing Log files exiting");
       return -1;
    }
 
    if(0 !=  InitiateLoggingFor(g_cfstream,"Logs","log","log"))
-   //if (0 !=InitiateLogging())
    {
       TESTOUT("Error in intializing Log files exiting");
       return -1;
