@@ -141,82 +141,12 @@ INITIALIZE()\
 
 #define COREGEN
 int g_nConnectedTest = 0;
-/*long getMicrotime()
-{
-   struct timeval currentTime;
-   gettimeofday(&currentTime, NULL);
-   //return currentTime.tv_sec * (int)1e6 + currentTime.tv_usec;
-   return currentTime.tv_usec;
-}*/
-/*
-#define LOG_LOGGER(cToBeLogged, ...)             \
-{                                                 \
-   {                                                \
-      \
-       LOGGINGI(g_cfstream,cToBeLogged,##__VA_ARGS__)\
-   }                                             \
-}
-
-#define LOGGINGI(cFileStream,cToBeLogged, ...)\
-{\
-    \
-   {                                                \
-      \
-      char lcBufferMessage[700] = {0};                       \
-      char lcTimeLogBuffer[700] = {0};\
-      GETTIMEBUFFER(lcTimeLogBuffer);\
-      snprintf(lcBufferMessage,500,cToBeLogged, ##__VA_ARGS__);         \
-      (cFileStream <<  lcTimeLogBuffer << " | " << g_PID << " | "<< lcBufferMessage <<  " | "<< __func__ <<"() | " << "thread id :" << pthread_self() << " | "<<__FILE__<< ":"<<__LINE__ <<endl);           \
-   }               \
-}
-
-
-
-#define GETTIMEBUFFER(cTimeBuffer)\
-{\
-    {\
-      time_t g_nTime = 0;\
-      g_nTime = time(NULL);\
-      long long lnMicro = getMicrotime();\
-      struct tm*  lpsttm =  localtime(&g_nTime);\
-      char lcBufferTime[200] = {0};                       \
-      snprintf(lcBufferTime,200,"%02d:%02d:%02d.%06d %02d-%02d-%04d",lpsttm->tm_hour, lpsttm->tm_min, lpsttm->tm_sec, lnMicro,lpsttm->tm_mday,lpsttm->tm_mon,(lpsttm->tm_year + 1900) );\
-      snprintf(cTimeBuffer,500,"%s",lcBufferTime);\
-   }\
-}
-
-#define TESTLOG(cToBeLogged, ...)             \
-{                                                 \
-   {                                                \
-     LOGGINGI(g_cfstreamDataLogger,cToBeLogged,##__VA_ARGS__)\
-   }                                             \
-}
-
-*/
-
 
 int VerifyUniqueness(char* cUniqueMessage);
 void SetRand(char* cBuf,int nSize);
 string SuffixAppropirateUniqueIdentifier(string lcString,short nCommand);
 
 
-
-#ifdef TESTLOGGING
-/*
-#define TESTLOG(STRING, ...) \
-{\*/
-  /*printf(STRING, ##__VA_ARGS__);*/ /*DATA_LOGGER(STRING, ##__VA_ARGS__)\
-}*/
-#endif
-
-#ifndef TESTLOGGING
-/*
-#define TESTLOG(STRING, ...) \
-{\
-   \
-}*/
-
-#endif
 
 
 
