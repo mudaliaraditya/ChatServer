@@ -1760,26 +1760,23 @@ int main()
       return -1;
    }
 
-/*   if(pConfigObject == NULL)
-   {
-      return -1;
-   }
-*/
    char* lcLogLvl  =  ((GetValueForKey(CNF_LOG_LEVEL, CNF_FILE_NAME , pConfigObject)));
    if(lcLogLvl == NULL)
    {
       return -1;
    }
-	unsigned short* lpLogLvl  = GetLogVarPtr();
-   *lpLogLvl = (unsigned short)GetLoggingLevel(lcLogLvl);
+	unsigned short* lpLogLvl  = GetLogLevel();
+   *lpLogLvl = (unsigned short)GetLoggingLevel(lcLogLvl);//setting the log level
    if(*lpLogLvl == 0)
    {
       return -1;
    }
+
    if(0 !=  DeleteKeyVal(lcLogLvl))
    {
       return -1; 
    }
+
    //LOG File Handling START
    if(0 !=  InitiateLoggingFor(g_cDatafstream,"Logs","data","log"))
    {

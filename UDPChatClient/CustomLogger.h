@@ -7,20 +7,20 @@
 {                                                 \
    {                                                \
       \
-       LOG(ERROR,g_cfstream,cToBeLogged,##__VA_ARGS__)\
+       LOG(LOGGER_ERROR,g_cfstream,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 #define TESTLOG(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
-      LOG(INFO,g_cfstreamDataLogger,cToBeLogged,##__VA_ARGS__)\
+      LOG(LOGGER_INFO,g_cfstreamDataLogger,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 
 #define DEBUGLOG(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
-      LOG(DEBUG,g_cfstreamDataLogger,cToBeLogged,##__VA_ARGS__)\
+      LOG(LOGGER_DEBUG,g_cfstreamDataLogger,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 
@@ -28,7 +28,7 @@
 #define TESTINGOUT(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
-      LOG(TEST,std::cout,cToBeLogged,##__VA_ARGS__)\
+      LOG(LOGGER_TEST,std::cout,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 
@@ -36,7 +36,7 @@
 #define TESTINGLOG(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
-     LOG(TEST,g_cfstreamDataLogger,cToBeLogged,##__VA_ARGS__)\
+     LOG(LOGGER_TEST,g_cfstreamDataLogger,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 
@@ -46,7 +46,7 @@
 #define TESTOUT(cToBeLogged, ...)             \
 {                                                 \
    {                                                \
-     LOG(OUT,std::cout,cToBeLogged,##__VA_ARGS__)\
+     LOG(LOGGER_OUT,std::cout,cToBeLogged,##__VA_ARGS__)\
    }                                             \
 }
 
