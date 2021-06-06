@@ -11,18 +11,16 @@ cleanLogs :
 	mkdir Logs
 
 .TEST : server.out
-	rm -rf CompileError.txt
-	touch CompileError.txt
-	touch .TEST
+	touch $@
 
 server.out : Source.o  ../ConfigParser/.Complete NetworkSources.o  globals.o ../EncyptingFunc/Encryptcall.o
-	(make server1.out && mv  server1.out server.out) || (make server2.out && mv  server2.out server.out)
+	(make server1.out && mv  server1.out $@) || (make server2.out && mv  server2.out $@)
 	
 server1.out :  Source.o  ../ConfigParser/.Complete NetworkSources.o  globals.o ../EncyptingFunc/Encryptcall.o
-	${CXX} -o server1.out -no-pie  Source.o  NetworkSources.o globals.o  -std=c++11  -lpthread -g -ggdb3 -L../ConfigParser/bin -lconfigparse -I../ConfigParser/hdr ../EncyptingFunc/Encryptcall.o -ldl -I../EncyptingFunc -I../Logger  -I../EncyptingFunc/encryptor/ -Wl,-R. 2> CompileError.txt
+	${CXX} -o server1.out -no-pie  Source.o  NetworkSources.o globals.o  -std=c++11  -lpthread -g -ggdb3 -L../ConfigParser/bin -lconfigparse -I../ConfigParser/hdr ../EncyptingFunc/Encryptcall.o -ldl -I../EncyptingFunc -I../Logger  -I../EncyptingFunc/encryptor/ -Wl,-R. 
 
 server2.out :  Source.o  ../ConfigParser/.Complete NetworkSources.o  globals.o ../EncyptingFunc/Encryptcall.o
-	${CXX} -o server2.out  Source.o  NetworkSources.o globals.o  -std=c++11  -lpthread -g -ggdb3 -L../ConfigParser/bin -lconfigparse -I../ConfigParser/hdr ../EncyptingFunc/Encryptcall.o -ldl -I../EncyptingFunc  -I../EncyptingFunc/encryptor/ -I../Logger  -Wl,-R. 2> CompileError.txt
+	${CXX} -o server2.out  Source.o  NetworkSources.o globals.o  -std=c++11  -lpthread -g -ggdb3 -L../ConfigParser/bin -lconfigparse -I../ConfigParser/hdr ../EncyptingFunc/Encryptcall.o -ldl -I../EncyptingFunc  -I../EncyptingFunc/encryptor/ -I../Logger  -Wl,-R. 
 
 
 libconfigparse.so : ../ConfigParser/.Complete
@@ -30,16 +28,16 @@ libconfigparse.so : ../ConfigParser/.Complete
 	
 
 ../ConfigParser/.Complete :
-	cd ../ConfigParser/ && make 2> CompileError.txt
+	cd ../ConfigParser/ && make 
 
 Source.o : Source.cpp
-	${CXX} -c Source.cpp  -std=c++11 -ggdb3 -lpthread -g -I../ConfigParser/hdr -I../EncyptingFunc  -I../EncyptingFunc/encryptor/ -I../Logger  2> CompileError.txt
+	${CXX} -c Source.cpp  -std=c++11 -ggdb3 -lpthread -g -I../ConfigParser/hdr -I../EncyptingFunc  -I../EncyptingFunc/encryptor/ -I../Logger  
 
 NetworkSources.o : NetworkSources.cpp
-	${CXX} -c NetworkSources.cpp -ldl -std=c++11 -ggdb3 -lpthread -g -I../ConfigParser/hdr -I../EncyptingFunc -I../EncyptingFunc/encryptor/ -I../Logger  2> CompileError.txt
+	${CXX} -c NetworkSources.cpp -ldl -std=c++11 -ggdb3 -lpthread -g -I../ConfigParser/hdr -I../EncyptingFunc -I../EncyptingFunc/encryptor/ -I../Logger  
 
 globals.o : globals.cpp
-	${CXX} -c globals.cpp -std=c++11 -lpthread -g -ggdb3 -I../ConfigParser/hdr -I../EncyptingFunc -I../EncyptingFunc/encryptor/  -I../Logger  2> CompileError.txt
+	${CXX} -c globals.cpp -std=c++11 -lpthread -g -ggdb3 -I../ConfigParser/hdr -I../EncyptingFunc -I../EncyptingFunc/encryptor/  -I../Logger  
 
 ../EncyptingFunc/Encryptcall.o : ../EncyptingFunc/Encryptcall.c
 	${CXX} -c ../EncyptingFunc/Encryptcall.c -I../ConfigParser/hdr -I../EncyptingFunc -lconfigparse -L../ConfigParser/bin -I../EncyptingFunc/encryptor/ -I../Logger  -g
@@ -55,4 +53,3 @@ clean :
 	rm *.so || true
 	rm *.o || true
 	rm .TEST || true
-	rm CompileError.txt || true
